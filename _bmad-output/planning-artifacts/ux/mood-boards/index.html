@@ -1,0 +1,1044 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GigBuddy — Mood Boards</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    color: #1A1A20;
+    background: #FAFAF8;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+  }
+  .page-header {
+    padding: 48px 32px 32px;
+    max-width: 880px;
+    margin: 0 auto;
+  }
+  .page-header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 44px;
+    margin: 0 0 12px;
+    font-weight: 600;
+  }
+  .page-header p {
+    color: #555;
+    max-width: 620px;
+    margin: 8px 0;
+  }
+  .nav {
+    position: sticky;
+    top: 0;
+    background: rgba(250, 250, 248, 0.92);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid #e5e2da;
+    padding: 12px 32px;
+    z-index: 10;
+    display: flex;
+    gap: 24px;
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .nav a { color: #1A1A20; text-decoration: none; }
+  .nav a:hover { text-decoration: underline; }
+
+  .board {
+    padding: 80px 32px 96px;
+    border-bottom: 1px solid #e5e2da;
+  }
+  .board-inner {
+    max-width: 1080px;
+    margin: 0 auto;
+  }
+  .board-eyebrow {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    opacity: 0.7;
+    margin: 0 0 12px;
+  }
+  .board h2 {
+    font-size: 56px;
+    margin: 0 0 12px;
+    font-weight: 600;
+    line-height: 1.05;
+  }
+  .board-lede {
+    font-size: 19px;
+    max-width: 640px;
+    line-height: 1.55;
+    margin: 0 0 48px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 56px;
+    align-items: start;
+  }
+  @media (max-width: 880px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+
+  .panel-title {
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    opacity: 0.6;
+    margin: 0 0 16px;
+  }
+
+  /* Palette swatches */
+  .palette {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .swatch {
+    padding: 14px 16px;
+    border-radius: 4px;
+    font-size: 12px;
+    line-height: 1.4;
+    border: 1px solid rgba(0,0,0,0.05);
+  }
+  .swatch-name { font-weight: 600; display: block; }
+  .swatch-hex { font-family: 'IBM Plex Mono', monospace; opacity: 0.7; }
+
+  /* Type specimens */
+  .specimens { display: flex; flex-direction: column; gap: 20px; }
+  .specimen-label {
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    opacity: 0.5;
+    margin: 0 0 4px;
+  }
+  .specimen-line { margin: 0; }
+
+  /* iPhone 13 frame */
+  .phone {
+    width: 320px;
+    height: 692px;
+    border-radius: 36px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.25), 0 6px 20px rgba(0,0,0,0.12);
+    margin: 0 auto;
+    border: 8px solid #111;
+  }
+  .phone-screen {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    position: relative;
+  }
+  .notch {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 96px;
+    height: 22px;
+    background: #111;
+    border-radius: 0 0 14px 14px;
+    z-index: 5;
+  }
+  .home-indicator {
+    position: absolute;
+    bottom: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 110px;
+    height: 4px;
+    border-radius: 2px;
+    z-index: 5;
+  }
+
+  .practice-card {
+    border-radius: 8px;
+    padding: 28px;
+    border: 1px solid rgba(0,0,0,0.06);
+  }
+
+  .phones-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    margin-top: 56px;
+  }
+  @media (max-width: 880px) {
+    .phones-row { grid-template-columns: 1fr; }
+  }
+  .phone-caption {
+    text-align: center;
+    margin-top: 16px;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    opacity: 0.6;
+  }
+
+  /* ============================================================ */
+  /* 01 — Stage & Score                                            */
+  /* ============================================================ */
+  .b-stage {
+    --stage-black: #0E0E12;
+    --amber: #E0A04A;
+    --brass: #B8862F;
+    --cream: #F5EDD8;
+    --ink: #1A1A20;
+    --smoke: #6B6B73;
+    --burgundy: #5A1F22;
+    background: var(--cream);
+    color: var(--ink);
+  }
+  .b-stage h2 { font-family: 'Playfair Display', serif; }
+  .b-stage .board-eyebrow { color: var(--brass); }
+  .b-stage .practice-card {
+    background: #FBF6E6;
+    border-color: rgba(26,26,32,0.08);
+  }
+  .b-stage .pc-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    font-weight: 600;
+    margin: 0 0 4px;
+  }
+  .b-stage .pc-sub {
+    font-style: italic;
+    color: var(--smoke);
+    margin: 0 0 20px;
+    font-family: 'Playfair Display', serif;
+  }
+  .b-stage .pc-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 24px;
+    padding: 12px 0;
+    border-top: 1px solid var(--brass);
+    border-bottom: 1px solid var(--brass);
+    margin: 0 0 20px;
+  }
+  .b-stage .pc-label {
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--smoke);
+    margin: 0 0 2px;
+  }
+  .b-stage .pc-val { font-family: 'IBM Plex Mono', monospace; font-size: 15px; }
+  .b-stage .pc-notes { font-size: 15px; line-height: 1.65; margin: 0; }
+  .b-stage .pc-link { color: var(--burgundy); text-decoration: none; border-bottom: 1px solid var(--burgundy); }
+
+  .b-stage .phone-screen { background: var(--stage-black); color: #fff; }
+  .b-stage .home-indicator { background: rgba(255,255,255,0.4); }
+  .b-stage .perf {
+    padding: 64px 24px 48px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    font-family: 'Inter', sans-serif;
+  }
+  .b-stage .perf-eyebrow {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin: 0 0 16px;
+    font-weight: 500;
+  }
+  .b-stage .perf-title {
+    font-family: 'Inter', sans-serif;
+    font-size: 38px;
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+    margin: 0 0 36px;
+  }
+  .b-stage .perf-meta {
+    display: flex;
+    gap: 32px;
+    margin: 0 0 32px;
+  }
+  .b-stage .perf-meta-label {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--smoke);
+    margin: 0 0 4px;
+  }
+  .b-stage .perf-meta-val {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 28px;
+    color: var(--amber);
+    font-feature-settings: 'tnum';
+    line-height: 1;
+  }
+  .b-stage .perf-chords {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 15px;
+    line-height: 2;
+    color: #EDEDED;
+    margin: 0 0 auto;
+    white-space: pre;
+  }
+  .b-stage .perf-anno {
+    font-style: italic;
+    color: var(--amber);
+    font-size: 13px;
+    margin: 24px 0 16px;
+  }
+  .b-stage .perf-dots {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+  }
+  .b-stage .perf-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--smoke); }
+  .b-stage .perf-dot.played { background: rgba(224,160,74,0.35); }
+  .b-stage .perf-dot.current { background: var(--amber); }
+
+  .b-stage .setlist {
+    margin-top: 56px;
+    border-top: 1px solid var(--brass);
+    padding-top: 24px;
+  }
+  .b-stage .setlist h3 {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--brass);
+    margin: 0 0 12px;
+  }
+  .b-stage .setlist ol {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 24px;
+    font-family: 'Inter', sans-serif;
+  }
+  .b-stage .setlist li {
+    padding: 6px 0;
+    border-bottom: 1px dotted rgba(184,134,47,0.3);
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+  .b-stage .setlist .num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--smoke);
+    width: 18px;
+  }
+
+  /* ============================================================ */
+  /* 02 — Nord Studio                                              */
+  /* ============================================================ */
+  .b-nord {
+    --panel-black: #0A0A0A;
+    --chassis: #1C1C1F;
+    --nord-red: #E02020;
+    --amber: #F0B040;
+    --panel-white: #FAFAFA;
+    --etched: #8A8A90;
+    --hairline: #2A2A2E;
+    background: var(--chassis);
+    color: var(--panel-white);
+  }
+  .b-nord h2 { font-family: 'IBM Plex Sans', sans-serif; font-weight: 700; letter-spacing: -0.01em; }
+  .b-nord .board-eyebrow { color: var(--nord-red); }
+  .b-nord .board-lede { color: rgba(250,250,250,0.7); }
+  .b-nord .panel-title { color: var(--etched); }
+  .b-nord .swatch { border-color: var(--hairline); color: var(--panel-white); }
+
+  .b-nord .practice-card {
+    background: #141416;
+    border: 1px solid var(--hairline);
+    font-family: 'IBM Plex Sans', sans-serif;
+    border-top: 2px solid var(--nord-red);
+  }
+  .b-nord .pc-eyebrow {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--etched);
+    margin: 0 0 6px;
+  }
+  .b-nord .pc-title {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin: 0 0 24px;
+  }
+  .b-nord .pc-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px 24px;
+    padding: 16px 0;
+    border-top: 1px solid var(--hairline);
+    border-bottom: 1px solid var(--hairline);
+    margin: 0 0 20px;
+  }
+  .b-nord .pc-label {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--etched);
+    margin: 0 0 4px;
+  }
+  .b-nord .pc-val { font-family: 'IBM Plex Mono', monospace; font-size: 15px; font-weight: 500; }
+  .b-nord .pc-val.accent { color: var(--nord-red); }
+  .b-nord .pc-notes { font-size: 14px; line-height: 1.6; margin: 0; color: rgba(250,250,250,0.85); }
+  .b-nord .pc-link { color: var(--nord-red); text-decoration: none; border-bottom: 1px solid var(--nord-red); }
+
+  .b-nord .phone-screen { background: var(--panel-black); color: var(--panel-white); }
+  .b-nord .home-indicator { background: rgba(250,250,250,0.4); }
+  .b-nord .perf {
+    padding: 64px 24px 48px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    font-family: 'IBM Plex Sans', sans-serif;
+  }
+  .b-nord .perf-eyebrow {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--etched);
+    margin: 0 0 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .b-nord .led { width: 7px; height: 7px; border-radius: 50%; background: var(--nord-red); box-shadow: 0 0 6px var(--nord-red); }
+  .b-nord .perf-title {
+    font-size: 34px;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    line-height: 1.05;
+    margin: 0 0 36px;
+  }
+  .b-nord .perf-meta {
+    display: flex;
+    gap: 32px;
+    margin: 0 0 28px;
+  }
+  .b-nord .perf-meta-label {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--etched);
+    margin: 0 0 4px;
+  }
+  .b-nord .perf-meta-val {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 26px;
+    font-weight: 500;
+    font-feature-settings: 'tnum';
+    line-height: 1;
+  }
+  .b-nord .perf-meta-val.accent { color: var(--nord-red); }
+  .b-nord .perf-chords {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    line-height: 2;
+    color: rgba(250,250,250,0.92);
+    margin: 0 0 auto;
+    white-space: pre;
+  }
+  .b-nord .perf-anno {
+    font-size: 12px;
+    color: var(--amber);
+    margin: 24px 0 16px;
+    letter-spacing: 0.06em;
+  }
+  .b-nord .perf-dots {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+  }
+  .b-nord .perf-dot { width: 6px; height: 6px; background: var(--hairline); border-radius: 1px; }
+  .b-nord .perf-dot.played { background: rgba(224,32,32,0.45); }
+  .b-nord .perf-dot.current { background: var(--nord-red); box-shadow: 0 0 5px var(--nord-red); }
+
+  .b-nord .setlist {
+    margin-top: 56px;
+    border-top: 1px solid var(--hairline);
+    padding-top: 24px;
+  }
+  .b-nord .setlist h3 {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--etched);
+    margin: 0 0 12px;
+    font-weight: 500;
+  }
+  .b-nord .setlist ol { list-style: none; padding: 0; margin: 0 0 24px; }
+  .b-nord .setlist li {
+    padding: 8px 0;
+    border-bottom: 1px solid var(--hairline);
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 14px;
+  }
+  .b-nord .setlist .num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--etched);
+    width: 22px;
+  }
+
+  /* ============================================================ */
+  /* 03 — Manuscript                                               */
+  /* ============================================================ */
+  .b-manu {
+    --paper: #F4ECD8;
+    --ink: #1B1816;
+    --red: #B5302C;
+    --margin: #9C9180;
+    --lectern: #161310;
+    --cream: #F4ECD8;
+    --faded: #5B544A;
+    background: var(--paper);
+    color: var(--ink);
+  }
+  .b-manu h2 { font-family: 'Crimson Pro', serif; font-weight: 600; }
+  .b-manu .board-eyebrow { color: var(--red); }
+  .b-manu .board-lede { font-family: 'Crimson Pro', serif; font-size: 21px; font-weight: 400; }
+
+  .b-manu .practice-card {
+    background: #FBF4DF;
+    border: 1px solid rgba(27,24,22,0.08);
+    font-family: 'Crimson Pro', serif;
+  }
+  .b-manu .pc-title {
+    font-family: 'Crimson Pro', serif;
+    font-size: 30px;
+    font-weight: 600;
+    font-style: italic;
+    margin: 0 0 4px;
+  }
+  .b-manu .pc-sub {
+    color: var(--margin);
+    margin: 0 0 20px;
+    font-size: 15px;
+  }
+  .b-manu .pc-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 24px;
+    padding: 14px 0;
+    border-top: 1px solid var(--margin);
+    border-bottom: 1px solid var(--margin);
+    margin: 0 0 20px;
+  }
+  .b-manu .pc-label {
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--margin);
+    margin: 0 0 2px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+  }
+  .b-manu .pc-val { font-family: 'Courier Prime', monospace; font-size: 15px; }
+  .b-manu .pc-val.accent { color: var(--red); }
+  .b-manu .pc-notes { font-size: 16px; line-height: 1.7; margin: 0; }
+  .b-manu .pc-link { color: var(--red); text-decoration: none; border-bottom: 1px solid var(--red); }
+
+  .b-manu .phone-screen { background: var(--lectern); color: var(--cream); }
+  .b-manu .home-indicator { background: rgba(244,236,216,0.4); }
+  .b-manu .perf {
+    padding: 64px 28px 48px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    font-family: 'Crimson Pro', serif;
+  }
+  .b-manu .perf-eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--red);
+    margin: 0 0 14px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+  }
+  .b-manu .perf-title {
+    font-family: 'Crimson Pro', serif;
+    font-size: 36px;
+    font-weight: 700;
+    line-height: 1.05;
+    margin: 0 0 36px;
+  }
+  .b-manu .perf-meta {
+    display: flex;
+    gap: 32px;
+    margin: 0 0 28px;
+  }
+  .b-manu .perf-meta-label {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--faded);
+    margin: 0 0 4px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+  }
+  .b-manu .perf-meta-val {
+    font-family: 'Courier Prime', monospace;
+    font-size: 26px;
+    color: var(--red);
+    font-feature-settings: 'tnum';
+    line-height: 1;
+  }
+  .b-manu .perf-chords {
+    font-family: 'Courier Prime', monospace;
+    font-size: 14px;
+    line-height: 2;
+    color: var(--cream);
+    margin: 0 0 auto;
+    white-space: pre;
+  }
+  .b-manu .perf-anno {
+    font-family: 'Crimson Pro', serif;
+    font-style: italic;
+    color: var(--red);
+    font-size: 14px;
+    margin: 24px 0 16px;
+  }
+  .b-manu .perf-dots {
+    display: flex;
+    gap: 5px;
+    justify-content: center;
+  }
+  .b-manu .perf-dot { width: 6px; height: 6px; background: var(--faded); }
+  .b-manu .perf-dot.played { background: rgba(181,48,44,0.4); }
+  .b-manu .perf-dot.current { background: var(--red); }
+
+  .b-manu .setlist {
+    margin-top: 56px;
+    border-top: 1px solid var(--margin);
+    padding-top: 24px;
+  }
+  .b-manu .setlist h3 {
+    font-family: 'Crimson Pro', serif;
+    font-style: italic;
+    font-size: 18px;
+    color: var(--red);
+    margin: 0 0 12px;
+  }
+  .b-manu .setlist h3::before {
+    content: "■";
+    color: var(--red);
+    margin-right: 8px;
+    font-size: 11px;
+    vertical-align: middle;
+  }
+  .b-manu .setlist ol { list-style: none; padding: 0; margin: 0 0 24px; }
+  .b-manu .setlist li {
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(156,145,128,0.4);
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    font-family: 'Crimson Pro', serif;
+    font-size: 17px;
+  }
+  .b-manu .setlist .num {
+    font-family: 'Courier Prime', monospace;
+    font-size: 13px;
+    color: var(--margin);
+    width: 22px;
+  }
+
+  /* Footer / decision */
+  .decision {
+    background: #1A1A20;
+    color: #FAFAF8;
+    padding: 80px 32px;
+    text-align: center;
+  }
+  .decision h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 36px;
+    font-weight: 600;
+    margin: 0 0 16px;
+  }
+  .decision p { max-width: 540px; margin: 0 auto 12px; opacity: 0.75; }
+</style>
+</head>
+<body>
+
+<header class="page-header">
+  <h1>GigBuddy — Mood Boards</h1>
+  <p>Three distinct directions for the look and feel. Each commits to a different opinion about what GigBuddy is. Scroll through, react, then pick one (or remix).</p>
+  <p style="font-size: 13px; opacity: 0.6;">Performance cards are rendered at iPhone 13 width (390pt) to give a realistic sense of the live view. Test on your actual phone in a dim room before committing.</p>
+</header>
+
+<nav class="nav">
+  <a href="#stage">01 — Stage &amp; Score</a>
+  <a href="#nord">02 — Nord Studio</a>
+  <a href="#manu">03 — Manuscript</a>
+  <a href="#pick">Pick one</a>
+</nav>
+
+<!-- ============================================================ -->
+<!-- 01 — Stage & Score                                            -->
+<!-- ============================================================ -->
+<section class="board b-stage" id="stage">
+  <div class="board-inner">
+    <p class="board-eyebrow">Direction 01</p>
+    <h2>Stage &amp; Score</h2>
+    <p class="board-lede">A late-set jazz club. Cream-paper notes in the green room; ink-black with a single amber stand light on stage. Two atmospheres, one product.</p>
+
+    <div class="grid">
+      <div>
+        <p class="panel-title">Palette</p>
+        <div class="palette">
+          <div class="swatch" style="background:#0E0E12;color:#fff;"><span class="swatch-name">Stage Black</span><span class="swatch-hex">#0E0E12</span></div>
+          <div class="swatch" style="background:#E0A04A;color:#1A1A20;"><span class="swatch-name">Music Stand Amber</span><span class="swatch-hex">#E0A04A</span></div>
+          <div class="swatch" style="background:#B8862F;color:#fff;"><span class="swatch-name">Brass</span><span class="swatch-hex">#B8862F</span></div>
+          <div class="swatch" style="background:#F5EDD8;color:#1A1A20;"><span class="swatch-name">Programme Cream</span><span class="swatch-hex">#F5EDD8</span></div>
+          <div class="swatch" style="background:#1A1A20;color:#fff;"><span class="swatch-name">Ink</span><span class="swatch-hex">#1A1A20</span></div>
+          <div class="swatch" style="background:#5A1F22;color:#fff;"><span class="swatch-name">Burgundy Reserve</span><span class="swatch-hex">#5A1F22</span></div>
+        </div>
+      </div>
+
+      <div>
+        <p class="panel-title">Typography</p>
+        <div class="specimens">
+          <div>
+            <p class="specimen-label">Display — Playfair Display 600</p>
+            <p class="specimen-line" style="font-family:'Playfair Display',serif;font-weight:600;font-size:32px;line-height:1.1;margin:0;">Body and Soul</p>
+          </div>
+          <div>
+            <p class="specimen-label">Body — Inter 400 / 600</p>
+            <p class="specimen-line" style="font-family:'Inter',sans-serif;font-size:17px;line-height:1.55;margin:0;">Jazz Trio · Standards repertoire · 35 songs</p>
+          </div>
+          <div>
+            <p class="specimen-label">Mono — IBM Plex Mono</p>
+            <p class="specimen-line" style="font-family:'IBM Plex Mono',monospace;font-size:15px;margin:0;">Ebm7 | Ab7 | Db∆ | Db∆</p>
+          </div>
+          <div>
+            <p class="specimen-label">Stage title — Inter 800</p>
+            <p class="specimen-line" style="font-family:'Inter',sans-serif;font-weight:800;font-size:42px;line-height:1;margin:0;letter-spacing:-0.01em;">All The Things</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phones-row">
+      <div>
+        <p class="panel-title" style="text-align:center;">Practice mode (MacBook)</p>
+        <div class="practice-card">
+          <p class="pc-title">Body and Soul</p>
+          <p class="pc-sub">Jazz Trio · Standard</p>
+          <div class="pc-grid">
+            <div><p class="pc-label">Key</p><p class="pc-val">Db (Eb for vocal)</p></div>
+            <div><p class="pc-label">Patch</p><p class="pc-val">23 — Stage 3 Piano</p></div>
+            <div><p class="pc-label">Tempo</p><p class="pc-val">62 BPM, ballad</p></div>
+            <div><p class="pc-label">Last played</p><p class="pc-val">12 Mar 2026</p></div>
+          </div>
+          <p class="pc-notes" style="margin-bottom:14px;"><em>Intro: rubato, 4 bars of Db∆ — wait for nod.</em> Head twice, piano solo, head out. Watch the bridge — modulation to D major is the trap, slow it down.</p>
+          <p class="pc-notes" style="font-size:13px;color:#6B6B73;">Reference: <a class="pc-link" href="#">Hancock / Tony Williams, 1965</a></p>
+        </div>
+      </div>
+
+      <div>
+        <p class="panel-title" style="text-align:center;">Performance mode (iPhone 13)</p>
+        <div class="phone">
+          <div class="notch"></div>
+          <div class="phone-screen">
+            <div class="perf">
+              <p class="perf-eyebrow">Set 1 · 4 of 8</p>
+              <p class="perf-title">Body<br>and Soul</p>
+              <div class="perf-meta">
+                <div><p class="perf-meta-label">Key</p><p class="perf-meta-val">D♭</p></div>
+                <div><p class="perf-meta-label">Patch</p><p class="perf-meta-val">23</p></div>
+              </div>
+              <p class="perf-chords">E♭m7   A♭7
+D♭∆    D♭∆
+E♭m7   A♭7
+D♭∆    Gm7♭5  C7</p>
+              <p class="perf-anno">vocal tonight — start in E♭</p>
+              <div class="perf-dots">
+                <span class="perf-dot played"></span><span class="perf-dot played"></span><span class="perf-dot played"></span><span class="perf-dot current"></span><span class="perf-dot"></span><span class="perf-dot"></span><span class="perf-dot"></span><span class="perf-dot"></span>
+              </div>
+            </div>
+            <div class="home-indicator"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="setlist" style="max-width: 520px; margin: 56px auto 0;">
+      <h3>Tonight's Setlist · Jazz Trio · Sat 31 May</h3>
+      <h3 style="margin-top:24px; font-size:12px;">First Set</h3>
+      <ol>
+        <li><span class="num">1</span>Autumn Leaves</li>
+        <li><span class="num">2</span>All The Things You Are</li>
+        <li><span class="num">3</span>Stella By Starlight</li>
+        <li><span class="num">4</span>Body and Soul</li>
+      </ol>
+      <h3 style="font-size:12px;">Second Set</h3>
+      <ol>
+        <li><span class="num">5</span>There Will Never Be Another You</li>
+        <li><span class="num">6</span>Have You Met Miss Jones</li>
+        <li><span class="num">7</span>But Not For Me</li>
+        <li><span class="num">8</span>Take The A Train</li>
+      </ol>
+      <h3 style="font-size:12px;color:#5A1F22;">Reserve</h3>
+      <ol>
+        <li><span class="num">R1</span>Sweet Georgia Brown</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 02 — Nord Studio                                              -->
+<!-- ============================================================ -->
+<section class="board b-nord" id="nord">
+  <div class="board-inner">
+    <p class="board-eyebrow">Direction 02</p>
+    <h2>Nord Studio</h2>
+    <p class="board-lede">Your Nord keyboard, made into software. Hardware-coded. Panel black, instrument labels in caps, one red LED. The app becomes part of the rig.</p>
+
+    <div class="grid">
+      <div>
+        <p class="panel-title">Palette</p>
+        <div class="palette">
+          <div class="swatch" style="background:#0A0A0A;color:#FAFAFA;"><span class="swatch-name">Panel Black</span><span class="swatch-hex">#0A0A0A</span></div>
+          <div class="swatch" style="background:#1C1C1F;color:#FAFAFA;"><span class="swatch-name">Chassis Gray</span><span class="swatch-hex">#1C1C1F</span></div>
+          <div class="swatch" style="background:#E02020;color:#fff;"><span class="swatch-name">Nord Red</span><span class="swatch-hex">#E02020</span></div>
+          <div class="swatch" style="background:#F0B040;color:#0A0A0A;"><span class="swatch-name">LED Amber</span><span class="swatch-hex">#F0B040</span></div>
+          <div class="swatch" style="background:#FAFAFA;color:#0A0A0A;"><span class="swatch-name">Panel White</span><span class="swatch-hex">#FAFAFA</span></div>
+          <div class="swatch" style="background:#8A8A90;color:#0A0A0A;"><span class="swatch-name">Etched Gray</span><span class="swatch-hex">#8A8A90</span></div>
+        </div>
+      </div>
+
+      <div>
+        <p class="panel-title">Typography</p>
+        <div class="specimens">
+          <div>
+            <p class="specimen-label">UI display — IBM Plex Sans 700</p>
+            <p class="specimen-line" style="font-family:'IBM Plex Sans',sans-serif;font-weight:700;font-size:30px;line-height:1.05;margin:0;letter-spacing:-0.01em;">Body and Soul</p>
+          </div>
+          <div>
+            <p class="specimen-label">Body — IBM Plex Sans 400 / 600</p>
+            <p class="specimen-line" style="font-family:'IBM Plex Sans',sans-serif;font-size:15px;line-height:1.55;margin:0;">Jazz Trio · 35 songs · Last gig 12 Mar 2026</p>
+          </div>
+          <div>
+            <p class="specimen-label">Mono — IBM Plex Mono</p>
+            <p class="specimen-line" style="font-family:'IBM Plex Mono',monospace;font-size:15px;margin:0;">Ebm7  Ab7   Db∆   Db∆</p>
+          </div>
+          <div>
+            <p class="specimen-label">Labels — Plex Sans caps</p>
+            <p class="specimen-line" style="font-family:'IBM Plex Sans',sans-serif;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;margin:0;color:#8A8A90;font-weight:500;">PATCH · KEY · TEMPO · BAND</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phones-row">
+      <div>
+        <p class="panel-title" style="text-align:center;">Practice mode (MacBook)</p>
+        <div class="practice-card">
+          <p class="pc-eyebrow">JAZZ TRIO · STANDARD</p>
+          <p class="pc-title">Body and Soul</p>
+          <div class="pc-grid">
+            <div><p class="pc-label">KEY</p><p class="pc-val accent">D♭</p></div>
+            <div><p class="pc-label">PATCH</p><p class="pc-val">23 · STAGE 3 PIANO</p></div>
+            <div><p class="pc-label">TEMPO</p><p class="pc-val">62 BPM</p></div>
+            <div><p class="pc-label">LAST PLAYED</p><p class="pc-val">12 MAR 2026</p></div>
+          </div>
+          <p class="pc-notes" style="margin-bottom:12px;">Intro: rubato, 4 bars of D♭∆ — wait for nod. Head twice, piano solo, head out. Watch the bridge — modulation to D major is the trap.</p>
+          <p class="pc-notes" style="font-size:13px;color:#8A8A90;">REF: <a class="pc-link" href="#">Hancock / Williams 1965</a></p>
+        </div>
+      </div>
+
+      <div>
+        <p class="panel-title" style="text-align:center;">Performance mode (iPhone 13)</p>
+        <div class="phone">
+          <div class="notch"></div>
+          <div class="phone-screen">
+            <div class="perf">
+              <p class="perf-eyebrow"><span class="led"></span>SET 1 — 4 / 8</p>
+              <p class="perf-title">Body<br>and Soul</p>
+              <div class="perf-meta">
+                <div><p class="perf-meta-label">KEY</p><p class="perf-meta-val accent">D♭</p></div>
+                <div><p class="perf-meta-label">PATCH</p><p class="perf-meta-val">23</p></div>
+              </div>
+              <p class="perf-chords">E♭m7   A♭7
+D♭∆    D♭∆
+E♭m7   A♭7
+D♭∆    Gm7♭5  C7</p>
+              <p class="perf-anno">VOCAL TONIGHT — START E♭</p>
+              <div class="perf-dots">
+                <span class="perf-dot played"></span><span class="perf-dot played"></span><span class="perf-dot played"></span><span class="perf-dot current"></span><span class="perf-dot"></span><span class="perf-dot"></span><span class="perf-dot"></span><span class="perf-dot"></span>
+              </div>
+            </div>
+            <div class="home-indicator"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="setlist" style="max-width: 520px; margin: 56px auto 0;">
+      <h3>TONIGHT · JAZZ TRIO · SAT 31 MAY</h3>
+      <h3 style="margin-top:24px;">SET 1</h3>
+      <ol>
+        <li><span class="num">01</span>Autumn Leaves</li>
+        <li><span class="num">02</span>All The Things You Are</li>
+        <li><span class="num">03</span>Stella By Starlight</li>
+        <li><span class="num">04</span>Body and Soul</li>
+      </ol>
+      <h3>SET 2</h3>
+      <ol>
+        <li><span class="num">05</span>There Will Never Be Another You</li>
+        <li><span class="num">06</span>Have You Met Miss Jones</li>
+        <li><span class="num">07</span>But Not For Me</li>
+        <li><span class="num">08</span>Take The A Train</li>
+      </ol>
+      <h3 style="color:#E02020;">RESERVE</h3>
+      <ol>
+        <li><span class="num">R1</span>Sweet Georgia Brown</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 03 — Manuscript                                               -->
+<!-- ============================================================ -->
+<section class="board b-manu" id="manu">
+  <div class="board-inner">
+    <p class="board-eyebrow">Direction 03</p>
+    <h2>Manuscript</h2>
+    <p class="board-lede">The Real Book. Lead sheets, fountain pens, notebook ruling. Practice mode is the notebook itself; performance mode is the same notebook glowing on a lectern.</p>
+
+    <div class="grid">
+      <div>
+        <p class="panel-title">Palette</p>
+        <div class="palette">
+          <div class="swatch" style="background:#F4ECD8;color:#1B1816;"><span class="swatch-name">Paper</span><span class="swatch-hex">#F4ECD8</span></div>
+          <div class="swatch" style="background:#1B1816;color:#F4ECD8;"><span class="swatch-name">Ink</span><span class="swatch-hex">#1B1816</span></div>
+          <div class="swatch" style="background:#B5302C;color:#F4ECD8;"><span class="swatch-name">Real Book Red</span><span class="swatch-hex">#B5302C</span></div>
+          <div class="swatch" style="background:#9C9180;color:#1B1816;"><span class="swatch-name">Margin</span><span class="swatch-hex">#9C9180</span></div>
+          <div class="swatch" style="background:#161310;color:#F4ECD8;"><span class="swatch-name">Lectern Black</span><span class="swatch-hex">#161310</span></div>
+          <div class="swatch" style="background:#5B544A;color:#F4ECD8;"><span class="swatch-name">Faded</span><span class="swatch-hex">#5B544A</span></div>
+        </div>
+      </div>
+
+      <div>
+        <p class="panel-title">Typography</p>
+        <div class="specimens">
+          <div>
+            <p class="specimen-label">Display — Crimson Pro 600 italic</p>
+            <p class="specimen-line" style="font-family:'Crimson Pro',serif;font-weight:600;font-style:italic;font-size:34px;line-height:1.05;margin:0;">Body and Soul</p>
+          </div>
+          <div>
+            <p class="specimen-label">Body — Crimson Pro 400</p>
+            <p class="specimen-line" style="font-family:'Crimson Pro',serif;font-size:18px;line-height:1.6;margin:0;">A jazz pianist's notebook — Tony Williams on the kit, 1965.</p>
+          </div>
+          <div>
+            <p class="specimen-label">Mono — Courier Prime</p>
+            <p class="specimen-line" style="font-family:'Courier Prime',monospace;font-size:15px;margin:0;">Ebm7  Ab7   Db∆   Db∆</p>
+          </div>
+          <div>
+            <p class="specimen-label">Section — Crimson italic + red rule</p>
+            <p class="specimen-line" style="font-family:'Crimson Pro',serif;font-style:italic;font-size:22px;color:#B5302C;margin:0;border-bottom:1px solid #9C9180;padding-bottom:6px;display:inline-block;">First Set</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phones-row">
+      <div>
+        <p class="panel-title" style="text-align:center;">Practice mode (MacBook)</p>
+        <div class="practice-card">
+          <p class="pc-title">Body and Soul</p>
+          <p class="pc-sub">Jazz Trio &middot; a standard</p>
+          <div class="pc-grid">
+            <div><p class="pc-label">Key</p><p class="pc-val accent">D♭</p></div>
+            <div><p class="pc-label">Patch</p><p class="pc-val">23 · Stage 3</p></div>
+            <div><p class="pc-label">Tempo</p><p class="pc-val">62 BPM</p></div>
+            <div><p class="pc-label">Last played</p><p class="pc-val">12 Mar 2026</p></div>
+          </div>
+          <p class="pc-notes"><em>Intro:</em> rubato, four bars of D♭∆ — wait for the nod. Head twice, piano solo, head out. The bridge modulates to D major; that's the trap. Slow it down.</p>
+          <p class="pc-notes" style="font-size:14px;color:#9C9180;margin-top:14px;">Reference: <a class="pc-link" href="#">Hancock / Williams, 1965</a></p>
+        </div>
+      </div>
+
+      <div>
+        <p class="panel-title" style="text-align:center;">Performance mode (iPhone 13)</p>
+        <div class="phone">
+          <div class="notch"></div>
+          <div class="phone-screen">
+            <div class="perf">
+              <p class="perf-eyebrow">First Set · 4 of 8</p>
+              <p class="perf-title">Body<br>and Soul</p>
+              <div class="perf-meta">
+                <div><p class="perf-meta-label">Key</p><p class="perf-meta-val">D♭</p></div>
+                <div><p class="perf-meta-label">Patch</p><p class="perf-meta-val">23</p></div>
+              </div>
+              <p class="perf-chords">E♭m7   A♭7
+D♭∆    D♭∆
+E♭m7   A♭7
+D♭∆    Gm7♭5  C7</p>
+              <p class="perf-anno">vocal tonight — start in E♭</p>
+              <div class="perf-dots">
+                <span class="perf-dot played"></span><span class="perf-dot played"></span><span class="perf-dot played"></span><span class="perf-dot current"></span><span class="perf-dot"></span><span class="perf-dot"></span><span class="perf-dot"></span><span class="perf-dot"></span>
+              </div>
+            </div>
+            <div class="home-indicator"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="setlist" style="max-width: 520px; margin: 56px auto 0;">
+      <h3>Tonight's setlist &mdash; Jazz Trio, Sat 31 May</h3>
+      <h3 style="margin-top:24px;">First Set</h3>
+      <ol>
+        <li><span class="num">i.</span>Autumn Leaves</li>
+        <li><span class="num">ii.</span>All The Things You Are</li>
+        <li><span class="num">iii.</span>Stella By Starlight</li>
+        <li><span class="num">iv.</span>Body and Soul</li>
+      </ol>
+      <h3>Second Set</h3>
+      <ol>
+        <li><span class="num">v.</span>There Will Never Be Another You</li>
+        <li><span class="num">vi.</span>Have You Met Miss Jones</li>
+        <li><span class="num">vii.</span>But Not For Me</li>
+        <li><span class="num">viii.</span>Take The A Train</li>
+      </ol>
+      <h3>Reserve</h3>
+      <ol>
+        <li><span class="num">r.</span>Sweet Georgia Brown</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<section class="decision" id="pick">
+  <h2>Now: pick a direction.</h2>
+  <p>Tell Sally which one feels right — or what you'd remix from the others. Once you commit, the next step is locking palette + type into tokens and building a clickable HTML prototype of the key screens.</p>
+  <p style="margin-top:24px;font-size:14px;opacity:0.5;">Recommendation: <strong>Stage &amp; Score</strong>, because it's the only direction that gives practice and performance fully different visual worlds — honoring the brief's two-modes principle.</p>
+</section>
+
+</body>
+</html>
