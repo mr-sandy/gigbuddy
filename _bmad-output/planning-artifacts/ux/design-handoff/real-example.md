@@ -10,7 +10,7 @@ Sandy's actual notes for a real gig, pasted verbatim below. This is what the cur
 
 **Signals to preserve / honour:**
 
-- **Capitalisation is meaningful.** ALL CAPS song titles = confirmed in set. Mixed case (e.g. "Cissy Strut", "At the Midnight Hour") = optional / TBA / dependent on running time. The original document used visual highlighting for the same signal — capitalisation is the surviving cue here.
+- **Capitalisation is NOT meaningful.** ALL CAPS in this document was Sandy's manual visual styling to make titles stand out in his Apple Notes. Lowercase titles (e.g. "Cissy Strut") were oversights — forgot-to-uppercase, not a TBA / optional signal. Earlier versions of this file incorrectly claimed otherwise; corrected 2026-06-08 by Sandy.
 - **Patches are referenced by number** with letter prefixes (P11, P13, P14, P31, P33, P34, R41). The R prefix appears on at least one (R41 = Piano and Cello) — naming convention is the user's own.
 - **Per-song instrument switches are common** ("Switch to Rhodes and play long"). One song may use multiple sounds.
 - **Multiple-key support is real:** "F#m(Ian) Fm(Sandy)" — same song, different key depending on who's singing.

@@ -21,7 +21,7 @@ A second real gig from Sandy's current Apple Notes workflow, pasted verbatim bel
 - **Mode notation** appears: `D Dorian with a minor 6th`, `Bb Dorian (Ab maj)`.
 - **Voicing instructions in parentheses**: `(LH E, RH BDF# / LH D, RH ACE)`, `(3 5 7 R)` for intervals from root.
 - **Theory shorthand**: `For min11 - R, 7 9 11`.
-- **The setlist styling differs from real-example.md** — Set 2 here is ALL CAPS throughout, while Set 1 in `real-example.md` mixed cases to mark optional/TBA. Capitalisation convention may be per-document, not universal.
+- **The setlist styling differs from real-example.md** — Set 2 here is ALL CAPS throughout, while Set 1 in `real-example.md` mixes cases. The case-difference carries **no semantic meaning** — earlier annotations incorrectly read it as a TBA/optional signal; corrected 2026-06-08. ALL CAPS was Sandy's manual visual styling; lowercase entries were forgot-to-uppercase oversights.
 - **Typos and quirks preserved in the wild** — `Meolody starts no  (note) E`, `DON"T FORGET THE PERCUSSION BREAKS!` (wrong-direction smart quote), `KELVINGROVESTREET` in the body vs. `KELVINGROVE STREET` in the setlist. The library must be lenient about title matching.
 - **Band identity is implicit** — the song mix (funk/soul covers + originals like Kelvingrove Street, Fire Eater, Count Da Funk) suggests this and the Big Ed gig are likely the *same band*, despite "covers" vs "originals" being separate categories in the brief. The data model should not assume bands cleanly map to repertoire styles.
 
