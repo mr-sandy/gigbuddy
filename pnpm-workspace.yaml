@@ -1,0 +1,8 @@
+packages:
+  - web
+  - api
+  - shared
+  - infra
+  - e2e
+allowBuilds:
+  esbuild: true

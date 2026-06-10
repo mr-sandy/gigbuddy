@@ -4,3 +4,28 @@
 
 # Claude Code local settings (user-specific permissions)
 .claude/settings.local.json
+
+# Node / pnpm
+node_modules/
+
+# Build output
+dist/
+**/dist/
+cdk.out/
+**/cdk.out/
+
+# Logs
+*.log
+
+# Env files (keep .env.example)
+.env
+.env.*
+!.env.example
+
+# Test artifacts
+coverage/
+playwright-report/
+test-results/
+
+# Font subset source TTFs (cached for re-subsetting; subsetted WOFF2 outputs in web/public/fonts/ are committed)
+web/scripts/fonts-source/

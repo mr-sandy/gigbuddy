@@ -1,0 +1,39 @@
+@import "tailwindcss";
+@import "./tokens.css";
+@import "./fonts.css";
+
+/*
+ * Base typography + atmosphere paint.
+ *
+ * `html` picks up the Practice palette by default (from tokens.css `@theme`);
+ * the `[data-atmosphere="performance"]` selector flips the palette for iPhone.
+ * The boot-time setter in main.tsx writes the attribute before React renders.
+ */
+html {
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  font-family: var(--font-serif-editorial);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+}
+
+/*
+ * Reduced-motion: zero all transitions and animations.
+ * The !important markers are required to override per-component declarations
+ * that haven't been written yet (architecture.md "Accessibility implementation
+ * primitives" — the global rule must win).
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    /* biome-ignore lint/complexity/noImportantStyles: required by architecture.md prefers-reduced-motion rule */
+    transition-duration: 0ms !important;
+    /* biome-ignore lint/complexity/noImportantStyles: required by architecture.md prefers-reduced-motion rule */
+    animation-duration: 0ms !important;
+  }
+}

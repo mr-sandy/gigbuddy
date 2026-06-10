@@ -1,0 +1,165 @@
+{
+  "tokensSource": "web/src/styles/tokens.css",
+  "summary": {
+    "total": 14,
+    "passing": 14,
+    "failing": 0,
+    "waived": 0
+  },
+  "pairs": [
+    {
+      "pair": "text-primary on bg",
+      "atmosphere": "performance",
+      "fgToken": "text-primary",
+      "bgToken": "bg",
+      "fg": "#f1e6cf",
+      "bg": "#1a1209",
+      "ratio": 14.95,
+      "target": "AAA",
+      "pass": true
+    },
+    {
+      "pair": "text-primary on surface",
+      "atmosphere": "performance",
+      "fgToken": "text-primary",
+      "bgToken": "surface",
+      "fg": "#f1e6cf",
+      "bg": "#241910",
+      "ratio": 13.88,
+      "target": "AAA",
+      "pass": true
+    },
+    {
+      "pair": "text-secondary on bg",
+      "atmosphere": "performance",
+      "fgToken": "text-secondary",
+      "bgToken": "bg",
+      "fg": "#c9b486",
+      "bg": "#1a1209",
+      "ratio": 9.13,
+      "target": "AAA",
+      "pass": true
+    },
+    {
+      "pair": "text-secondary on surface",
+      "atmosphere": "performance",
+      "fgToken": "text-secondary",
+      "bgToken": "surface",
+      "fg": "#c9b486",
+      "bg": "#241910",
+      "ratio": 8.48,
+      "target": "AAA",
+      "pass": true
+    },
+    {
+      "pair": "accent on bg",
+      "atmosphere": "performance",
+      "fgToken": "accent",
+      "bgToken": "bg",
+      "fg": "#e6b855",
+      "bg": "#1a1209",
+      "ratio": 10.01,
+      "target": "AAA",
+      "pass": true
+    },
+    {
+      "pair": "bg-on-accent (CTA)",
+      "atmosphere": "performance",
+      "fgToken": "bg",
+      "bgToken": "accent",
+      "fg": "#1a1209",
+      "bg": "#e6b855",
+      "ratio": 10.01,
+      "target": "AAA",
+      "pass": true
+    },
+    {
+      "pair": "text-primary on bg",
+      "atmosphere": "practice",
+      "fgToken": "text-primary",
+      "bgToken": "bg",
+      "fg": "#1a1209",
+      "bg": "#faf9f5",
+      "ratio": 17.57,
+      "target": "AA",
+      "pass": true
+    },
+    {
+      "pair": "text-primary on surface",
+      "atmosphere": "practice",
+      "fgToken": "text-primary",
+      "bgToken": "surface",
+      "fg": "#1a1209",
+      "bg": "#ffffff",
+      "ratio": 18.51,
+      "target": "AA",
+      "pass": true
+    },
+    {
+      "pair": "text-secondary on bg",
+      "atmosphere": "practice",
+      "fgToken": "text-secondary",
+      "bgToken": "bg",
+      "fg": "#5a4a35",
+      "bg": "#faf9f5",
+      "ratio": 8.08,
+      "target": "AA",
+      "pass": true
+    },
+    {
+      "pair": "text-secondary on surface",
+      "atmosphere": "practice",
+      "fgToken": "text-secondary",
+      "bgToken": "surface",
+      "fg": "#5a4a35",
+      "bg": "#ffffff",
+      "ratio": 8.52,
+      "target": "AA",
+      "pass": true
+    },
+    {
+      "pair": "accent on bg",
+      "atmosphere": "practice",
+      "fgToken": "accent",
+      "bgToken": "bg",
+      "fg": "#b3892f",
+      "bg": "#faf9f5",
+      "ratio": 3.05,
+      "target": "AA-large",
+      "pass": true
+    },
+    {
+      "pair": "bg-on-accent (CTA)",
+      "atmosphere": "practice",
+      "fgToken": "bg",
+      "bgToken": "accent",
+      "fg": "#faf9f5",
+      "bg": "#b3892f",
+      "ratio": 3.05,
+      "target": "AA-large",
+      "pass": true
+    },
+    {
+      "pair": "attention-fuzzy on bg",
+      "atmosphere": "practice",
+      "fgToken": "attention-fuzzy",
+      "bgToken": "bg",
+      "fg": "#c47a1c",
+      "bg": "#faf9f5",
+      "ratio": 3.24,
+      "target": "AA-large",
+      "pass": true
+    },
+    {
+      "pair": "attention-unknown on bg",
+      "atmosphere": "practice",
+      "fgToken": "attention-unknown",
+      "bgToken": "bg",
+      "fg": "#a8351a",
+      "bg": "#faf9f5",
+      "ratio": 6.25,
+      "target": "AA",
+      "pass": true
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "name": "gigbuddy",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.0.9",
+  "engines": {
+    "node": ">=22 <23"
+  },
+  "scripts": {
+    "dev": "concurrently -n web,api -c green,blue \"pnpm dev:web\" \"pnpm dev:api\"",
+    "dev:web": "pnpm --filter web run dev",
+    "dev:api": "pnpm --filter api run dev",
+    "build": "pnpm --filter web --filter api run build",
+    "build:web": "pnpm --filter web run build",
+    "build:api": "pnpm --filter api run build",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "typecheck": "pnpm -r run typecheck",
+    "test": "pnpm --filter \"!e2e\" -r run test",
+    "test:web": "pnpm --filter web run test",
+    "test:api": "pnpm --filter api run test",
+    "test:e2e": "pnpm --filter e2e run test"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.0.0",
+    "concurrently": "^9.0.0",
+    "typescript": "^5.6.0"
+  }
+}

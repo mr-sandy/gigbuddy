@@ -1,0 +1,11 @@
+{
+  "app": "tsx bin/gigbuddy.ts",
+  "watch": {
+    "include": ["**"],
+    "exclude": ["README.md", "cdk.out/**", "node_modules/**"]
+  },
+  "context": {
+    "@aws-cdk/aws-iam:minimizePolicies": true,
+    "@aws-cdk/core:checkSecretUsage": true
+  }
+}

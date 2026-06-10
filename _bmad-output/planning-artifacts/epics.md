@@ -386,6 +386,14 @@ So that every subsequent feature inherits the locked visual direction without re
 **Then** two Tailwind v4 `@theme` blocks define both atmospheres' tokens: colors (`accent`, `attention-fuzzy`, `attention-unknown`, `surface`, `bg`, `text-secondary`, plus the rest of DESIGN.md Color tables for Performance "Club Warm" and Practice "warm paper cream"), the type scale from DESIGN.md §Scale (including `perf-title` ≥36pt, `key/patch` 22pt, `body` 18pt for Performance; `home-tonight`, `section-heading`, body 17–18pt for Practice), spacing on a 4pt base unit, elevation rules (max 4pt shadow), and corner radii including `rounded-chord-glyph`
 **And** no token values are hard-coded in component files — every color/size/space references a token
 
+**Given** the finalized tokens in `web/src/styles/tokens.css`
+**When** Story 1.2 closes
+**Then** every foreground/background token pair used together in Performance atmosphere is measured against WCAG AAA (≥7:1 contrast ratio) — pairs include text-primary/bg, text-primary/surface, text-secondary/bg, text-secondary/surface, accent/bg, bg/accent (for the CTA `accent` background with `bg` text)
+**And** every foreground/background token pair used together in Practice atmosphere is measured against WCAG AA (≥4.5:1 contrast ratio) — same pair set plus attention-fuzzy/bg and attention-unknown/bg
+**And** the measurements are committed to `web/test-output/contrast-report.json` (machine-readable, one entry per pair with token names, hex values, computed ratio, and AAA/AA pass flag)
+**And** any pair failing its target ratio is either remediated (token value adjusted) or explicitly waived in the report with a justification (e.g., "decorative use only, not body text")
+**And** the contrast report is regenerated and committed whenever `tokens.css` changes (enforced by a CI step or a documented developer-workflow note — pick at implementation)
+
 **Given** the running web app on a MacBook viewport
 **When** the document loads
 **Then** `<html data-atmosphere="practice">` is set and the Practice palette is applied via CSS variable scope
@@ -429,6 +437,7 @@ So that the AWS account is shaped: the SPA is reachable from CloudFront over HTT
 **Given** `infra/lib/stacks/data-stack.ts`
 **When** `cdk deploy` is run
 **Then** the `gigbuddy-data` DynamoDB table is created in eu-west-2 with on-demand billing, PITR enabled, and `DeletionProtection: true`
+**And** the table CDK config sets `encryption: dynamodb.TableEncryption.AWS_MANAGED` explicitly (not relying on the implicit default), satisfying NFR-11 with a code-level assertion that a future CDK refactor cannot silently drop
 **And** GSI1 is created with `gsi1pk` and `gsi1sk` per architecture.md Decision 2
 **And** an AWS Backup vault (KMS-managed) holds a daily backup plan with 365-day retention and cold-storage transition at 30 days
 **And** the data stack carries CDK termination protection (cannot be destroyed via `cdk destroy` without explicit override)
@@ -545,6 +554,12 @@ So that after Epic 1 ships I can verify the deployed app works end-to-end on bot
 **And** a hairline divider sits below the top nav
 **And** the default landing route after login is `/` (the Setlists tab)
 
+**Given** the MacBook top nav from the AC above
+**When** the layout component is reviewed
+**Then** the right-side nav container is structured to accept additional action items appended after `Library` — implemented as a slot/children pattern (e.g., `<TopNav rightActions={...}>`) rather than a hard-coded list
+**And** in Epic 1 the slot renders nothing (no visible affordance)
+**And** the structural code path is in place so Story 3.4's `+ New setlist` action mounts into the slot without modifying `TopNav`'s implementation
+
 **Given** an iPhone viewport, authenticated (and PWA install gate satisfied — see Story 2.x)
 **When** the app renders the root layout
 **Then** a bottom tab bar shows two tabs: `Setlists` and `Library`
@@ -568,10 +583,17 @@ So that after Epic 1 ships I can verify the deployed app works end-to-end on bot
 **Then** an `aria-label` is set matching the spoken intent (e.g., `aria-label="Setlists tab"`)
 **And** focus order follows DOM reading order with no manual `tabindex` other than `0` (focusable) or `-1` (removed)
 
-**Given** a `useChromeVisible()` hook reading `performanceActive` from a `PerformanceModeContext` provider
-**When** the hook is consumed by the root layout
-**Then** the hook returns `true` always in Epic 1 (the context default is `false`; the layout shows chrome when not active)
-**And** the structural code path is in place so Epic 4's FR-15 only needs to call `setActive(true)` to hide chrome
+**Given** `web/src/performance/performance-context.tsx`
+**When** the file is reviewed
+**Then** it exports `PerformanceModeContext` (React Context), a `PerformanceModeProvider` component, a `useSetPerformanceActive()` hook returning `setActive(bool)`, and a `usePerformanceActive()` hook returning the current flag
+**And** the provider's initial state is `performanceActive=false`
+**And** the provider is mounted at the root of the React tree (above the router)
+
+**Given** `web/src/hooks/use-chrome-visible.ts`
+**When** consumed by the root layout
+**Then** the hook reads `performanceActive` from `PerformanceModeContext` and returns its negation
+**And** in Epic 1 the hook always returns `true` (default `performanceActive=false`) — chrome is visible
+**And** the structural code path is in place so Epic 4's FR-15 only needs to call `setActive(true)` to hide chrome — no additional context plumbing required in Epic 4
 
 ---
 
@@ -813,10 +835,11 @@ So that optimistic writes survive offline, conflicts resolve LWW silently, the c
 **Then** the wrapper reads the `x-server-now` header and computes `|serverNow - Date.now()|`
 **And** if the drift exceeds 30 seconds, a `console.warn` is emitted with the drift value (no UI; diagnostic only)
 
-**Given** `web/src/performance/performance-context.tsx`
-**When** the app boots
-**Then** `PerformanceModeContext` is provided at the root with `performanceActive=false` and a `setActive(bool)` function
-**And** the flusher and any future banner subsystem read this flag before surfacing UI
+**Given** the existing `PerformanceModeContext` created in Story 1.5
+**When** Story 2.4's sync subsystems are wired
+**Then** the flusher reads `performanceActive` via `usePerformanceActive()` (or the equivalent non-hook accessor for non-React modules) before surfacing any banner
+**And** the stale-write banner subsystem reads the same flag before rendering on iPhone
+**And** Story 2.4 does NOT re-create the provider (Story 1.5 owns the provider's mounting and the initial-state contract)
 
 **Given** `web/src/lib/error-reporter.ts`
 **When** the app boots
