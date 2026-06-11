@@ -14,7 +14,16 @@
 - **Budget alerts fire only at 100% threshold** (`infra/lib/stacks/observability-stack.ts`) — beyond AC-4 requirements. Add a FORECASTED 80% notification in a future infrastructure hardening story.
 - **Function URL unprotected during bootstrap deploy window** (`infra/lib/stacks/web-stack.ts`) — short window between GigbuddyApi and GigbuddyWeb deploys; no secrets exposed until Story 1.4. Document the window in bootstrap.md.
 - **Hard-coded Lambda/log-group names block second-environment deploy** (`infra/lib/stacks/api-stack.ts`) — intentional single-account design for a personal tool. Accept the constraint; document in Dev Notes.
-- **handler.test.ts missing negative test coverage** (`api/src/handler.test.ts`) — story scope covers only `/api/v1/health`. Story 1.4 adds auth routes and is the appropriate place for negative/401 test cases.
+- ~~**handler.test.ts missing negative test coverage** (`api/src/handler.test.ts`) — story scope covers only `/api/v1/health`. Story 1.4 adds auth routes and is the appropriate place for negative/401 test cases.~~ **Resolved in Story 1.4 (Task 8)** — `handler.test.ts` now exercises GET `/api/v1/me` without a session cookie and asserts `statusCode: 401` with the `UNAUTHORIZED` envelope.
+
+## Deferred from: code review of 1-4-access-gate-single-password-jwt-cookie-ssm (2026-06-11)
+
+- **JWT key has no minimum-length runtime enforcement** (`api/src/auth/jwt.ts`) — a misconfigured SSM value shorter than 32 chars would produce a weak HS256 signature; fix is operational (bootstrap runbook should specify key generation command). Address when documenting key generation in rotation runbooks (Story 5.2).
+- **`daysUntilExpiry === 0` renders "Re-authenticate within 0 days."** (`web/src/components/reauth-banner.tsx:22-23`) — grammar is wrong and misleading at boundary; fix requires singular/plural handling. UX polish, no security impact.
+- **`handler.test.ts` `getPasswordHashMock` not initialized in `beforeEach`** (`api/src/handler.test.ts`) — future test exercising the login path through the handler will find mock returning `undefined`. Add `getPasswordHashMock.mockResolvedValue(...)` to `beforeEach` in a test cleanup pass.
+- **`app-bootstrap.test.tsx` authenticated-shell assertion is inconclusive** (`web/src/app-bootstrap.test.tsx`) — test cannot distinguish the boot loading shell from the authenticated shell; both render `<h1>GigBuddy</h1>`. Improve once Story 1.5 adds unique authenticated-shell content.
+- **No redirect from `/login` when already authenticated** (`web/src/router.tsx:15`) — authenticated user navigating to `/login` sees the form silently. Add an `alreadyAuthenticated` guard in a future Story 1.5 router polish pass.
+- **`uniformReject()` not constant-time on first cold-start Lambda invocation** (`api/src/routes/auth.ts:19-21`) — the very first malformed-body request to a fresh container pays SSM latency that warm-invocation paths skip; subsequent requests are uniform. Negligible window; fix would require eager SSM priming on cold-start which is out of scope.
 
 ## Deferred from: code review of 1-2-design-system-foundation-tokens-typography-atmospheres (2026-06-11)
 

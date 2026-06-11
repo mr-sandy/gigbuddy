@@ -204,3 +204,45 @@ aws cloudformation describe-stacks \
 ```
 
 That ARN goes into the GitHub Actions workflow (Story 1.6).
+
+## 8. Verify the access gate (after Story 1.4 ships)
+
+Once the new code is deployed, run these smoke checks against `gig.cormie.com`:
+
+```
+# Unauthenticated read of a protected route → 401 envelope
+curl -i https://gig.cormie.com/api/v1/me
+# expect: HTTP/2 401, body {"status":"error","error":{"code":"UNAUTHORIZED",...}}
+#         no Set-Cookie header
+
+# Login with the wrong password → 401, no cookie
+curl -i -X POST https://gig.cormie.com/api/v1/auth/login \
+  -H 'content-type: application/json' \
+  -d '{"password":"obviously-wrong"}'
+# expect: HTTP/2 401, body {"status":"error","error":{"code":"INVALID_CREDENTIALS",...}}
+
+# Login with the right password → 200, Set-Cookie present
+curl -i -X POST https://gig.cormie.com/api/v1/auth/login \
+  -H 'content-type: application/json' \
+  -d "{\"password\":\"$REAL_PASSWORD\"}" \
+  -c /tmp/gigbuddy-cookie.txt
+# expect: HTTP/2 200, body {"status":"applied"}
+#         Set-Cookie: gigbuddy_session=...; HttpOnly; Secure; SameSite=Strict; Max-Age=31536000; Path=/
+
+# Use the cookie to read /me → 200
+curl -i https://gig.cormie.com/api/v1/me -b /tmp/gigbuddy-cookie.txt
+# expect: HTTP/2 200, body {"status":"ok","data":{"authenticated":true,"daysUntilExpiry":365}}
+
+# Clean up the temp cookie file
+rm /tmp/gigbuddy-cookie.txt
+```
+
+If any of these fail, check the CloudWatch log group `/aws/lambda/gigbuddy-api`
+for a stack trace, and verify both SSM parameters exist with
+`aws ssm get-parameters --names /gigbuddy/jwt-key /gigbuddy/password-hash --with-decryption --region eu-west-2 --query 'Parameters[].Name'`
+(lists names only — never echo `Values` in shell history).
+
+> Rotation runbooks (`rotate-jwt-key.md`, `rotate-password.md`) ship in
+> Story 5.2 alongside the verified-restore drill. Until then, manual
+> rotation is: write a new SSM SecureString value, redeploy
+> `GigbuddyApi`, log back in. All prior sessions invalidate.

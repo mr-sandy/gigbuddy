@@ -10,8 +10,10 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@aws-sdk/client-ssm": "^3.658.0",
     "@gigbuddy/shared": "workspace:*",
     "@hono/node-server": "^1.13.0",
+    "hash-wasm": "^4.12.0",
     "hono": "^4.6.0"
   },
   "devDependencies": {
