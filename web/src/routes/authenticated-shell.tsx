@@ -1,17 +1,38 @@
 import { Outlet } from 'react-router';
+import { BottomTabs } from '../components/bottom-tabs.js';
 import { ReauthBanner } from '../components/reauth-banner.js';
+import { TopNav } from '../components/top-nav.js';
+import { useChromeVisible } from '../hooks/use-chrome-visible.js';
+import { isIPhone } from '../lib/platform.js';
 
-/**
- * Minimal authenticated shell. Story 1.5 replaces the body with the full
- * nav chrome scaffold (top nav + bottom tab bar + Setlists/Library
- * routes). For 1.4 the shell renders just the banner + the route Outlet
- * so the auth flow can be tested end-to-end against the placeholder.
+/*
+ * Renders the global chrome around the route Outlet:
+ *   - MacBook (isIPhone=false): TopNav above the Outlet, no bottom bar.
+ *   - iPhone (isIPhone=true): fixed BottomTabs below the Outlet, no top bar.
+ *
+ * Chrome is omitted entirely when `useChromeVisible()` is false (Story 4.1
+ * sets performanceActive=true → chrome hides during Performance Mode).
+ * On iPhone with chrome visible, <main> reserves bottom padding so the
+ * last row of route content isn't occluded by the fixed bar.
  */
 export function AuthenticatedShell() {
+  const chromeVisible = useChromeVisible();
+  const iPhone = isIPhone();
   return (
     <>
+      {chromeVisible && !iPhone ? <TopNav /> : null}
       <ReauthBanner />
-      <Outlet />
+      <main
+        className="mx-auto max-w-[960px] px-[var(--spacing-gutter)] py-[var(--spacing-section-gap)]"
+        style={
+          iPhone && chromeVisible
+            ? { paddingBottom: 'calc(50pt + env(safe-area-inset-bottom))' }
+            : undefined
+        }
+      >
+        <Outlet />
+      </main>
+      {chromeVisible && iPhone ? <BottomTabs /> : null}
     </>
   );
 }

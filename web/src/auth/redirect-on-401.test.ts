@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { shouldRedirectOn401, usePerformanceActive } from './redirect-on-401.js';
+import { shouldRedirectOn401 } from './redirect-on-401.js';
 
 describe('shouldRedirectOn401', () => {
   it('redirects on a network-success 401 while performance is inactive', () => {
@@ -16,11 +16,5 @@ describe('shouldRedirectOn401', () => {
 
   it('does NOT redirect when both gates fail', () => {
     expect(shouldRedirectOn401({ performanceActive: true, wasNetworkSuccess: false })).toBe(false);
-  });
-});
-
-describe('usePerformanceActive (Story 1.4 placeholder)', () => {
-  it('returns false until Story 1.5 introduces PerformanceModeContext', () => {
-    expect(usePerformanceActive()).toBe(false);
   });
 });

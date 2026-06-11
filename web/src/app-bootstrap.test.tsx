@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppBootstrap } from './app-bootstrap.js';
+import { EMPTY_STATES } from './lib/microcopy.js';
 import { router } from './router.js';
 
 const fetchMock = vi.fn();
@@ -32,17 +33,17 @@ describe('AppBootstrap', () => {
     expect(screen.getByRole('heading', { name: 'GigBuddy' })).toBeInTheDocument();
   });
 
-  it('mounts the authenticated shell after a 200 /me response', async () => {
+  it('mounts the authenticated shell with Setlists home after a 200 /me response', async () => {
     fetchMock.mockResolvedValueOnce(
       jsonResponse(200, { status: 'ok', data: { authenticated: true, daysUntilExpiry: 365 } }),
     );
     render(<AppBootstrap />);
+    // Two unambiguous signals that the authenticated shell rendered, NOT the boot
+    // loading shell: the (sr-only) Setlists h1 and the locked empty-state copy.
     await waitFor(() => {
-      // The authenticated index route renders the Placeholder, which is `<h1>GigBuddy</h1>`.
-      // We can't disambiguate from the boot shell by text alone, but the router will have
-      // mounted by the time we no longer need additional fetch responses pending.
-      expect(screen.getByRole('heading', { name: 'GigBuddy' })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 1, name: 'Setlists' })).toBeInTheDocument();
     });
+    expect(screen.getByText(EMPTY_STATES.noUpcomingGigs)).toBeInTheDocument();
   });
 
   it('redirects to /login when /me returns 401', async () => {
