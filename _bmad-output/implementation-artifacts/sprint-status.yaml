@@ -1,5 +1,5 @@
 # generated: 2026-06-09
-# last_updated: 2026-06-11 (story 1.2 review → done)
+# last_updated: 2026-06-11 (story 1.3 review → done)
 # last_status_change: 2026-06-10
 # project: gigbuddy
 # project_key: NOKEY
@@ -47,7 +47,7 @@ development_status:
   epic-1: in-progress
   1-1-repo-scaffold-and-toolchain: done
   1-2-design-system-foundation-tokens-typography-atmospheres: done
-  1-3-aws-infrastructure-stacks-data-api-web-observability-ci: backlog
+  1-3-aws-infrastructure-stacks-data-api-web-observability-ci: done
   1-4-access-gate-single-password-jwt-cookie-ssm: backlog
   1-5-navigation-chrome-scaffold: backlog
   1-6-deploy-pipeline-with-two-stage-blackout-check: backlog

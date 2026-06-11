@@ -14,6 +14,9 @@ dist/
 cdk.out/
 **/cdk.out/
 
+# Local CDK context (hosted zone IDs, GitHub owner, budget email — gitignored secrets-ish)
+infra/cdk.context.json
+
 # Logs
 *.log
 

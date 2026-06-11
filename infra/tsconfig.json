@@ -5,7 +5,9 @@
     "lib": ["ES2022"],
     "outDir": "./dist",
     "types": ["node", "vitest/globals"],
-    "noEmit": true
+    "noEmit": true,
+    "exactOptionalPropertyTypes": false
   },
   "include": ["bin/**/*", "lib/**/*"]
 }
+
