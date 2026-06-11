@@ -1,5 +1,5 @@
 ---
-baseline_commit: pending-1.5-commit
+baseline_commit: 2a7d4ae
 ---
 
 # Story 1.6: Deploy pipeline with two-stage blackout check
