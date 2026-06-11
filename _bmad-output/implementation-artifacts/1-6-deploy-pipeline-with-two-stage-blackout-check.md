@@ -63,7 +63,7 @@ so that I can deploy safely and the system refuses to deploy within 24h of any G
   - Response body parses to `{"status":"ok"}`
 **And** it issues `curl -fsS -D /tmp/index.headers -o /tmp/index.html -w '%{http_code}\n' https://gig.cormie.com/index.html` and asserts:
   - HTTP status `200`
-  - `/tmp/index.headers` contains a `cache-control:` header whose value is the `CachingOptimized`-managed policy default (`public, max-age=...`) — any non-zero `max-age` proves the S3 origin path is being served through the CDN, not direct origin-pull (the assertion is `grep -iE 'cache-control:\s*public' /tmp/index.headers`)
+  - `/tmp/index.headers` contains a `via:` header naming `cloudfront` — proves the response was served through CloudFront, not direct origin-pull (the assertion is `grep -iE '^via:.*cloudfront' /tmp/index.headers`). The `CachingOptimized` cache policy (web-stack.ts:75) controls CloudFront's cache-key behavior, not response headers; S3 origin objects have no `Cache-Control` set by default, and no Response Headers Policy is attached, so the only reliable CDN-in-path proof is the `Via` header CloudFront injects on every response.
 **And** any non-200 response or missing header pattern fails the workflow step (non-zero exit propagates because of `curl -fsS` and `grep`'s exit code)
 **And** the smoke step runs AFTER the CloudFront invalidation; it does NOT wait for invalidation completion — the new SPA bundle being served from any edge is acceptable (the invalidation merely accelerates propagation; eventual consistency is fine for a single-user app)
 
@@ -91,7 +91,7 @@ so that I can deploy safely and the system refuses to deploy within 24h of any G
 
 **Given** the `main` branch protection rules
 **When** Sandy opens a PR against `main`
-**Then** the `ci` workflow (lint + typecheck + test) must pass before the PR is mergeable — this is configured manually in GitHub repo settings (Sandy is the admin; the configuration step is captured in the bootstrap runbook addendum produced by this story — see AC-7)
+**Then** the `lint + typecheck + test` status check (the value of `jobs.verify.name` in `.github/workflows/ci.yml`, which is what GitHub branch protection keys on — not the workflow name `ci` and not the job key `verify`) must pass before the PR is mergeable — this is configured manually in GitHub repo settings (Sandy is the admin; the configuration step is captured in the bootstrap runbook addendum produced by this story — see AC-7)
 **And** the deploy workflow and its blackout check are NOT required at PR time (Gig times change between PR open and merge; the blackout check is a deploy-time guard that runs against the live DDB table at the exact moment of merge-to-main → deploy)
 **And** the PR-time `ci.yml` continues to NOT assume the deploy role (PRs run on `pull_request` triggers; the OIDC `sub` constraint `repo:<owner>/gigbuddy:ref:refs/heads/main` rejects PR-ref token-exchange attempts — AR-31)
 
@@ -234,7 +234,7 @@ so that I can deploy safely and the system refuses to deploy within 24h of any G
        - Page via `ExclusiveStartKey` if `LastEvaluatedKey` is set (single-user volume should not paginate, but the loop is cheap)
        - Map each item to `Gig` by reading the `gigMeta` Map attribute and unmarshalling the `venue`, `date`, `time` String attributes (use `@aws-sdk/util-dynamodb`'s `unmarshall` OR a tiny inline reader — both are acceptable; if you pull in `@aws-sdk/util-dynamodb`, add it to `infra/package.json` devDeps the same way Task 1 added the client)
     5. `const decision = await decideBlackout({ now: new Date(), describeTable, scanGigs })`
-    6. **If `--report-only`:** instead of exiting with `decision.exit`, write each blocking gig as JSON-per-line to stdout (`process.stdout.write(JSON.stringify(g) + '\n')`) and `process.exit(0)`. The deploy-force workflow consumes this output.
+    6. **If `--report-only`:** instead of exiting with `decision.exit`, write each blocking gig's `gigMeta` (the flat `{venue, date, time?}` shape) as JSON-per-line to stdout (`process.stdout.write(JSON.stringify(g.gigMeta) + '\n')` — NOT `JSON.stringify(g)`, which would emit the nested `{gigMeta: {...}}` wrapper) and `process.exit(0)`. The deploy-force workflow consumes this output via `jq -r .venue`, which expects `venue` at the top level — matching AC-4's contract `{"venue": "...", "date": "...", "time": "..."}`.
     7. **Otherwise:** if `decision.exit === 0`, `process.stdout.write(decision.stdout + '\n')` and `process.exit(0)`. If `decision.exit === 1`, `process.stderr.write(decision.stderr + '\n')` and `process.exit(1)`.
   - [ ] **Anti-scope-creep:** the script must NOT:
     - Touch SSM, CloudFront, S3, Lambda, or any AWS service other than DynamoDB
@@ -369,7 +369,7 @@ so that I can deploy safely and the system refuses to deploy within 24h of any G
               STATUS=$(curl -fsS -D /tmp/index.headers -o /tmp/index.html -w '%{http_code}' https://gig.cormie.com/index.html)
               echo "status: $STATUS"
               test "$STATUS" = "200"
-              grep -iE '^cache-control:\s*public' /tmp/index.headers
+              grep -iE '^via:.*cloudfront' /tmp/index.headers
     ```
   - [ ] **Why `concurrency: group: deploy, cancel-in-progress: false`:** the deploy workflow takes ~8 min; back-to-back merges to main should serialize, not run in parallel (parallel `cdk deploy` against the same stacks corrupts CloudFormation state). `cancel-in-progress: false` because cancelling a partially-deployed run leaves the infrastructure in a worse state than letting it finish.
   - [ ] **Why no `cdk diff` `|| true`:** if `cdk diff` itself errors (CFN access denied, network failure), we want the deploy to fail before `cdk deploy` runs — a `cdk deploy` that proceeds without a successful diff is operating blind.
@@ -544,7 +544,7 @@ so that I can deploy safely and the system refuses to deploy within 24h of any G
             run: |
               STATUS=$(curl -fsS -D /tmp/index.headers -o /tmp/index.html -w '%{http_code}' https://gig.cormie.com/index.html)
               test "$STATUS" = "200"
-              grep -iE '^cache-control:\s*public' /tmp/index.headers
+              grep -iE '^via:.*cloudfront' /tmp/index.headers
     ```
   - [ ] **Concurrency group is the same as `deploy.yml`** (`group: deploy`) so a force-deploy and a normal deploy queue against each other rather than racing.
   - [ ] **`jq` is preinstalled on `ubuntu-latest` runners** — no setup step needed. If the runner image ever drops `jq`, install with `apt-get install -y jq` in a step (defer until needed).
@@ -574,8 +574,8 @@ so that I can deploy safely and the system refuses to deploy within 24h of any G
   - [ ] Open `infra/runbooks/bootstrap.md`. Replace the existing Section 7 ("OIDC hand-off") with an expanded version that documents the post-bootstrap GitHub repo configuration:
     - The `DeployRoleArn` CFN output value goes into a **GitHub repository variable** (Settings → Secrets and variables → Actions → Variables → "New repository variable") named **exactly** `AWS_DEPLOY_ROLE_ARN` (case sensitive — the workflows reference `vars.AWS_DEPLOY_ROLE_ARN`)
     - Why a variable, not a secret: ARNs are not sensitive; using a variable means the value appears in workflow logs (visible only to repo collaborators) which aids diagnosis. Secrets are masked in logs.
-    - Branch protection for `main`: Settings → Branches → Branch protection rules → "Add branch protection rule" → branch name pattern `main` → check "Require status checks to pass before merging" → required check: `verify` (the job name in `ci.yml`) → check "Require a pull request before merging" with `Required approvals = 0` → save
-    - Verification: open a draft PR with a one-character README change; the PR's "Checks" tab shows `ci / verify` as required and the merge button is disabled until it passes
+    - Branch protection for `main`: Settings → Branches → Branch protection rules → "Add branch protection rule" → branch name pattern `main` → check "Require status checks to pass before merging" → required check: `lint + typecheck + test` (the value of the `jobs.verify.name` field in `ci.yml` — GitHub branch protection keys on the job's display name, not the workflow name `ci` and not the job key `verify`; the picker autocompletes from check-run history once `ci.yml` has run at least once on `main`) → check "Require a pull request before merging" with `Required approvals = 0` → save
+    - Verification: open a draft PR with a one-character README change; the PR's "Checks" tab shows `lint + typecheck + test` as required and the merge button is disabled until it passes
   - [ ] Add a new Section 9 ("Emergency: deploy-force.yml") immediately after the existing Section 8:
     - When to use it: gig less than 24h away but a deploy MUST proceed (security hotfix, customer-blocking outage). Default answer is "wait until after the gig" — this workflow is for the cases where waiting is not an option.
     - The two inputs (`reason`, `venueConfirmation`) — `reason` is free text, `venueConfirmation` must match the venue of the nearest blocking Gig exactly. The first job's log shows the blocking-gigs JSON output; copy the `venue` field value verbatim into the `venueConfirmation` input.
@@ -680,7 +680,7 @@ If you find yourself wanting to scaffold any of the above, **don't**. The respec
 
 #### `infra/lib/stacks/ci-stack.test.ts` (Tasks 1, 6 — add assertions for the new permissions)
 
-**Current state:** Five tests covering OIDC provider creation, role + sub constraint, no static credentials, CloudFormation scoping.
+**Current state:** Four tests covering OIDC provider creation, role + sub constraint, no static credentials, CloudFormation scoping (the CloudFormation-scoping test sits at lines 56–68 — that range is unchanged by this story).
 
 **This story changes:** Add two tests — one asserting `dynamodb:Scan` is in the actions for the table-scoped statement (Task 1), one asserting `logs:PutLogEvents` is in the actions on the `/gigbuddy/deploy-force` ARN (Task 6).
 
@@ -782,7 +782,7 @@ From **Story 1.1** (commit `d5dcbab`):
 - **GitHub Actions OIDC + `aws-actions/configure-aws-credentials@v4`** — the modern pattern. The action automatically constructs the `AssumeRoleWithWebIdentity` call using the GH OIDC token. No need to set `audience` explicitly (the default `sts.amazonaws.com` matches our trust policy).
 - **`pnpm/action-setup@v4` @ `version: 11.0.9`** — pinned in `ci.yml`; reuse the same pin.
 - **`actions/setup-node@v4`** — supports `node-version-file: '.nvmrc'` (reads from `/.nvmrc`); `cache: 'pnpm'` enables pnpm dependency caching.
-- **CloudFront `CachingOptimized` policy** — sets `cache-control: public, max-age=...` headers on responses; the smoke test's `grep -iE '^cache-control:\s*public'` matches reliably.
+- **CloudFront `Via` header** — CloudFront injects a `Via: 1.1 <id>.cloudfront.net (CloudFront)` response header on every response it serves, regardless of cache policy or origin. The smoke test's `grep -iE '^via:.*cloudfront'` proves the SPA was served through the CDN. The `CachingOptimized` cache policy (web-stack.ts:75) governs cache-key behavior, NOT response headers — and S3 origin objects have no `Cache-Control` set by default (the deploy workflow's `aws s3 sync` does not pass `--cache-control`), so `Via` is the only reliable CDN-in-path proof available without a Response Headers Policy.
 
 ### Files this story creates
 
