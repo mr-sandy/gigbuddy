@@ -8,6 +8,8 @@ import {
 } from 'aws-cdk-lib/aws-iam';
 import type { Construct } from 'constructs';
 
+const GITHUB_OIDC_PROVIDER_ARN = `arn:aws:iam::828560234470:oidc-provider/token.actions.githubusercontent.com`;
+
 export interface CiStackProps extends StackProps {
   githubOwner: string;
   tableArn: string;
@@ -19,10 +21,14 @@ export class CiStack extends Stack {
   constructor(scope: Construct, id: string, props: CiStackProps) {
     super(scope, id, props);
 
-    const provider = new OpenIdConnectProvider(this, 'GithubOidc', {
-      url: 'https://token.actions.githubusercontent.com',
-      clientIds: ['sts.amazonaws.com'],
-    });
+    // Import the existing OIDC provider rather than creating a new one —
+    // this account already has token.actions.githubusercontent.com registered
+    // (from another project). Creating a second one fails with EntityAlreadyExists.
+    const provider = OpenIdConnectProvider.fromOpenIdConnectProviderArn(
+      this,
+      'GithubOidc',
+      GITHUB_OIDC_PROVIDER_ARN,
+    );
 
     this.deployRole = new Role(this, 'DeployRole', {
       roleName: 'gigbuddy-deploy-role',
@@ -107,11 +113,15 @@ export class CiStack extends Stack {
       }),
     );
 
-    // DynamoDB: Query + DescribeTable on the data table + its GSI.
+    // DynamoDB: Query + Scan + DescribeTable on the data table + its GSI.
+    // Scan is required by the deploy-time blackout check (infra/scripts/blackout-check.ts):
+    // GSI1's partition key is BAND#<bandId>#SETLIST_BY_DATE — V1 ships a single Band but
+    // the deploy script does not know its bandId, so Scan on GSI1 covers all bands at
+    // negligible cost (single-user volume).
     this.deployRole.addToPolicy(
       new PolicyStatement({
         effect: Effect.ALLOW,
-        actions: ['dynamodb:Query', 'dynamodb:DescribeTable'],
+        actions: ['dynamodb:Query', 'dynamodb:Scan', 'dynamodb:DescribeTable'],
         resources: [props.tableArn, `${props.tableArn}/index/*`],
       }),
     );
@@ -157,6 +167,23 @@ export class CiStack extends Stack {
           'lambda:DeleteFunctionUrlConfig',
         ],
         resources: [`arn:aws:lambda:${this.region}:${this.account}:function:gigbuddy-api`],
+      }),
+    );
+
+    // CloudWatch Logs: audit log for deploy-force overrides. Scoped to
+    // /gigbuddy/deploy-force only — the deploy role intentionally cannot read or
+    // tamper with the Lambda log group /aws/lambda/gigbuddy-api (operator's read
+    // surface, not the deploy pipeline's). The two-resource ARN pattern is
+    // required: PutLogEvents expects the :log-stream:* sub-resource form, while
+    // CreateLogGroup operates on the unsuffixed log-group ARN.
+    this.deployRole.addToPolicy(
+      new PolicyStatement({
+        effect: Effect.ALLOW,
+        actions: ['logs:CreateLogGroup', 'logs:CreateLogStream', 'logs:PutLogEvents'],
+        resources: [
+          `arn:aws:logs:${this.region}:${this.account}:log-group:/gigbuddy/deploy-force`,
+          `arn:aws:logs:${this.region}:${this.account}:log-group:/gigbuddy/deploy-force:*`,
+        ],
       }),
     );
 

@@ -135,6 +135,14 @@ pnpm -F infra exec cdk deploy --all --require-approval=never
 CDK will pick a valid order automatically. The cert + web split is what
 forces the us-east-1 dependency.
 
+> **Function URL window during bootstrap.** Between the `GigbuddyApi` and
+> `GigbuddyWeb` deploys, the Lambda Function URL is reachable directly (the
+> `SourceArn` lock is added by `GigbuddyWeb`). The window is short (a few
+> minutes) and pre-dates any secret material in the Lambda — Story 1.4 wires
+> SSM secrets. First-time bootstrap: accept the window. Rebuild after Story 1.4
+> has shipped: deploy `GigbuddyWeb` immediately after `GigbuddyApi` to minimise
+> the window.
+
 ## 5. First placeholder SPA upload
 
 The CDK web-stack creates an empty S3 bucket. Upload a placeholder SPA so the
@@ -186,24 +194,52 @@ curl -i https://$FURL/api/v1/health
 
 ## 7. OIDC hand-off
 
-Once `GigbuddyCi` is deployed, GitHub Actions (Story 1.6) takes over deploys
-via the `gigbuddy-deploy-role` role. The admin profile (or SSO session) used
-for this bootstrap is now only for:
+Once `GigbuddyCi` is deployed, GitHub Actions takes over deploys via the
+`gigbuddy-deploy-role` role. The admin profile (or SSO session) used for this
+bootstrap is now only for:
 
 - CDK bootstrap (already done above)
 - Emergency break-glass (rare; document the action in a follow-up incident note)
 
-Capture the deploy role ARN:
+1. Capture the deploy role ARN:
 
-```
-aws cloudformation describe-stacks \
-  --stack-name GigbuddyCi \
-  --query "Stacks[0].Outputs[?OutputKey=='DeployRoleArn'].OutputValue" \
-  --output text \
-  --region eu-west-2
-```
+   ```
+   aws cloudformation describe-stacks \
+     --stack-name GigbuddyCi \
+     --query "Stacks[0].Outputs[?OutputKey=='DeployRoleArn'].OutputValue" \
+     --output text \
+     --region eu-west-2
+   ```
 
-That ARN goes into the GitHub Actions workflow (Story 1.6).
+2. In the GitHub repo, navigate to `Settings → Secrets and variables → Actions
+   → Variables` and create a **repository variable** named exactly
+   `AWS_DEPLOY_ROLE_ARN` (case-sensitive — the workflows reference
+   `vars.AWS_DEPLOY_ROLE_ARN`) with the ARN from step 1 as its value.
+
+   Use a variable, not a secret: ARNs are not sensitive, and a variable's value
+   appears in workflow logs (visible only to repo collaborators), which aids
+   diagnosis. Secrets are masked.
+
+3. Navigate to `Settings → Branches → Branch protection rules` and add a rule
+   for `main`:
+
+   - Branch name pattern: `main`
+   - Require a pull request before merging: enabled, `Required approvals = 0`
+     (Sandy is the sole reviewer)
+   - Require status checks to pass before merging: enabled; the required check
+     is `lint + typecheck + test` (the value of `jobs.verify.name` in
+     `.github/workflows/ci.yml` — GitHub branch protection keys on the job's
+     display name, not the workflow name `ci` or the job key `verify`; the
+     check name autocompletes once `ci.yml` has run at least once on `main`).
+   - Save the rule.
+
+4. Verify by opening a draft PR with a one-character README change. The PR's
+   "Checks" tab shows `lint + typecheck + test` as required, and the merge
+   button is disabled until it passes.
+
+The deploy and deploy-force workflows reference `vars.AWS_DEPLOY_ROLE_ARN`.
+If the variable name does not match exactly, both workflows fail at the
+credential-configuration step.
 
 ## 8. Verify the access gate (after Story 1.4 ships)
 
@@ -246,3 +282,42 @@ for a stack trace, and verify both SSM parameters exist with
 > Story 5.2 alongside the verified-restore drill. Until then, manual
 > rotation is: write a new SSM SecureString value, redeploy
 > `GigbuddyApi`, log back in. All prior sessions invalidate.
+
+## 9. Emergency: deploy-force.yml
+
+`.github/workflows/deploy-force.yml` bypasses the deploy-time blackout check.
+Use it only when a gig is less than 24h away and a deploy MUST proceed
+(security hotfix, customer-blocking outage). The default answer is "wait until
+after the gig" — this workflow exists for the cases where waiting is not an
+option.
+
+Trigger via `Actions → deploy-force → Run workflow` with two inputs:
+
+- `reason` — free text, required. One sentence on why the override is needed.
+- `venueConfirmation` — must match the venue name of the nearest blocking Gig
+  exactly (case-sensitive). Leave blank if no Gig blocks (the static
+  weekend-evening fallback fired but no real Gig is scheduled).
+
+To find the venue name: open the workflow run. The first job (`enumerate`)
+logs each blocking Gig as one JSON object per line (`{"venue": "...",
+"date": "...", "time": "..."}`). Copy the `venue` field of the **first** entry
+verbatim into the `venueConfirmation` input on a re-run.
+
+Audit trail:
+
+- Run history: `Actions → Workflows → deploy-force`. Every triggered run
+  appears here; the `reason` and `venueConfirmation` inputs are shown in the
+  run's "Inputs" panel.
+- `$GITHUB_STEP_SUMMARY` is captured per run (visible in the GitHub Actions UI
+  for 90 days by default). Includes the `reason`, `venueConfirmation`, and the
+  full list of blocking Gigs at deploy time — including runs where venue
+  confirmation failed.
+- CloudWatch Logs group `/gigbuddy/deploy-force` (eu-west-2) retains one JSON
+  event per force-deploy run (including failed confirmation attempts),
+  indefinitely. No retention policy is configured in V1 — accept the volume
+  risk; a future story can wire a 365-day retention if needed.
+
+Do NOT bypass the workflow by running `pnpm -F infra exec cdk deploy` locally
+with the bootstrap-user credentials. The OIDC role is the only legitimate CI
+deploy path post-bootstrap. The bootstrap-user is for `cdk bootstrap` and
+emergency break-glass only.

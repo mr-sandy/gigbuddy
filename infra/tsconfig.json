@@ -8,6 +8,6 @@
     "noEmit": true,
     "exactOptionalPropertyTypes": false
   },
-  "include": ["bin/**/*", "lib/**/*"]
+  "include": ["bin/**/*", "lib/**/*", "scripts/**/*"]
 }
 

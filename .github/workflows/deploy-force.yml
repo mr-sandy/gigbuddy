@@ -1,0 +1,180 @@
+name: deploy-force
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Why this override is needed'
+        required: true
+        type: string
+      venueConfirmation:
+        description: 'Type the venue name of the nearest blocking Gig (leave blank if none)'
+        required: false
+        type: string
+        default: ''
+
+concurrency:
+  # Same group as deploy.yml — a force-deploy and a normal deploy queue against
+  # each other rather than racing.
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  enumerate:
+    name: enumerate blocking gigs and validate venue confirmation
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      blocking_gigs: ${{ steps.enumerate.outputs.blocking_gigs }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: eu-west-2
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.0.9
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - id: enumerate
+        name: enumerate blocking gigs (report-only mode)
+        run: |
+          OUTPUT=$(pnpm -F infra --silent exec tsx scripts/blackout-check.ts --report-only)
+          printf '%s\n' "$OUTPUT"
+          # Multi-line output handling per GitHub docs; printf avoids the
+          # trailing newline that echo adds when OUTPUT is empty
+          {
+            echo 'blocking_gigs<<EOF'
+            printf '%s' "$OUTPUT"
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
+      - name: validate venue confirmation if blocking gigs exist
+        env:
+          VENUE_INPUT: ${{ inputs.venueConfirmation }}
+          BLOCKING: ${{ steps.enumerate.outputs.blocking_gigs }}
+        run: |
+          if [ -z "$BLOCKING" ]; then
+            echo "no blocking gigs; venue confirmation not required"
+            exit 0
+          fi
+          FIRST_VENUE=$(echo "$BLOCKING" | head -n 1 | jq -r .venue)
+          echo "nearest blocking venue: $FIRST_VENUE"
+          if [ "$VENUE_INPUT" != "$FIRST_VENUE" ]; then
+            echo "venue confirmation does not match the nearest blocking Gig; aborting force-deploy" >&2
+            exit 1
+          fi
+      - name: audit log to GH summary
+        if: always()
+        env:
+          REASON: ${{ inputs.reason }}
+          VENUE_INPUT: ${{ inputs.venueConfirmation }}
+          BLOCKING: ${{ steps.enumerate.outputs.blocking_gigs }}
+        run: |
+          {
+            echo "## deploy-force audit"
+            echo ""
+            echo "- run id: ${{ github.run_id }}"
+            echo "- actor: ${{ github.actor }}"
+            echo "- reason: $REASON"
+            echo "- venueConfirmation: $VENUE_INPUT"
+            echo ""
+            echo "### blocking gigs at deploy time"
+            echo ""
+            echo '```'
+            echo "$BLOCKING"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: audit log to CloudWatch
+        if: always()
+        env:
+          REASON: ${{ inputs.reason }}
+          VENUE_INPUT: ${{ inputs.venueConfirmation }}
+          BLOCKING: ${{ steps.enumerate.outputs.blocking_gigs }}
+        run: |
+          aws logs create-log-group --log-group-name /gigbuddy/deploy-force --region eu-west-2 2>/dev/null || true
+          aws logs create-log-stream --log-group-name /gigbuddy/deploy-force \
+            --log-stream-name "${{ github.run_id }}-${{ github.run_attempt }}" --region eu-west-2
+          TIMESTAMP=$(( $(date +%s) * 1000 ))
+          MESSAGE=$(jq -n \
+            --arg runId "${{ github.run_id }}" \
+            --arg actor "${{ github.actor }}" \
+            --arg reason "$REASON" \
+            --arg venueConfirmation "$VENUE_INPUT" \
+            --arg blockingGigs "$BLOCKING" \
+            '{event:"deploy-force",runId:$runId,actor:$actor,reason:$reason,venueConfirmation:$venueConfirmation,blockingGigs:$blockingGigs}')
+          LOG_EVENTS=$(jq -n --argjson ts "$TIMESTAMP" --arg msg "$MESSAGE" \
+            '[{"timestamp":$ts,"message":$msg}]')
+          aws logs put-log-events \
+            --log-group-name /gigbuddy/deploy-force \
+            --log-stream-name "${{ github.run_id }}-${{ github.run_attempt }}" \
+            --log-events "$LOG_EVENTS" \
+            --region eu-west-2
+
+  deploy:
+    name: deploy main to gig.cormie.com (force, blackout skipped)
+    runs-on: ubuntu-latest
+    needs: enumerate
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: eu-west-2
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.0.9
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      # Blackout check intentionally OMITTED — that is the whole point of this workflow.
+      - run: pnpm -F infra exec cdk diff --all
+      - run: pnpm -F infra exec cdk deploy --all --require-approval=never
+      - run: pnpm build:web
+      - id: outputs
+        name: resolve stack outputs
+        run: |
+          BUCKET=$(aws cloudformation describe-stacks \
+            --stack-name GigbuddyWeb \
+            --query "Stacks[0].Outputs[?OutputKey=='SpaBucketName'].OutputValue" \
+            --output text \
+            --region eu-west-2)
+          DIST_ID=$(aws cloudformation describe-stacks \
+            --stack-name GigbuddyWeb \
+            --query "Stacks[0].Outputs[?OutputKey=='DistributionId'].OutputValue" \
+            --output text \
+            --region eu-west-2)
+          echo "bucket=$BUCKET" >> "$GITHUB_OUTPUT"
+          echo "dist_id=$DIST_ID" >> "$GITHUB_OUTPUT"
+      - run: aws s3 sync web/dist/ s3://${{ steps.outputs.outputs.bucket }}/ --delete
+      - name: CloudFront invalidation
+        run: |
+          INVALIDATION_ID=$(aws cloudfront create-invalidation \
+            --distribution-id ${{ steps.outputs.outputs.dist_id }} \
+            --paths '/*' \
+            --query 'Invalidation.Id' \
+            --output text)
+          echo "invalidation: $INVALIDATION_ID"
+      - name: smoke test API health
+        run: |
+          STATUS=$(curl -fsS -o /tmp/health.json -w '%{http_code}\n' https://gig.cormie.com/api/v1/health)
+          test "$STATUS" = "200"
+          grep -q '"status":"ok"' /tmp/health.json
+      - name: smoke test SPA index
+        run: |
+          STATUS=$(curl -fsS -D /tmp/index.headers -o /tmp/index.html -w '%{http_code}\n' https://gig.cormie.com/index.html)
+          test "$STATUS" = "200"
+          grep -iE '^via:.*cloudfront' /tmp/index.headers

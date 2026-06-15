@@ -1,0 +1,101 @@
+name: deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  # One deploy at a time. A queued deploy that lands after a newer commit is wasted
+  # work; cancel-in-progress: false because cancelling a partially-deployed run
+  # leaves the infrastructure in a worse state than letting it finish.
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    name: deploy main to gig.cormie.com
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: eu-west-2
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.0.9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm lint
+
+      - run: pnpm typecheck
+
+      - run: pnpm test
+
+      - name: blackout check
+        run: pnpm -F infra exec tsx scripts/blackout-check.ts
+
+      - name: cdk diff
+        run: pnpm -F infra exec cdk diff --all
+
+      - name: cdk deploy
+        run: pnpm -F infra exec cdk deploy --all --require-approval=never
+
+      - name: build SPA
+        run: pnpm build:web
+
+      - name: resolve stack outputs
+        id: outputs
+        run: |
+          BUCKET=$(aws cloudformation describe-stacks \
+            --stack-name GigbuddyWeb \
+            --query "Stacks[0].Outputs[?OutputKey=='SpaBucketName'].OutputValue" \
+            --output text \
+            --region eu-west-2)
+          DIST_ID=$(aws cloudformation describe-stacks \
+            --stack-name GigbuddyWeb \
+            --query "Stacks[0].Outputs[?OutputKey=='DistributionId'].OutputValue" \
+            --output text \
+            --region eu-west-2)
+          echo "bucket=$BUCKET" >> "$GITHUB_OUTPUT"
+          echo "dist_id=$DIST_ID" >> "$GITHUB_OUTPUT"
+
+      - name: upload SPA to S3
+        run: aws s3 sync web/dist/ s3://${{ steps.outputs.outputs.bucket }}/ --delete
+
+      - name: CloudFront invalidation
+        run: |
+          INVALIDATION_ID=$(aws cloudfront create-invalidation \
+            --distribution-id ${{ steps.outputs.outputs.dist_id }} \
+            --paths '/*' \
+            --query 'Invalidation.Id' \
+            --output text)
+          echo "invalidation: $INVALIDATION_ID"
+
+      - name: smoke test API health
+        run: |
+          STATUS=$(curl -fsS -o /tmp/health.json -w '%{http_code}\n' https://gig.cormie.com/api/v1/health)
+          echo "status: $STATUS"
+          test "$STATUS" = "200"
+          grep -q '"status":"ok"' /tmp/health.json
+
+      - name: smoke test SPA index
+        run: |
+          STATUS=$(curl -fsS -D /tmp/index.headers -o /tmp/index.html -w '%{http_code}\n' https://gig.cormie.com/index.html)
+          echo "status: $STATUS"
+          test "$STATUS" = "200"
+          grep -iE '^via:.*cloudfront' /tmp/index.headers

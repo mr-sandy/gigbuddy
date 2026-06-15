@@ -14,14 +14,12 @@ describe('CiStack', () => {
     return Template.fromStack(stack);
   };
 
-  it('creates an OIDC provider for token.actions.githubusercontent.com', () => {
+  it('imports (not creates) the OIDC provider — no Custom::AWSCDKOpenIdConnectProvider resource', () => {
     const template = synth();
-    // CDK uses a custom resource (Lambda-backed) to manage the OIDC provider.
-    // The provider URL is in the Custom::AWSCDKOpenIdConnectProvider resource.
-    template.hasResourceProperties('Custom::AWSCDKOpenIdConnectProvider', {
-      Url: 'https://token.actions.githubusercontent.com',
-      ClientIDList: ['sts.amazonaws.com'],
-    });
+    // The account already has the GitHub OIDC provider; we import it via
+    // fromOpenIdConnectProviderArn rather than creating a second one.
+    // Importing produces no CloudFormation resource — assert the count is zero.
+    template.resourceCountIs('Custom::AWSCDKOpenIdConnectProvider', 0);
   });
 
   it('creates the gigbuddy-deploy-role with the OIDC sub constraint scoped to main', () => {
@@ -61,6 +59,44 @@ describe('CiStack', () => {
           Match.objectLike({
             Action: 'cloudformation:*',
             Resource: Match.arrayWith([Match.stringLikeRegexp('stack/Gigbuddy\\*')]),
+          }),
+        ]),
+      }),
+    });
+  });
+
+  it('grants dynamodb:Query+Scan+DescribeTable on the table + GSI', () => {
+    const template = synth();
+    template.hasResourceProperties('AWS::IAM::Policy', {
+      PolicyDocument: Match.objectLike({
+        Statement: Match.arrayWith([
+          Match.objectLike({
+            Action: Match.arrayWith(['dynamodb:Query', 'dynamodb:Scan', 'dynamodb:DescribeTable']),
+            Resource: Match.arrayWith([
+              'arn:aws:dynamodb:eu-west-2:111111111111:table/gigbuddy-data',
+              'arn:aws:dynamodb:eu-west-2:111111111111:table/gigbuddy-data/index/*',
+            ]),
+          }),
+        ]),
+      }),
+    });
+  });
+
+  it('grants logs:CreateLogGroup+CreateLogStream+PutLogEvents on /gigbuddy/deploy-force only', () => {
+    const template = synth();
+    template.hasResourceProperties('AWS::IAM::Policy', {
+      PolicyDocument: Match.objectLike({
+        Statement: Match.arrayWith([
+          Match.objectLike({
+            Action: Match.arrayWith([
+              'logs:CreateLogGroup',
+              'logs:CreateLogStream',
+              'logs:PutLogEvents',
+            ]),
+            Resource: Match.arrayWith([
+              'arn:aws:logs:eu-west-2:111111111111:log-group:/gigbuddy/deploy-force',
+              'arn:aws:logs:eu-west-2:111111111111:log-group:/gigbuddy/deploy-force:*',
+            ]),
           }),
         ]),
       }),

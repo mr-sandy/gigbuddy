@@ -1,6 +1,6 @@
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { CfnOutput, Duration, RemovalPolicy, Stack, type StackProps } from 'aws-cdk-lib';
+import { CfnOutput, Duration, Fn, RemovalPolicy, Stack, type StackProps } from 'aws-cdk-lib';
 import type { ITable } from 'aws-cdk-lib/aws-dynamodb';
 import { Effect, PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { Architecture, FunctionUrlAuthType, LoggingFormat, Runtime } from 'aws-cdk-lib/aws-lambda';
@@ -82,8 +82,10 @@ export class ApiStack extends Stack {
     });
 
     this.functionArn = lambdaFn.functionArn;
-    // Strip protocol — web-stack consumes just the FQDN as an HttpOrigin domain.
-    this.functionUrlDomain = functionUrl.url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    // functionUrl.url is a CDK token — .replace() on a token string is a no-op at
+    // runtime. Use Fn.select/split to strip "https://" and the trailing "/" so that
+    // web-stack can pass a bare FQDN to HttpOrigin (CloudFront rejects colons).
+    this.functionUrlDomain = Fn.select(0, Fn.split('/', Fn.select(1, Fn.split('//', functionUrl.url))));
 
     new CfnOutput(this, 'LambdaFunctionArn', { value: lambdaFn.functionArn });
     new CfnOutput(this, 'LambdaFunctionUrlDomain', { value: this.functionUrlDomain });

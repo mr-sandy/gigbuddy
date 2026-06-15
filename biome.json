@@ -12,6 +12,7 @@
       "shared/src/**",
       "infra/bin/**",
       "infra/lib/**",
+      "infra/scripts/**",
       "e2e/**",
       "!**/dist",
       "!**/node_modules",

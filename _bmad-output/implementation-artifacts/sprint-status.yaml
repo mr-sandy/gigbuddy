@@ -1,6 +1,6 @@
 # generated: 2026-06-09
-# last_updated: 2026-06-12 (story 1.6 → ready-for-dev)
-# last_status_change: 2026-06-12
+# last_updated: 2026-06-15 (epic-1-retrospective → done)
+# last_status_change: 2026-06-15
 # project: gigbuddy
 # project_key: NOKEY
 # tracking_system: file-system
@@ -36,7 +36,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-06-09
-last_updated: 2026-06-12 (story 1.6 → ready-for-dev)
+last_updated: 2026-06-13 (story 1.6 → done)
 project: gigbuddy
 project_key: NOKEY
 tracking_system: file-system
@@ -50,8 +50,8 @@ development_status:
   1-3-aws-infrastructure-stacks-data-api-web-observability-ci: done
   1-4-access-gate-single-password-jwt-cookie-ssm: done
   1-5-navigation-chrome-scaffold: done
-  1-6-deploy-pipeline-with-two-stage-blackout-check: ready-for-dev
-  epic-1-retrospective: optional
+  1-6-deploy-pipeline-with-two-stage-blackout-check: done
+  epic-1-retrospective: done
 
   # Epic 2: Song Library & Sync Layer
   epic-2: backlog
