@@ -85,7 +85,10 @@ export class ApiStack extends Stack {
     // functionUrl.url is a CDK token — .replace() on a token string is a no-op at
     // runtime. Use Fn.select/split to strip "https://" and the trailing "/" so that
     // web-stack can pass a bare FQDN to HttpOrigin (CloudFront rejects colons).
-    this.functionUrlDomain = Fn.select(0, Fn.split('/', Fn.select(1, Fn.split('//', functionUrl.url))));
+    this.functionUrlDomain = Fn.select(
+      0,
+      Fn.split('/', Fn.select(1, Fn.split('//', functionUrl.url))),
+    );
 
     new CfnOutput(this, 'LambdaFunctionArn', { value: lambdaFn.functionArn });
     new CfnOutput(this, 'LambdaFunctionUrlDomain', { value: this.functionUrlDomain });
