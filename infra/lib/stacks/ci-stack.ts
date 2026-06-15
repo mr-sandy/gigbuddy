@@ -141,12 +141,17 @@ export class CiStack extends Stack {
       }),
     );
 
-    // IAM PassRole on the Lambda execution role (for cdk to update Lambda config).
+    // IAM PassRole: Lambda execution role (for CDK to update Lambda config) and
+    // CDK CFN execution roles (CDK passes these to CloudFormation when deploying
+    // stacks — required for all CDK stack deployments from CI).
     this.deployRole.addToPolicy(
       new PolicyStatement({
         effect: Effect.ALLOW,
         actions: ['iam:PassRole'],
-        resources: [`arn:aws:iam::${this.account}:role/GigbuddyApi-*`],
+        resources: [
+          `arn:aws:iam::${this.account}:role/GigbuddyApi-*`,
+          `arn:aws:iam::${this.account}:role/cdk-hnb659fds-cfn-exec-role-${this.account}-*`,
+        ],
       }),
     );
 
