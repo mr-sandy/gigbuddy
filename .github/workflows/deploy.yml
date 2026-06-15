@@ -21,6 +21,9 @@ jobs:
     name: deploy main to gig.cormie.com
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      CDK_DEFAULT_ACCOUNT: ${{ vars.CDK_DEFAULT_ACCOUNT }}
+      CDK_DEFAULT_REGION: eu-west-2
     steps:
       - uses: actions/checkout@v4
 
@@ -50,10 +53,18 @@ jobs:
         run: pnpm -F infra exec tsx scripts/blackout-check.ts
 
       - name: cdk diff
-        run: pnpm -F infra exec cdk diff --all
+        run: >-
+          pnpm -F infra exec cdk diff
+          -c hostedZoneId=${{ vars.CDK_HOSTED_ZONE_ID }}
+          -c githubOwner=${{ vars.CDK_GITHUB_OWNER }}
+          -c budgetEmail=${{ vars.CDK_BUDGET_EMAIL }}
 
       - name: cdk deploy
-        run: pnpm -F infra exec cdk deploy --all --require-approval=never
+        run: >-
+          pnpm -F infra exec cdk deploy --all --require-approval=never
+          -c hostedZoneId=${{ vars.CDK_HOSTED_ZONE_ID }}
+          -c githubOwner=${{ vars.CDK_GITHUB_OWNER }}
+          -c budgetEmail=${{ vars.CDK_BUDGET_EMAIL }}
 
       - name: build SPA
         run: pnpm build:web

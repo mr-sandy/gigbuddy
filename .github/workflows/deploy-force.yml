@@ -123,6 +123,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: enumerate
     timeout-minutes: 20
+    env:
+      CDK_DEFAULT_ACCOUNT: ${{ vars.CDK_DEFAULT_ACCOUNT }}
+      CDK_DEFAULT_REGION: eu-west-2
     steps:
       - uses: actions/checkout@v4
       - uses: aws-actions/configure-aws-credentials@v4
@@ -141,8 +144,16 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       # Blackout check intentionally OMITTED — that is the whole point of this workflow.
-      - run: pnpm -F infra exec cdk diff --all
-      - run: pnpm -F infra exec cdk deploy --all --require-approval=never
+      - run: >-
+          pnpm -F infra exec cdk diff
+          -c hostedZoneId=${{ vars.CDK_HOSTED_ZONE_ID }}
+          -c githubOwner=${{ vars.CDK_GITHUB_OWNER }}
+          -c budgetEmail=${{ vars.CDK_BUDGET_EMAIL }}
+      - run: >-
+          pnpm -F infra exec cdk deploy --all --require-approval=never
+          -c hostedZoneId=${{ vars.CDK_HOSTED_ZONE_ID }}
+          -c githubOwner=${{ vars.CDK_GITHUB_OWNER }}
+          -c budgetEmail=${{ vars.CDK_BUDGET_EMAIL }}
       - run: pnpm build:web
       - id: outputs
         name: resolve stack outputs
