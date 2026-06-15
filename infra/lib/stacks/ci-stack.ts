@@ -126,12 +126,18 @@ export class CiStack extends Stack {
       }),
     );
 
-    // SSM: GetParameter on /gigbuddy/* (non-secret config the deploy may need).
+    // SSM: GetParameter on /gigbuddy/* (non-secret config the deploy may need)
+    // and on /cdk-bootstrap/* (CDK checks the bootstrap stack version via SSM
+    // before every deploy — without this the role can't deploy any stack).
     this.deployRole.addToPolicy(
       new PolicyStatement({
         effect: Effect.ALLOW,
         actions: ['ssm:GetParameter', 'ssm:GetParameters'],
-        resources: [`arn:aws:ssm:${this.region}:${this.account}:parameter/gigbuddy/*`],
+        resources: [
+          `arn:aws:ssm:${this.region}:${this.account}:parameter/gigbuddy/*`,
+          `arn:aws:ssm:${this.region}:${this.account}:parameter/cdk-bootstrap/*`,
+          `arn:aws:ssm:us-east-1:${this.account}:parameter/cdk-bootstrap/*`,
+        ],
       }),
     );
 
