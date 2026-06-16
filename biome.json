@@ -8,6 +8,7 @@
   "files": {
     "includes": [
       "web/src/**",
+      "web/pwa-assets.config.ts",
       "api/src/**",
       "shared/src/**",
       "infra/bin/**",
