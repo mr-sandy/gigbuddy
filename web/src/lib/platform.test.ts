@@ -1,8 +1,25 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { isIPhone } from './platform.js';
+import { isIPhone, isStandalone } from './platform.js';
 
 function stubUserAgent(value: string): void {
   vi.stubGlobal('navigator', { ...navigator, userAgent: value });
+}
+
+function stubMatchMedia(matches: boolean): void {
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    matches,
+    media: query,
+    onchange: null,
+    addListener: () => {},
+    removeListener: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => false,
+  }));
+}
+
+function stubLegacyStandalone(value: boolean | undefined): void {
+  vi.stubGlobal('navigator', { ...navigator, standalone: value });
 }
 
 afterEach(() => {
@@ -57,5 +74,31 @@ describe('isIPhone', () => {
       'Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
     );
     expect(isIPhone()).toBe(false);
+  });
+});
+
+describe('isStandalone', () => {
+  it('returns true when display-mode standalone matches', () => {
+    stubMatchMedia(true);
+    stubLegacyStandalone(undefined);
+    expect(isStandalone()).toBe(true);
+  });
+
+  it('returns true via legacy navigator.standalone even when display-mode does not match', () => {
+    stubMatchMedia(false);
+    stubLegacyStandalone(true);
+    expect(isStandalone()).toBe(true);
+  });
+
+  it('returns false when neither signal is truthy', () => {
+    stubMatchMedia(false);
+    stubLegacyStandalone(undefined);
+    expect(isStandalone()).toBe(false);
+  });
+
+  it('returns false when navigator.standalone is explicitly false', () => {
+    stubMatchMedia(false);
+    stubLegacyStandalone(false);
+    expect(isStandalone()).toBe(false);
   });
 });

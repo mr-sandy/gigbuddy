@@ -1,6 +1,6 @@
 # generated: 2026-06-09
-# last_updated: 2026-06-15 (epic-1-retrospective → done)
-# last_status_change: 2026-06-15
+# last_updated: 2026-06-16 (story 2.2 → review)
+# last_status_change: 2026-06-16
 # project: gigbuddy
 # project_key: NOKEY
 # tracking_system: file-system
@@ -36,7 +36,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-06-09
-last_updated: 2026-06-13 (story 1.6 → done)
+last_updated: 2026-06-16 (story 2.2 → review)
 project: gigbuddy
 project_key: NOKEY
 tracking_system: file-system
@@ -54,9 +54,9 @@ development_status:
   epic-1-retrospective: done
 
   # Epic 2: Song Library & Sync Layer
-  epic-2: backlog
-  2-1-service-worker-pwa-manifest: backlog
-  2-2-iphone-pwa-install-gate: backlog
+  epic-2: in-progress
+  2-1-service-worker-pwa-manifest: review
+  2-2-iphone-pwa-install-gate: review
   2-3-song-api-ddb-persistence-client-errors-endpoint: backlog
   2-4-sync-layer-foundation-client-error-reporter: backlog
   2-5-library-list-surface: backlog

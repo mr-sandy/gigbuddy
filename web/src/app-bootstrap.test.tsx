@@ -26,6 +26,36 @@ function jsonResponse(status: number, body: unknown): Response {
   });
 }
 
+function stubIPhoneUA(): void {
+  vi.stubGlobal('navigator', {
+    ...navigator,
+    userAgent:
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+  });
+}
+
+function stubIPhonePWA(): void {
+  vi.stubGlobal('navigator', {
+    ...navigator,
+    userAgent:
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148',
+    standalone: true,
+  });
+}
+
+function stubMatchMedia(matches: boolean): void {
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    matches,
+    media: query,
+    onchange: null,
+    addListener: () => {},
+    removeListener: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => false,
+  }));
+}
+
 describe('AppBootstrap', () => {
   it('renders the GigBuddy shell heading while the /me probe is in-flight', () => {
     fetchMock.mockReturnValueOnce(new Promise(() => undefined)); // never resolves
@@ -63,5 +93,39 @@ describe('AppBootstrap', () => {
     });
     // No login input should appear — AR-16 says we stay on the cached shell.
     expect(screen.queryByLabelText(/password/i)).toBeNull();
+  });
+
+  it('renders the install-instructions surface and skips /me on iPhone Safari', () => {
+    stubIPhoneUA();
+    stubMatchMedia(false);
+    render(<AppBootstrap />);
+    expect(screen.getByRole('heading', { level: 1, name: 'Install GigBuddy' })).toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('boots the authenticated shell on iPhone PWA (display-mode standalone)', async () => {
+    stubIPhonePWA();
+    stubMatchMedia(true);
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(200, { status: 'ok', data: { authenticated: true, daysUntilExpiry: 365 } }),
+    );
+    render(<AppBootstrap />);
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { level: 1, name: 'Setlists' })).toBeInTheDocument();
+    });
+    expect(fetchMock).toHaveBeenCalledWith('/api/v1/me', expect.anything());
+  });
+
+  it('boots the authenticated shell on MacBook even if display-mode standalone matches', async () => {
+    // No iPhone UA stub — default jsdom navigator is a non-iPhone agent.
+    stubMatchMedia(true); // simulates the edge of a future macOS PWA install
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(200, { status: 'ok', data: { authenticated: true, daysUntilExpiry: 365 } }),
+    );
+    render(<AppBootstrap />);
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { level: 1, name: 'Setlists' })).toBeInTheDocument();
+    });
+    expect(screen.queryByRole('heading', { name: 'Install GigBuddy' })).toBeNull();
   });
 });
