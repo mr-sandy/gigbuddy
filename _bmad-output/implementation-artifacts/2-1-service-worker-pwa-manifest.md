@@ -4,7 +4,7 @@ baseline_commit: bc100fe
 
 # Story 2.1: Service worker + PWA manifest
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -408,14 +408,14 @@ so that the SPA can be installed as a PWA on iPhone (unlocking Wake Lock and ful
   - [x] **Do NOT add `web/scripts/**`** to biome includes in this story. Story 1.2 created `web/scripts/` (subset-fonts.ts, contrast-report.ts) without adding it to biome — that omission is a deferred-work item but expanding the lint surface to those existing files risks fix-up churn that this story does not own. Track as a separate item if Sandy wants the cleanup.
   - [x] Run `pnpm lint` from the repo root after the change. Confirm the new `pwa-assets.config.ts` passes Biome. Confirm no other files are newly snared by the include change.
 
-- [ ] **Task 7 — Manual install proof on Sandy's iPhone (deferred to Sandy; explicit unchecked checkbox per Epic 1 retro)** (AC: 9)
-  - [ ] Sandy merges the Story 2.1 PR to `main`; `deploy.yml` (Story 1.6) ships the new SW + manifest to `https://gig.cormie.com/`.
-  - [ ] Sandy opens `https://gig.cormie.com/` in iPhone Safari on his iPhone 13.
-  - [ ] Sandy performs `Share → Add to Home Screen`. Confirms the install sheet shows `GigBuddy` + the `apple-touch-icon-180x180.png` artwork (the rasterized `GB` wordmark on `#1a1209`).
-  - [ ] Sandy taps `Add`, then launches GigBuddy from the home-screen icon.
-  - [ ] Sandy confirms the launch is full-screen standalone (no Safari chrome at top or bottom).
-  - [ ] Sandy pastes a confirmation line into the Dev Agent Record's "Completion Notes List" (e.g., "Installed and verified standalone launch on iPhone 13 / iOS 18.x at 2026-06-XX. Icon and title render correctly.") and ticks this checkbox.
-  - [ ] **Do NOT mark the story `done` in sprint-status.yaml until this checkbox is ticked.** The Epic 1 retro called out "deferred to Sandy" prose handoffs as the single biggest process failure of Epic 1; this checkbox is the structural fix.
+- [x] **Task 7 — Manual install proof on Sandy's iPhone (deferred to Sandy; explicit unchecked checkbox per Epic 1 retro)** (AC: 9)
+  - [x] Sandy merges the Story 2.1 PR to `main`; `deploy.yml` (Story 1.6) ships the new SW + manifest to `https://gig.cormie.com/`.
+  - [x] Sandy opens `https://gig.cormie.com/` in iPhone Safari on his iPhone 13.
+  - [x] Sandy performs `Share → Add to Home Screen`. Confirms the install sheet shows `GigBuddy` + the `apple-touch-icon-180x180.png` artwork (the rasterized `GB` wordmark on `#1a1209`).
+  - [x] Sandy taps `Add`, then launches GigBuddy from the home-screen icon.
+  - [x] Sandy confirms the launch is full-screen standalone (no Safari chrome at top or bottom).
+  - [x] Sandy pastes a confirmation line into the Dev Agent Record's "Completion Notes List" (e.g., "Installed and verified standalone launch on iPhone 13 / iOS 18.x at 2026-06-XX. Icon and title render correctly.") and ticks this checkbox.
+  - [x] **Do NOT mark the story `done` in sprint-status.yaml until this checkbox is ticked.** The Epic 1 retro called out "deferred to Sandy" prose handoffs as the single biggest process failure of Epic 1; this checkbox is the structural fix.
 
 - [x] **Task 8 — Verification pass** (AC: 1–8)
   - [x] `pnpm typecheck` green across all packages. (The new files: `web/vite.config.ts` extended with `VitePWA` import; `web/pwa-assets.config.ts` is a new TS file at the package root — `web/tsconfig.json` `include: ['src/**/*']` does NOT cover it; if the file's type imports cause a typecheck miss, leave it — `pwa-assets.config.ts` is read by a binary via tsx/unconfig at runtime, not by the `tsc -p` check.)
@@ -702,6 +702,9 @@ claude-opus-4-7 (Opus 4.7, 1M context) via Claude Code dev-story workflow
   - `web/dist/icons/` contains the five PWA PNGs; `web/dist/favicon.ico` at root.
 - AC-9 (manual iPhone install proof) is intentionally deferred to Sandy as an explicit unchecked checkbox per Epic 1 retro Lesson #1. The story remains in `review` until Sandy ticks Task 7 with confirmation that the iPhone PWA installs and launches standalone.
 - The local `vite preview` browser smoke (Task 8 sub-bullet) is folded into Sandy's Task 7 pass — same artifact set, same browser-tooling territory. The automated build-output test covers the structural invariants that benefit from CI-grade repeatability.
+- Task 8 sub-bullet "Browser smoke (dev agent on macOS)" is intentionally left unticked as a documented gap (Sandy's call on 2026-06-16). Production-mode SW behavior was confirmed by (a) the deploy pipeline's API + SPA smoke tests in `deploy.yml` on commit `84561a1`, and (b) Sandy's iPhone install + standalone-launch proof on the deployed bundle. The local `vite preview` smoke would have added marginal evidence on a per-dev-agent basis but is not load-bearing for V1.
+- Task 7 confirmed by Sandy on 2026-06-16: iPhone 13 Safari → Share → Add to Home Screen → Add → launched from home-screen icon. Install sheet showed `GigBuddy` with the apple-touch-icon artwork; standalone launch full-screen (no Safari chrome). PWA installed and launches cleanly.
+- Note from the same session (relevant to future iPhone work): iOS shares the cookie jar between Safari and the installed PWA at the same origin — the `gigbuddy_session` cookie set during pre-install Safari testing carried across the install boundary into the PWA, so the post-install launch reached the authenticated Setlists shell rather than `/login`. This is iOS platform behavior, not a GigBuddy regression. IndexedDB isolation (relevant to Story 2.4's outbox + `navigator.storage.persist()`) is a separate question that should be verified independently before Story 2.4.
 - One pnpm-workspace.yaml hygiene change (sharp build approval) was added at repo root; see Debug Log entry. This is outside the spec's "files this story modifies" list but is required for the assets-generator to install its native dependency on this and any future machine.
 
 ### File List
@@ -732,3 +735,5 @@ claude-opus-4-7 (Opus 4.7, 1M context) via Claude Code dev-story workflow
 | Date       | Change                                                                                      |
 | ---------- | ------------------------------------------------------------------------------------------- |
 | 2026-06-15 | Story implementation: VitePWA plugin + manifest + icon set + iOS install metadata + build-output test (commits forthcoming). Status flipped to `review`; Task 7 (iPhone install proof) deferred to Sandy. |
+| 2026-06-16 | CI surfaced a stale-`dist`-masked test failure: `build-output.test.ts` line 39's `not.toMatch(/self\.skipWaiting\(\);/)` matched Workbox 7.4.1's conditional-handler body too (the previous deferred-work note's claim that the implementation's regex distinguished top-level vs. handler was wrong). Fixed by dropping the brittle negation; the existing positive `toMatch(/SKIP_WAITING/)` assertion is sufficient proof that `skipWaiting: false` was honored. Commit `84561a1`. |
+| 2026-06-16 | Story done (status: done). Sandy's iPhone 13 manual install proof confirmed: Share → Add to Home Screen → Add → launched from home-screen icon; install sheet showed GigBuddy + apple-touch-icon artwork; standalone launch full-screen. Same session also confirmed iOS shares the cookie jar between Safari and the installed PWA at the origin (see Completion Notes). |
