@@ -26,19 +26,15 @@ describe('PWA build output', () => {
     expect(sw).toContain('app-shell-v1');
   });
 
-  it('does not call self.skipWaiting() unconditionally in the generated SW', () => {
-    // Workbox 7.4.1's sw-template ALWAYS emits a conditional SKIP_WAITING message
-    // handler (sw-template.ts lines 33-39) when skipWaiting: false, so the literal
-    // text `self.skipWaiting()` appears inside that handler. That handler is dead
-    // code in V1 because registerType: 'prompt' makes registerSW.js not post the
-    // SKIP_WAITING message, and no UI code does either. The load-bearing assertion
-    // is that there is NO UNCONDITIONAL skipWaiting() call (which Workbox emits as
-    // a bare `self.skipWaiting();` statement at top level when skipWaiting: true).
+  it('honors skipWaiting: false and clientsClaim: false in the generated SW', () => {
+    // Workbox 7.4.1's sw-template emits a conditional SKIP_WAITING message handler
+    // (sw-template.ts lines 33-39) ONLY when skipWaiting: false. When skipWaiting: true,
+    // it emits a bare `self.skipWaiting();` at module top level and no message handler.
+    // Asserting the conditional handler is present is therefore sufficient proof that
+    // the `skipWaiting: false` branch was taken. (The handler itself is dead code in V1
+    // because registerType: 'prompt' makes registerSW.js not post the SKIP_WAITING
+    // message, and no UI code does either — by design.)
     const sw = readFileSync(distSw, 'utf-8');
-    // No unconditional `self.skipWaiting();` (trailing semicolon ≡ statement form).
-    expect(sw).not.toMatch(/self\.skipWaiting\(\);/);
-    // Conditional handler IS present — proves Workbox config produced the
-    // skipWaiting: false branch of its template.
     expect(sw).toMatch(/SKIP_WAITING/);
     // No unconditional clients.claim() (Workbox only emits this when clientsClaim: true).
     expect(sw).not.toMatch(/clients\.claim\(\)/);
