@@ -12,9 +12,14 @@ vi.mock('./secrets/ssm.js', () => ({
 
 import { handler } from './handler.js';
 
-// Minimal Lambda Function URL / API Gateway v2 event for a GET /api/v1/* call.
+// Minimal Lambda Function URL / API Gateway v2 event for a /api/v1/* call.
 // Hand-rolled inline to avoid pulling in @types/aws-lambda just for tests.
-function buildEvent(opts: { path: string; headers?: Record<string, string> }): unknown {
+function buildEvent(opts: {
+  path: string;
+  method?: string;
+  body?: string;
+  headers?: Record<string, string>;
+}): unknown {
   return {
     version: '2.0',
     routeKey: '$default',
@@ -27,7 +32,7 @@ function buildEvent(opts: { path: string; headers?: Record<string, string> }): u
       domainName: 'test.lambda-url.eu-west-2.on.aws',
       domainPrefix: 'test',
       http: {
-        method: 'GET',
+        method: opts.method ?? 'GET',
         path: opts.path,
         protocol: 'HTTP/1.1',
         sourceIp: '127.0.0.1',
@@ -39,7 +44,7 @@ function buildEvent(opts: { path: string; headers?: Record<string, string> }): u
       time: '01/Jan/2026:00:00:00 +0000',
       timeEpoch: 1735689600000,
     },
-    body: null,
+    body: opts.body ?? null,
     isBase64Encoded: false,
   };
 }
@@ -82,6 +87,45 @@ describe('Lambda handler', () => {
     // biome-ignore lint/suspicious/noExplicitAny: handler accepts a union of Lambda event types
     const result: any = await (handler as any)(
       buildEvent({ path: '/api/v1/me' }),
+      lambdaContext,
+      () => undefined,
+    );
+    expect(result.statusCode).toBe(401);
+    const body = JSON.parse(result.body);
+    expect(body).toEqual({
+      status: 'error',
+      error: { code: 'UNAUTHORIZED', message: 'authentication required' },
+    });
+  });
+
+  it('returns HTTP 401 UNAUTHORIZED for GET /api/v1/songs without a session cookie', async () => {
+    // biome-ignore lint/suspicious/noExplicitAny: handler accepts a union of Lambda event types
+    const result: any = await (handler as any)(
+      buildEvent({ path: '/api/v1/songs' }),
+      lambdaContext,
+      () => undefined,
+    );
+    expect(result.statusCode).toBe(401);
+    const body = JSON.parse(result.body);
+    expect(body).toEqual({
+      status: 'error',
+      error: { code: 'UNAUTHORIZED', message: 'authentication required' },
+    });
+  });
+
+  it('returns HTTP 401 UNAUTHORIZED for POST /api/v1/client-errors without a session cookie', async () => {
+    // biome-ignore lint/suspicious/noExplicitAny: handler accepts a union of Lambda event types
+    const result: any = await (handler as any)(
+      buildEvent({
+        path: '/api/v1/client-errors',
+        method: 'POST',
+        body: JSON.stringify({
+          where: 'window.onerror',
+          message: 'irrelevant — auth fires first',
+          performanceActive: false,
+          timestamp: '2026-06-16T12:00:00.000Z',
+        }),
+      }),
       lambdaContext,
       () => undefined,
     );

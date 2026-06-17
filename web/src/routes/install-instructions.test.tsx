@@ -18,6 +18,7 @@ describe('InstallInstructions', () => {
     render(<InstallInstructions />);
     expect(screen.queryByRole('button')).toBeNull();
     expect(screen.queryByRole('link')).toBeNull();
+    expect(screen.queryByText(/dismiss|skip|continue|already installed/i)).toBeNull();
   });
 
   it('contains no voice-and-tone-violating copy (no exclamation marks, no emoji)', () => {

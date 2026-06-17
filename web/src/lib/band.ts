@@ -1,11 +1,11 @@
 /*
- * V1 single-Band scope (FR-25, FR-26). The Jack Ruby 5 is the only Band that
- * carries content in V1. The name appears in the MacBook top-nav passive
- * label only (per FR-26 — no switcher in V1; iPhone chrome shows no Band
- * label).
+ * V1 single-Band passive label (FR-25, FR-26). Re-exported from
+ * @gigbuddy/shared so client and server agree on the same band identity
+ * (the server resolves ACTIVE_BAND_ID for DDB scoping; the client renders
+ * ACTIVE_BAND_NAME in the MacBook chrome).
  *
- * V2 / Multi-Band: this constant becomes a `useActiveBand()` hook backed by
- * the REGISTRY item in DDB (architecture.md Decision 2 "V2 evolution paths").
- * Do NOT add band metadata fetching in this story.
+ * ACTIVE_BAND_ID is intentionally NOT re-exported here — Story 2.4+ code
+ * that needs the id imports it directly from @gigbuddy/shared so the
+ * single source of truth is unmistakable.
  */
-export const ACTIVE_BAND_NAME = 'The Jack Ruby 5' as const;
+export { ACTIVE_BAND_NAME } from '@gigbuddy/shared';

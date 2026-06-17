@@ -101,4 +101,9 @@ describe('isStandalone', () => {
     stubLegacyStandalone(false);
     expect(isStandalone()).toBe(false);
   });
+
+  it('returns false when window is undefined (SSR safety)', () => {
+    vi.stubGlobal('window', undefined);
+    expect(isStandalone()).toBe(false);
+  });
 });

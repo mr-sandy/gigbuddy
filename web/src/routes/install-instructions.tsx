@@ -31,7 +31,7 @@ export function InstallInstructions() {
       </p>
       <ol className="mt-[var(--spacing-section-gap)] flex list-decimal flex-col gap-[var(--spacing-card-stack-gap)] pl-[calc(var(--spacing-unit)*6)] text-[length:var(--text-perf-body)] leading-[var(--text-perf-body--line-height)] text-[color:var(--color-text-primary)]">
         <li>Tap the Share button at the bottom of Safari.</li>
-        <li>Scroll and tap &ldquo;Add to Home Screen&rdquo;.</li>
+        <li>Scroll and tap "Add to Home Screen".</li>
         <li>Tap Add. Then open GigBuddy from your home screen.</li>
       </ol>
     </main>
