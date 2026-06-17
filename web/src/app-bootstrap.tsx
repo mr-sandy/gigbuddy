@@ -6,6 +6,7 @@ import { isIPhone, isStandalone } from './lib/platform.js';
 import { PerformanceModeProvider } from './performance/performance-context.js';
 import { router } from './router.js';
 import { InstallInstructions } from './routes/install-instructions.js';
+import { SyncWiring } from './sync/sync-wiring.js';
 
 /*
  * The architectural app-boot sequence (architecture.md "Auth flow"
@@ -52,6 +53,7 @@ export function AppBootstrap() {
         <h1>GigBuddy</h1>
       ) : (
         <AuthProvider initial={initial}>
+          <SyncWiring />
           <RouterProvider router={router} />
         </AuthProvider>
       )}

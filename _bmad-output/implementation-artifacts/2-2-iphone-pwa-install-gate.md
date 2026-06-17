@@ -686,3 +686,16 @@ Claude Opus 4.7 (claude-opus-4-7[1m])
 | 2026-06-16 | Story spec created (status: ready-for-dev). Builds on Story 2.1's manifest + SW; adds `isStandalone()` to `platform.ts`, the `InstallInstructions` route component, and the `AppBootstrap` short-circuit gating iPhone Safari (uninstalled) before any API call. |
 | 2026-06-16 | Implementation complete (status: review). Tasks 1–5 done: `isStandalone()` added, `InstallInstructions` surface created, `AppBootstrap` short-circuit wired, tests extended (web suite 79/79 passing). Task 6 (Sandy's iPhone manual proof) explicitly unchecked per Epic 1 retro Lesson #1. |
 | 2026-06-16 | Story done (status: done). Sandy's iPhone 13 manual proof confirmed: pre-install gate rendered, post-install standalone launch bypassed the gate. Reached Setlists shell rather than `/login` because iOS shares the cookie jar between Safari and the installed PWA. Gate-bypass invariant confirmed. |
+| 2026-06-16 | Code review complete. 1 decision-needed, 2 patches, 2 deferred, 14 dismissed. |
+
+## Review Findings
+
+- [x] [Review][Decision] Step 2 copy uses typographic curly quotes (`&ldquo;&rdquo;`) vs spec-prescribed straight quotes — resolved: switched to straight quotes (`"Add to Home Screen"`) per Sandy's call. **[`web/src/routes/install-instructions.tsx:34`]**
+
+- [x] [Review][Patch] `isStandalone()` missing SSR (`typeof window === 'undefined'`) test case — resolved: added fifth `isStandalone` test case (`vi.stubGlobal('window', undefined)` → returns false). **[`web/src/lib/platform.test.ts`]**
+
+- [x] [Review][Patch] Missing `/dismiss|skip|continue|already installed/i` text-content assertion in install-instructions test — resolved: added `queryByText` regex assertion to the "no interactive controls" test. **[`web/src/routes/install-instructions.test.tsx`]**
+
+- [x] [Review][Defer] `isStandalone()` lacks guard for `window.matchMedia` being absent (window defined but matchMedia undefined) [`web/src/lib/platform.ts:29`] — deferred, pre-existing — Production browsers always have `matchMedia`; `isIPhone()` short-circuit prevents calling `isStandalone()` on non-iPhone paths; jsdom tests always stub matchMedia before calling `isStandalone()` directly. Pattern mirrors `isIPhone()`'s existing guard style.
+
+- [x] [Review][Defer] `stubMatchMedia` helper duplicated verbatim in `app-bootstrap.test.tsx` and `platform.test.ts` — deferred, pre-existing — Inline stubs are the established pattern in this codebase. Extract to a shared test utility in a future test-utilities pass.

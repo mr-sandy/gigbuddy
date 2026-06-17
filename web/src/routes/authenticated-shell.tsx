@@ -4,6 +4,7 @@ import { ReauthBanner } from '../components/reauth-banner.js';
 import { TopNav } from '../components/top-nav.js';
 import { useChromeVisible } from '../hooks/use-chrome-visible.js';
 import { isIPhone } from '../lib/platform.js';
+import { StaleWriteBanner } from '../sync/stale-write-banner.js';
 
 /*
  * Renders the global chrome around the route Outlet:
@@ -22,6 +23,7 @@ export function AuthenticatedShell() {
     <>
       {chromeVisible && !iPhone ? <TopNav /> : null}
       <ReauthBanner />
+      <StaleWriteBanner />
       <main
         className="mx-auto max-w-[960px] px-[var(--spacing-gutter)] py-[var(--spacing-section-gap)]"
         style={

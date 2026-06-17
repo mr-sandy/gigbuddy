@@ -1,5 +1,8 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import 'fake-indexeddb/auto';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { z } from 'zod';
+import { apiFetch } from './api/client.js';
 import { AppBootstrap } from './app-bootstrap.js';
 import { EMPTY_STATES } from './lib/microcopy.js';
 import { router } from './router.js';
@@ -98,9 +101,13 @@ describe('AppBootstrap', () => {
   it('renders the install-instructions surface and skips /me on iPhone Safari', () => {
     stubIPhoneUA();
     stubMatchMedia(false);
+    const addEventListenerSpy = vi.spyOn(window, 'addEventListener');
     render(<AppBootstrap />);
     expect(screen.getByRole('heading', { level: 1, name: 'Install GigBuddy' })).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
+    // SyncWiring must not mount on the install-gate path — no 'online' listener from startFlusher.
+    expect(addEventListenerSpy).not.toHaveBeenCalledWith('online', expect.any(Function));
+    addEventListenerSpy.mockRestore();
   });
 
   it('boots the authenticated shell on iPhone PWA (display-mode standalone)', async () => {
@@ -114,6 +121,41 @@ describe('AppBootstrap', () => {
       expect(screen.getByRole('heading', { level: 1, name: 'Setlists' })).toBeInTheDocument();
     });
     expect(fetchMock).toHaveBeenCalledWith('/api/v1/me', expect.anything());
+  });
+
+  it('SyncWiring installs the unauthorized handler: a 401 from apiFetch redirects to /login', async () => {
+    // /me first → authenticated shell mounts → SyncWiring effect runs.
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(200, { status: 'ok', data: { authenticated: true, daysUntilExpiry: 365 } }),
+    );
+    render(<AppBootstrap />);
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { level: 1, name: 'Setlists' })).toBeInTheDocument();
+    });
+    // Now fire a network call via apiFetch that returns 401 WITH x-server-now —
+    // the SyncWiring handler should flip auth to 'unauthenticated' and the
+    // router should redirect.
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ status: 'ok', data: [] }), {
+        status: 401,
+        headers: {
+          'content-type': 'application/json',
+          'x-server-now': new Date().toISOString(),
+        },
+      }),
+    );
+    // The schema parse will throw because the body isn't an error envelope —
+    // catch and swallow; the side effect (handler firing) is what we verify.
+    await act(async () => {
+      try {
+        await apiFetch('/api/v1/songs', { method: 'GET', schema: z.unknown() });
+      } catch {
+        /* expected */
+      }
+    });
+    await waitFor(() => {
+      expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
+    });
   });
 
   it('boots the authenticated shell on MacBook even if display-mode standalone matches', async () => {

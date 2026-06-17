@@ -14,3 +14,8 @@ export const EMPTY_STATES = {
   noUpcomingGigs: 'No upcoming gigs.',
   noSongsInLibrary: 'No songs in this library yet.',
 } as const;
+
+export const BANNERS = {
+  staleWrite: 'Your earlier edit was superseded.',
+  errorBoundary: 'Something went wrong. Try refreshing.',
+} as const;

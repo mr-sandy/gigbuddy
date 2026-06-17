@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  getPerformanceActiveSnapshot,
   PerformanceModeProvider,
   usePerformanceActive,
   useSetPerformanceActive,
@@ -63,6 +64,23 @@ describe('PerformanceModeContext', () => {
 
     it('useSetPerformanceActive throws the documented error', () => {
       expect(() => render(<Toggle />)).toThrow(/inside <PerformanceModeProvider>/);
+    });
+  });
+
+  describe('getPerformanceActiveSnapshot (non-React surface)', () => {
+    it('mirrors the React state into the module-scope snapshot when setActive flips', async () => {
+      const user = userEvent.setup();
+      render(
+        <PerformanceModeProvider>
+          <Toggle />
+        </PerformanceModeProvider>,
+      );
+      // Before the toggle fires, the snapshot reflects the provider's initial
+      // value (false). Reading immediately after first paint is sufficient
+      // because the snapshot-sync useEffect runs synchronously after mount.
+      expect(getPerformanceActiveSnapshot()).toBe(false);
+      await user.click(screen.getByRole('button', { name: 'activate' }));
+      expect(getPerformanceActiveSnapshot()).toBe(true);
     });
   });
 
