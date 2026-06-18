@@ -7,6 +7,7 @@ import { AuthenticatedShell } from './routes/authenticated-shell.js';
 import { Home } from './routes/home.js';
 import { Library } from './routes/library.js';
 import { Login } from './routes/login.js';
+import { SongDetail } from './routes/song-detail.js';
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { auth } = useAuth();
@@ -33,6 +34,8 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Home /> },
       { path: 'library', element: <Library /> },
+      { path: 'songs/new', element: <SongDetail /> },
+      { path: 'songs/:songId', element: <SongDetail /> },
     ],
   },
 ]);

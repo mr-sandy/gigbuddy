@@ -1,22 +1,72 @@
-import { OkResponseSchema, type Song, SongSchema } from '@gigbuddy/shared';
+import {
+  AppliedResponseSchema,
+  DroppedAsStaleResponseSchema,
+  ErrorResponseSchema,
+  OkResponseSchema,
+  type Song,
+  type SongPutInput,
+  SongSchema,
+} from '@gigbuddy/shared';
 import { z } from 'zod';
 import { apiFetch } from './client.js';
 
 /*
- * The list-Songs API surface. The flusher (sync/flusher.ts) owns the
- * write path via the outbox; this module owns the read path used by
- * useSongs (Story 2.5). Story 2.6 will add `getSong(songId)` here for
- * the per-record `useSong()` hook.
+ * The Songs API surface. The flusher (sync/flusher.ts) owns the outbox
+ * drain path with its own schema; this module owns the read paths
+ * (`listSongs`, `getSong`) consumed by the `useSongs` / `useSong` hooks,
+ * and `putSong` for any non-outbox caller (currently only test fixtures —
+ * production writes go through `useSongMutation` → outbox → flusher).
  *
- * The envelope schema is composed at the call site (Story 2.4 precedent
- * in flusher.ts) — no new shared exports. The function does not catch:
- * a network or schema failure throws, and TanStack Query's retry layer
- * handles the recovery (architecture.md "Error handling" lines 740–753).
+ * Envelope schemas are composed at the call site (Story 2.4 precedent in
+ * flusher.ts) — no new shared exports. Schema parse failures and non-2xx
+ * statuses throw; TanStack Query's retry layer handles recovery
+ * (architecture.md "Error handling" lines 740–753).
  */
+
+const GetSongResponseSchema = z.discriminatedUnion('status', [
+  OkResponseSchema(SongSchema),
+  ErrorResponseSchema,
+]);
+
+const PutSongResponseSchema = z.discriminatedUnion('status', [
+  AppliedResponseSchema(SongSchema),
+  DroppedAsStaleResponseSchema(SongSchema),
+  ErrorResponseSchema,
+]);
+
 export async function listSongs(): Promise<Song[]> {
   const response = await apiFetch('/api/v1/songs', {
     method: 'GET',
     schema: OkResponseSchema(z.array(SongSchema)),
   });
   return response.data.data;
+}
+
+export async function getSong(songId: string): Promise<Song | null> {
+  const response = await apiFetch(`/api/v1/songs/${songId}`, {
+    method: 'GET',
+    schema: GetSongResponseSchema,
+  });
+  if (response.data.status === 'ok') return response.data.data;
+  if (response.data.status === 'error' && response.data.error.code === 'NOT_FOUND') return null;
+  throw new Error(`getSong: unexpected error code ${response.data.error.code}`);
+}
+
+export type PutSongResult =
+  | { kind: 'applied'; data: Song }
+  | { kind: 'dropped-as-stale'; currentState: Song };
+
+export async function putSong(input: SongPutInput): Promise<PutSongResult> {
+  const response = await apiFetch(`/api/v1/songs/${input.songId}`, {
+    method: 'PUT',
+    body: input,
+    schema: PutSongResponseSchema,
+  });
+  if (response.data.status === 'applied') {
+    return { kind: 'applied', data: response.data.data };
+  }
+  if (response.data.status === 'dropped-as-stale') {
+    return { kind: 'dropped-as-stale', currentState: response.data.currentState };
+  }
+  throw new Error(`putSong: error envelope ${response.data.error.code}`);
 }

@@ -1,6 +1,7 @@
 import { clear, del, entries, set } from 'idb-keyval';
 import { customAlphabet } from 'nanoid';
 import { outboxStore } from '../cache/idb.js';
+import { URL_SAFE_ALPHABET } from '../lib/song-id.js';
 
 /*
  * IndexedDB-backed outbox for optimistic writes (architecture.md
@@ -18,7 +19,6 @@ import { outboxStore } from '../cache/idb.js';
  *     desired behaviour.
  */
 
-const URL_SAFE_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-';
 const newId = customAlphabet(URL_SAFE_ALPHABET, 16);
 
 export type OutboxEntry = {
