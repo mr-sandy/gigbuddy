@@ -1237,6 +1237,8 @@ As Sandy,
 I want a Paste-to-parse text area on the Setlist creation surface that parses pasted plain text into Sections + Song rows, matches each row against the Library, and surfaces Matched / Fuzzy / Unknown rows with inline resolution,
 So that I can land a 19-Song Setlist in minutes from a WhatsApp message or any other plain-text source.
 
+**Design reference:** Implementation conforms to [`paste-to-parse-design.md`](paste-to-parse-design.md) (approved 2026-06-19). The design note locks the algorithm (exact normalized match → Jaro-Winkler top-1 ≥ 0.92 → Unknown), the normalization pipeline (lowercase, NFKD, strip apostrophes / diacritics / trailing `– …` / `[…]` / `(…)`), the section-detection patterns (`Set N`, `Encore`, `{…}`, `# …`, `----`), and extends the Unknown-row action set below with **`Pick from library`** and **`Discard`** (in addition to `+ Add to library`).
+
 **Acceptance Criteria:**
 
 **Given** the `/setlists/new` route (from Story 3.4)
