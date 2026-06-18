@@ -1,5 +1,5 @@
 # generated: 2026-06-09
-# last_updated: 2026-06-17 (story 2.4 → done)
+# last_updated: 2026-06-18 (story 2.5 → done)
 # last_status_change: 2026-06-17
 # project: gigbuddy
 # project_key: NOKEY
@@ -36,7 +36,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-06-09
-last_updated: 2026-06-17 (story 2.4 → done)
+last_updated: 2026-06-18 (story 2.5 → done)
 project: gigbuddy
 project_key: NOKEY
 tracking_system: file-system
@@ -59,7 +59,7 @@ development_status:
   2-2-iphone-pwa-install-gate: done
   2-3-song-api-ddb-persistence-client-errors-endpoint: done
   2-4-sync-layer-foundation-client-error-reporter: done
-  2-5-library-list-surface: backlog
+  2-5-library-list-surface: done
   2-6-song-detail-with-inline-edit-chord-chart-rendering: backlog
   epic-2-retrospective: optional
 

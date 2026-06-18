@@ -6,8 +6,10 @@
  * Voice rules: short complete sentences, no exclamation marks, no emoji,
  * no marketing voice.
  *
- * Stories 1.5, 2.x, 3.x consume these for empty-state renders. Append (do not
- * mutate) when those stories introduce new empty states.
+ * Locked surfaces: EMPTY_STATES, BANNERS, ACTIONS.
+ *
+ * Stories 1.5, 2.x, 3.x consume these for empty-state renders and locked
+ * action labels. Append (do not mutate) when new surfaces are introduced.
  */
 
 export const EMPTY_STATES = {
@@ -18,4 +20,8 @@ export const EMPTY_STATES = {
 export const BANNERS = {
   staleWrite: 'Your earlier edit was superseded.',
   errorBoundary: 'Something went wrong. Try refreshing.',
+} as const;
+
+export const ACTIONS = {
+  newSong: '+ New song',
 } as const;

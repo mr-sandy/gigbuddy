@@ -24,7 +24,6 @@ export const queryClient = new QueryClient({
 
 export const persister = createAsyncStoragePersister({
   key: 'gigbuddy-query-cache-v1',
-  maxAge: Infinity,
   storage: {
     getItem: (key) => get(key, queryCacheStore) as Promise<string | null>,
     setItem: (key, value) => set(key, value, queryCacheStore),

@@ -82,3 +82,8 @@
 
 - **`isStandalone()` lacks guard for `window.matchMedia` being absent** (`web/src/lib/platform.ts:29`) — production browsers always have `matchMedia`; `isIPhone()` short-circuit prevents calling `isStandalone()` on non-iPhone paths; jsdom tests always stub matchMedia before calling `isStandalone()` directly. Add `typeof window.matchMedia === 'function'` guard if SSR or a non-standard browser env is ever targeted.
 - **`stubMatchMedia` helper duplicated verbatim in `app-bootstrap.test.tsx` and `platform.test.ts`** — inline stubs are the established pattern in this codebase. Extract to a shared `web/src/test-utils/stubs.ts` in a future test-utilities pass when duplication reaches three or more files.
+
+
+## Deferred from: code review of 2-5-library-list-surface (2026-06-18)
+
+- **`maxAge: Infinity` missing from `PersistQueryClientProvider` `persistOptions`** (`web/src/sync/query-client.tsx:41`) — `PersistQueryClientProvider` passes only `{ persister, buster: 'v1' }` with no `maxAge`; the `@tanstack/react-query-persist-client` default is 24 hours, meaning the entire persisted cache is invalidated after 24h. Offline PWA users who haven't opened the app in >24h will see an empty library until they get a network connection. The stray `maxAge: Infinity` removed in Story 2.5 was on the wrong constructor (`createAsyncStoragePersister` does not accept this option), so the 24h default has been in effect since Story 2.4. Fix: add `maxAge: Infinity` to the `persistOptions` prop on `PersistQueryClientProvider` in `query-client.tsx`.
