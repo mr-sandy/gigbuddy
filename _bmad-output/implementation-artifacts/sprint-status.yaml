@@ -1,6 +1,6 @@
 # generated: 2026-06-09
-# last_updated: 2026-06-18 (story 2.6 → done)
-# last_status_change: 2026-06-18
+# last_updated: 2026-06-19 (epic-2-retrospective → done)
+# last_status_change: 2026-06-19
 # project: gigbuddy
 # project_key: NOKEY
 # tracking_system: file-system
@@ -36,7 +36,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-06-09
-last_updated: 2026-06-18 (story 2.6 → done)
+last_updated: 2026-06-19 (epic-2-retrospective → done)
 project: gigbuddy
 project_key: NOKEY
 tracking_system: file-system
@@ -61,7 +61,7 @@ development_status:
   2-4-sync-layer-foundation-client-error-reporter: done
   2-5-library-list-surface: done
   2-6-song-detail-with-inline-edit-chord-chart-rendering: done
-  epic-2-retrospective: optional
+  epic-2-retrospective: done
 
   # Epic 3: Setlists Home, Paste-to-Parse & Setlist Management
   epic-3: backlog
