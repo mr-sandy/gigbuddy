@@ -11,8 +11,10 @@ import { queryCacheStore } from '../cache/idb.js';
  * render on the initial cache restore.
  *
  * Per-query staleTime / refetch policy is set at the hook layer
- * (Stories 2.5 / 2.6). The persister stores dehydrated data with no TTL
- * of its own — invalidation is owned by the `buster` field.
+ * (Stories 2.5 / 2.6). The persister stores dehydrated data with no TTL:
+ * `maxAge: Infinity` overrides the persist-client default of 24h so an
+ * iPhone PWA that hasn't been opened for >24h still surfaces cached
+ * songs on next open. Invalidation is owned by the `buster` field.
  */
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -38,7 +40,10 @@ export const persister = createAsyncStoragePersister({
  */
 export function SyncProvider({ children }: { children: ReactNode }) {
   return (
-    <PersistQueryClientProvider client={queryClient} persistOptions={{ persister, buster: 'v1' }}>
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={{ persister, buster: 'v1', maxAge: Number.POSITIVE_INFINITY }}
+    >
       {children}
     </PersistQueryClientProvider>
   );
