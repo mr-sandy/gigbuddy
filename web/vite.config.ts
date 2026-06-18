@@ -85,6 +85,15 @@ export default defineConfig({
   server: {
     port: 5273,
     strictPort: true,
+    proxy: {
+      // SPA fetches use relative paths (`/api/v1/...` — see web/src/api/client.ts).
+      // In production CloudFront routes the prefix to API Gateway; in dev the
+      // Vite proxy forwards to the local hono server (api/src/dev.ts, port 3100).
+      '/api/v1': {
+        target: 'http://localhost:3100',
+        changeOrigin: false,
+      },
+    },
   },
   test: {
     environment: 'jsdom',
