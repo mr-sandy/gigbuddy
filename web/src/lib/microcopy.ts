@@ -26,6 +26,7 @@ export const BANNERS = {
 
 export const ACTIONS = {
   newSong: '+ New song',
+  newSetlist: '+ New setlist',
   backToLibrary: 'Back to library',
 } as const;
 

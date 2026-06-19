@@ -1,4 +1,5 @@
 import 'fake-indexeddb/auto';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
@@ -8,10 +9,26 @@ import { EMPTY_STATES } from './lib/microcopy.js';
 import { router } from './router.js';
 
 const fetchMock = vi.fn();
+let queryClient: QueryClient;
+
+function renderBootstrap(): ReturnType<typeof render> {
+  // Production wraps <AppBootstrap /> in <SyncProvider> at main.tsx. In
+  // tests we use a fresh per-test QueryClient so cached data from one test
+  // can never leak into another. Story 3.2 introduced useSetlists() inside
+  // <Home>, which is why every bootstrap test now needs a QueryClient.
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <AppBootstrap />
+    </QueryClientProvider>,
+  );
+}
 
 beforeEach(async () => {
   fetchMock.mockReset();
   vi.stubGlobal('fetch', fetchMock);
+  queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, staleTime: Number.POSITIVE_INFINITY } },
+  });
   // The createBrowserRouter() instance is module-scoped; reset its location so
   // each test starts at '/' regardless of where a previous test left it.
   window.history.replaceState(null, '', '/');
@@ -62,7 +79,7 @@ function stubMatchMedia(matches: boolean): void {
 describe('AppBootstrap', () => {
   it('renders the GigBuddy shell heading while the /me probe is in-flight', () => {
     fetchMock.mockReturnValueOnce(new Promise(() => undefined)); // never resolves
-    render(<AppBootstrap />);
+    renderBootstrap();
     expect(screen.getByRole('heading', { name: 'GigBuddy' })).toBeInTheDocument();
   });
 
@@ -70,7 +87,7 @@ describe('AppBootstrap', () => {
     fetchMock.mockResolvedValueOnce(
       jsonResponse(200, { status: 'ok', data: { authenticated: true, daysUntilExpiry: 365 } }),
     );
-    render(<AppBootstrap />);
+    renderBootstrap();
     // Two unambiguous signals that the authenticated shell rendered, NOT the boot
     // loading shell: the (sr-only) Setlists h1 and the locked empty-state copy.
     await waitFor(() => {
@@ -81,7 +98,7 @@ describe('AppBootstrap', () => {
 
   it('redirects to /login when /me returns 401', async () => {
     fetchMock.mockResolvedValueOnce(new Response(null, { status: 401 }));
-    render(<AppBootstrap />);
+    renderBootstrap();
     await waitFor(() => {
       // The login route renders a password input with autocomplete="current-password".
       expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
@@ -90,7 +107,7 @@ describe('AppBootstrap', () => {
 
   it('stays on the shell (no /login redirect) when fetch rejects (offline-cache path)', async () => {
     fetchMock.mockRejectedValueOnce(new Error('network down'));
-    render(<AppBootstrap />);
+    renderBootstrap();
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: 'GigBuddy' })).toBeInTheDocument();
     });
@@ -102,7 +119,7 @@ describe('AppBootstrap', () => {
     stubIPhoneUA();
     stubMatchMedia(false);
     const addEventListenerSpy = vi.spyOn(window, 'addEventListener');
-    render(<AppBootstrap />);
+    renderBootstrap();
     expect(screen.getByRole('heading', { level: 1, name: 'Install GigBuddy' })).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
     // SyncWiring must not mount on the install-gate path — no 'online' listener from startFlusher.
@@ -116,7 +133,7 @@ describe('AppBootstrap', () => {
     fetchMock.mockResolvedValueOnce(
       jsonResponse(200, { status: 'ok', data: { authenticated: true, daysUntilExpiry: 365 } }),
     );
-    render(<AppBootstrap />);
+    renderBootstrap();
     await waitFor(() => {
       expect(screen.getByRole('heading', { level: 1, name: 'Setlists' })).toBeInTheDocument();
     });
@@ -128,7 +145,7 @@ describe('AppBootstrap', () => {
     fetchMock.mockResolvedValueOnce(
       jsonResponse(200, { status: 'ok', data: { authenticated: true, daysUntilExpiry: 365 } }),
     );
-    render(<AppBootstrap />);
+    renderBootstrap();
     await waitFor(() => {
       expect(screen.getByRole('heading', { level: 1, name: 'Setlists' })).toBeInTheDocument();
     });
@@ -164,7 +181,7 @@ describe('AppBootstrap', () => {
     fetchMock.mockResolvedValueOnce(
       jsonResponse(200, { status: 'ok', data: { authenticated: true, daysUntilExpiry: 365 } }),
     );
-    render(<AppBootstrap />);
+    renderBootstrap();
     await waitFor(() => {
       expect(screen.getByRole('heading', { level: 1, name: 'Setlists' })).toBeInTheDocument();
     });
