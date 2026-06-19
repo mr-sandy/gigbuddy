@@ -43,6 +43,36 @@ export function todayLondon(): string {
   return `${year}-${month}-${day}`;
 }
 
+/**
+ * Formats a `YYYY-MM-DD` ISO date as a short human-readable string in the
+ * `en-GB` locale, e.g. `2026-06-21` → `21 Jun 2026`.
+ *
+ * Parses the date manually to avoid `new Date(iso)` parsing as UTC midnight
+ * (which can roll the day back in some locales / timezones during display).
+ *
+ * Returns the original string unchanged when the input is malformed — the
+ * caller can decide how to surface that, but rendering raw input is
+ * preferable to NaN.
+ */
+export function formatGigDate(isoDate: string): string {
+  const parts = isoDate.split('-').map((p) => Number.parseInt(p, 10));
+  const year = parts[0];
+  const month = parts[1];
+  const day = parts[2];
+  if (year === undefined || month === undefined || day === undefined) {
+    return isoDate;
+  }
+  if (Number.isNaN(year) || Number.isNaN(month) || Number.isNaN(day)) {
+    return isoDate;
+  }
+  const date = new Date(year, month - 1, day);
+  return new Intl.DateTimeFormat('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(date);
+}
+
 export interface SectionedSetlists {
   tonight: Setlist | null;
   upcoming: Setlist[];

@@ -1,5 +1,6 @@
 import type { Setlist } from '@gigbuddy/shared';
 import { useNavigate } from 'react-router';
+import { formatGigDate } from '../lib/gig-date.js';
 
 /*
  * GigCard (Story 3.2, AC-7 / AC-14). Renders one Setlist as a tappable
@@ -22,26 +23,11 @@ import { useNavigate } from 'react-router';
  * aria-label composes venue + date + (time if present) + ", Tonight"
  * when the badge is shown so the accessible name captures all visible
  * information for screen readers.
+ *
+ * `formatGigDate` lives in `lib/gig-date.ts` (Story 3.3 — also consumed
+ * by setlist-overview.tsx); the helper is shared, not local to this
+ * component.
  */
-
-function formatGigDate(isoDate: string): string {
-  // isoDate is `YYYY-MM-DD`. Build a local Date strictly for formatting.
-  // Using `new Date(isoDate)` would parse as UTC midnight which can roll
-  // back a day in some locales; the manual split avoids that ambiguity.
-  const parts = isoDate.split('-').map((p) => Number.parseInt(p, 10));
-  const year = parts[0];
-  const month = parts[1];
-  const day = parts[2];
-  if (year === undefined || month === undefined || day === undefined) {
-    return isoDate;
-  }
-  const date = new Date(year, month - 1, day);
-  return new Intl.DateTimeFormat('en-GB', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  }).format(date);
-}
 
 export interface GigCardProps {
   setlist: Setlist;

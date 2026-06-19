@@ -1,8 +1,9 @@
-import { Outlet } from 'react-router';
+import { Link, Outlet } from 'react-router';
 import { BottomTabs } from '../components/bottom-tabs.js';
 import { ReauthBanner } from '../components/reauth-banner.js';
 import { TopNav } from '../components/top-nav.js';
 import { useChromeVisible } from '../hooks/use-chrome-visible.js';
+import { ACTIONS } from '../lib/microcopy.js';
 import { isIPhone } from '../lib/platform.js';
 import { StaleWriteBanner } from '../sync/stale-write-banner.js';
 
@@ -19,9 +20,21 @@ import { StaleWriteBanner } from '../sync/stale-write-banner.js';
 export function AuthenticatedShell() {
   const chromeVisible = useChromeVisible();
   const iPhone = isIPhone();
+  // Story 3.4: MacBook gets `+ New setlist` mounted in the TopNav's
+  // `rightActions` slot. iPhone has no TopNav — the equivalent affordance
+  // lives in the Home route (no chrome-level link).
+  const newSetlistLink = (
+    <Link
+      to="/setlists/new"
+      className="inline-flex min-h-tap items-center text-[color:var(--color-accent)] hover:text-[color:var(--color-accent-strong)] focus-visible:text-[color:var(--color-accent-strong)]"
+    >
+      {ACTIONS.newSetlist}
+    </Link>
+  );
+
   return (
     <>
-      {chromeVisible && !iPhone ? <TopNav /> : null}
+      {chromeVisible && !iPhone ? <TopNav rightActions={newSetlistLink} /> : null}
       <ReauthBanner />
       <StaleWriteBanner />
       <main

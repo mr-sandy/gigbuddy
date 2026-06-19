@@ -1,6 +1,6 @@
 import { ACTIVE_BAND_ID, type Setlist } from '@gigbuddy/shared';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { sectionSetlists, todayLondon } from './gig-date.js';
+import { formatGigDate, sectionSetlists, todayLondon } from './gig-date.js';
 
 function makeSetlist(setlistId: string, date: string, venue = 'Venue'): Setlist {
   return {
@@ -56,6 +56,20 @@ describe('todayLondon', () => {
     // case checks that a plain UTC date during GMT still matches London.
     vi.setSystemTime(new Date('2026-02-14T22:00:00Z'));
     expect(todayLondon()).toBe('2026-02-14');
+  });
+});
+
+describe('formatGigDate', () => {
+  it('formats a YYYY-MM-DD string as en-GB short date', () => {
+    expect(formatGigDate('2026-06-21')).toBe('21 Jun 2026');
+  });
+
+  it('handles a single-digit day correctly', () => {
+    expect(formatGigDate('2026-06-01')).toBe('1 Jun 2026');
+  });
+
+  it('returns the original string when the input is malformed', () => {
+    expect(formatGigDate('not-a-date')).toBe('not-a-date');
   });
 });
 

@@ -7,6 +7,7 @@ import { AuthenticatedShell } from './routes/authenticated-shell.js';
 import { Home } from './routes/home.js';
 import { Library } from './routes/library.js';
 import { Login } from './routes/login.js';
+import { SetlistCreation } from './routes/setlist-creation.js';
 import { SetlistOverview } from './routes/setlist-overview.js';
 import { SongDetail } from './routes/song-detail.js';
 
@@ -37,6 +38,10 @@ export const router = createBrowserRouter([
       { path: 'library', element: <Library /> },
       { path: 'songs/new', element: <SongDetail /> },
       { path: 'songs/:songId', element: <SongDetail /> },
+      // `setlists/new` MUST precede `setlists/:setlistId` so the literal
+      // "new" segment is not swallowed as a setlistId by the dynamic
+      // route (Story 3.4).
+      { path: 'setlists/new', element: <SetlistCreation /> },
       { path: 'setlists/:setlistId', element: <SetlistOverview /> },
     ],
   },

@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router';
 import { GigCard } from '../components/gig-card.js';
 import { useSetlists } from '../hooks/use-setlists.js';
 import { sectionSetlists, todayLondon } from '../lib/gig-date.js';
-import { EMPTY_STATES } from '../lib/microcopy.js';
+import { ACTIONS, EMPTY_STATES } from '../lib/microcopy.js';
+import { isIPhone } from '../lib/platform.js';
 
 /*
  * Setlists home (FR-14, FR-23). Default landing route on both surfaces.
@@ -49,12 +51,26 @@ export function Home() {
   const today = todayLondon();
   const { tonight, upcoming, past } = sectionSetlists(setlists.data ?? [], today);
   const tonightIsToday = tonight !== null && tonight.gigMeta.date === today;
+  const iphone = isIPhone();
 
   return (
     <section aria-labelledby="setlists-heading">
       <h1 id="setlists-heading" className="sr-only">
         Setlists
       </h1>
+
+      {/* iPhone-only: the `+ New setlist` affordance lives in the Home route
+          because there is no TopNav on iPhone. MacBook mounts the
+          equivalent link in TopNav's `rightActions` slot via
+          `AuthenticatedShell` — no duplication. (Story 3.4.) */}
+      {iphone ? (
+        <Link
+          to="/setlists/new"
+          className="mb-[var(--spacing-section-gap)] inline-flex min-h-tap items-center py-[calc(var(--spacing-unit)*2)] text-[length:var(--text-practice-body)] leading-[var(--text-practice-body--line-height)] text-[color:var(--color-accent)] hover:text-[color:var(--color-accent-strong)] focus-visible:text-[color:var(--color-accent-strong)]"
+        >
+          {ACTIONS.newSetlist}
+        </Link>
+      ) : null}
 
       <section aria-labelledby="setlists-tonight-heading">
         <h2
