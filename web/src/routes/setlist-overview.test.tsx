@@ -1,5 +1,5 @@
 import { ACTIVE_BAND_ID, type Setlist } from '@gigbuddy/shared';
-import { render, screen } from '@testing-library/react';
+import { createEvent, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -203,6 +203,259 @@ describe('SetlistOverview — annotation change flow', () => {
     expect(saveSetlistMock).toHaveBeenCalledTimes(1);
     const payload = saveSetlistMock.mock.calls[0]?.[0];
     expect(payload.sections[0].songs[1]).not.toHaveProperty('perGigAnnotation');
+  });
+});
+
+/*
+ * Story 3.6 — drag-reorder flow tests.
+ *
+ * Drag state lives in setlist-overview.tsx; firing native HTML5 DnD
+ * events end-to-end through jsdom is brittle, so these tests drive the
+ * reorder via the keyboard parity path (Move up / Move down buttons),
+ * which invokes the SAME handleReorder code path as a drop event.
+ * Cross-section and invalid-target cases are exercised by direct
+ * dispatch of synthesised drag events.
+ */
+describe('SetlistOverview — reorder flow (keyboard path)', () => {
+  it('Move down on the first song in a section calls saveSetlist with a swapped order', async () => {
+    const user = userEvent.setup();
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    renderRoute();
+
+    // Two Move down buttons in Set 1 (only the first is enabled — the
+    // second song is last in section). Click the FIRST one.
+    const moveDownButtons = screen.getAllByRole('button', { name: 'Move down' });
+    // Set 1 has 2 songs → 2 buttons (Autumn Leaves: enabled, Black Orpheus: disabled).
+    // Set 2 has 1 song → 1 button (Take Five: disabled).
+    expect(moveDownButtons).toHaveLength(3);
+    const firstMoveDown = moveDownButtons[0];
+    if (!firstMoveDown) throw new Error('expected at least one Move down button');
+    await user.click(firstMoveDown);
+
+    expect(saveSetlistMock).toHaveBeenCalledTimes(1);
+    const payload = saveSetlistMock.mock.calls[0]?.[0];
+    expect(
+      payload.sections[0].songs.map((s: { titleSnapshot: string }) => s.titleSnapshot),
+    ).toEqual(['Black Orpheus', 'Autumn Leaves']);
+    // Other section is untouched.
+    expect(
+      payload.sections[1].songs.map((s: { titleSnapshot: string }) => s.titleSnapshot),
+    ).toEqual(['Take Five']);
+    // serverReceivedAt is omitted by SetlistPutInputSchema.strict().
+    expect(payload).not.toHaveProperty('serverReceivedAt');
+    expect(typeof payload.clientWrittenAt).toBe('string');
+  });
+
+  it('Move up on the second song in a section restores the original order', async () => {
+    const user = userEvent.setup();
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    renderRoute();
+
+    const moveUpButtons = screen.getAllByRole('button', { name: 'Move up' });
+    // The first Move up in Set 1 (on Autumn Leaves) is disabled; the
+    // second (on Black Orpheus) is enabled.
+    const enabledMoveUp = moveUpButtons.find((b) => !(b as HTMLButtonElement).disabled);
+    expect(enabledMoveUp).toBeDefined();
+    if (!enabledMoveUp) throw new Error('expected an enabled Move up button');
+    await user.click(enabledMoveUp);
+
+    expect(saveSetlistMock).toHaveBeenCalledTimes(1);
+    const payload = saveSetlistMock.mock.calls[0]?.[0];
+    expect(
+      payload.sections[0].songs.map((s: { titleSnapshot: string }) => s.titleSnapshot),
+    ).toEqual(['Black Orpheus', 'Autumn Leaves']);
+  });
+
+  it('Move up is aria-disabled on the first song in a section', () => {
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    renderRoute();
+    // The first Move up (Autumn Leaves, songIndex 0) must be disabled.
+    const moveUpButtons = screen.getAllByRole('button', { name: 'Move up' });
+    expect((moveUpButtons[0] as HTMLButtonElement).disabled).toBe(true);
+    expect(moveUpButtons[0]?.getAttribute('aria-disabled')).toBe('true');
+  });
+
+  it('Move down is aria-disabled on the last song in a section', () => {
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    renderRoute();
+    const moveDownButtons = screen.getAllByRole('button', { name: 'Move down' });
+    // Set 1 last song (Black Orpheus, index 1) and Set 2 last song
+    // (Take Five, index 0) must both be disabled.
+    const disabled = moveDownButtons.filter((b) => (b as HTMLButtonElement).disabled);
+    expect(disabled).toHaveLength(2);
+  });
+
+  it('rapid successive reorders fire multiple saveSetlist calls (outbox coalesces them)', async () => {
+    const user = userEvent.setup();
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    renderRoute();
+
+    const moveDownButtons = screen.getAllByRole('button', { name: 'Move down' });
+    const firstMoveDown = moveDownButtons[0];
+    if (!firstMoveDown) throw new Error('expected at least one Move down button');
+    // Two clicks on the same enabled button → two saveSetlist calls
+    // queued. The outbox (mocked at the hook layer) is responsible for
+    // coalescing — the route's job is just to fire each PUT.
+    await user.click(firstMoveDown);
+    await user.click(firstMoveDown);
+
+    expect(saveSetlistMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('does NOT render drag handles or Move up/down buttons on iPhone', () => {
+    isIPhoneMock.mockReturnValue(true);
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    renderRoute();
+    expect(screen.queryByRole('button', { name: 'Move up' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Move down' })).toBeNull();
+    expect(screen.queryByRole('img', { name: 'Drag to reorder Autumn Leaves' })).toBeNull();
+  });
+});
+
+/*
+ * jsdom's DragEvent does not honor `clientX`/`clientY` from event-init
+ * (DragEvent inherits MouseEvent in the spec, but jsdom drops the
+ * coordinate fields). To exercise the midpoint heuristic in the row,
+ * we build the DragEvent via createEvent then patch the coordinate
+ * fields as own-properties — React's synthetic event reads them as-is
+ * from the underlying native event.
+ */
+function makeDataTransfer(): DataTransfer {
+  const store = new Map<string, string>();
+  return {
+    setData(format: string, value: string) {
+      store.set(format, value);
+    },
+    getData(format: string) {
+      return store.get(format) ?? '';
+    },
+    clearData() {
+      store.clear();
+    },
+    effectAllowed: 'none',
+    dropEffect: 'none',
+    files: [] as unknown as FileList,
+    items: [] as unknown as DataTransferItemList,
+    types: [],
+    dropEffectAllowed: 'none',
+    setDragImage: () => {},
+  } as unknown as DataTransfer;
+}
+
+function fireDragEventAt(
+  node: HTMLElement,
+  type: 'dragStart' | 'dragOver' | 'drop' | 'dragEnd',
+  init: { dataTransfer: DataTransfer; clientY?: number },
+): void {
+  const event = createEvent[type](node, { dataTransfer: init.dataTransfer });
+  if (init.clientY !== undefined) {
+    Object.defineProperty(event, 'clientY', { value: init.clientY, configurable: true });
+  }
+  fireEvent(node, event);
+}
+
+describe('SetlistOverview — reorder flow (drag-and-drop path)', () => {
+  it('fires a full SetlistPutInput with reordered sections on a same-section drop', () => {
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    renderRoute();
+
+    const rows = screen
+      .getAllByRole('button', { name: /^(Autumn Leaves|Black Orpheus|Take Five)$/ })
+      .map((b) => b.closest('li'))
+      .filter((el): el is HTMLLIElement => el !== null);
+    const source = rows[0];
+    const target = rows[1];
+    if (!source || !target) throw new Error('expected at least two song rows');
+
+    const dataTransfer = makeDataTransfer();
+    // Set the target row's bounding box so the midpoint check resolves
+    // to "below" — clientY past the midpoint of a 100px-tall row.
+    target.getBoundingClientRect = () =>
+      ({
+        top: 0,
+        bottom: 100,
+        left: 0,
+        right: 100,
+        height: 100,
+        width: 100,
+        x: 0,
+        y: 0,
+      }) as DOMRect;
+
+    fireDragEventAt(source, 'dragStart', { dataTransfer });
+    fireDragEventAt(target, 'dragOver', { dataTransfer, clientY: 90 });
+    fireDragEventAt(target, 'drop', { dataTransfer, clientY: 90 });
+    fireDragEventAt(source, 'dragEnd', { dataTransfer });
+
+    expect(saveSetlistMock).toHaveBeenCalledTimes(1);
+    const payload = saveSetlistMock.mock.calls[0]?.[0];
+    expect(
+      payload.sections[0].songs.map((s: { titleSnapshot: string }) => s.titleSnapshot),
+    ).toEqual(['Black Orpheus', 'Autumn Leaves']);
+    // Whole-record PUT: serverReceivedAt is stripped, clientWrittenAt fresh.
+    expect(payload).not.toHaveProperty('serverReceivedAt');
+    expect(typeof payload.clientWrittenAt).toBe('string');
+    expect(
+      payload.sections[1].songs.map((s: { titleSnapshot: string }) => s.titleSnapshot),
+    ).toEqual(['Take Five']);
+  });
+
+  it('fires a full SetlistPutInput with cross-section reorder on drop', () => {
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    renderRoute();
+
+    // Drag Autumn Leaves (section 0, song 0) onto Take Five (section 1,
+    // song 0), drop "above" → Autumn Leaves moves to section 1 ahead of
+    // Take Five.
+    const rows = screen
+      .getAllByRole('button', { name: /^(Autumn Leaves|Black Orpheus|Take Five)$/ })
+      .map((b) => b.closest('li'))
+      .filter((el): el is HTMLLIElement => el !== null);
+    const source = rows[0];
+    const target = rows[2];
+    if (!source || !target) throw new Error('expected at least three song rows');
+
+    const dataTransfer = makeDataTransfer();
+    target.getBoundingClientRect = () =>
+      ({
+        top: 0,
+        bottom: 100,
+        left: 0,
+        right: 100,
+        height: 100,
+        width: 100,
+        x: 0,
+        y: 0,
+      }) as DOMRect;
+
+    fireDragEventAt(source, 'dragStart', { dataTransfer });
+    fireDragEventAt(target, 'dragOver', { dataTransfer, clientY: 10 });
+    fireDragEventAt(target, 'drop', { dataTransfer, clientY: 10 });
+    fireDragEventAt(source, 'dragEnd', { dataTransfer });
+
+    expect(saveSetlistMock).toHaveBeenCalledTimes(1);
+    const payload = saveSetlistMock.mock.calls[0]?.[0];
+    expect(
+      payload.sections[0].songs.map((s: { titleSnapshot: string }) => s.titleSnapshot),
+    ).toEqual(['Black Orpheus']);
+    expect(
+      payload.sections[1].songs.map((s: { titleSnapshot: string }) => s.titleSnapshot),
+    ).toEqual(['Autumn Leaves', 'Take Five']);
+  });
+
+  it('does NOT call saveSetlist when dragEnd fires without a preceding drop (invalid drop)', () => {
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    renderRoute();
+
+    const source = screen.getByRole('button', { name: 'Autumn Leaves' }).closest('li');
+    if (!source) throw new Error('expected a source row');
+
+    const dataTransfer = makeDataTransfer();
+    fireDragEventAt(source as HTMLElement, 'dragStart', { dataTransfer });
+    // No drop — drag ends in empty space.
+    fireDragEventAt(source as HTMLElement, 'dragEnd', { dataTransfer });
+
+    expect(saveSetlistMock).not.toHaveBeenCalled();
   });
 });
 

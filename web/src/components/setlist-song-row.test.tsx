@@ -115,6 +115,102 @@ describe('SetlistSongRow — MacBook (practice)', () => {
   });
 });
 
+/*
+ * Story 3.6 — drag-reorder affordances on MacBook.
+ *
+ * The drag handle appears only when the parent has wired drag callbacks
+ * (drag state lives in setlist-overview.tsx). When drag callbacks are
+ * undefined the row renders without any drag affordance. Move up / Move
+ * down buttons follow the same opt-in pattern.
+ */
+describe('SetlistSongRow — MacBook drag handle and keyboard buttons', () => {
+  beforeEach(() => {
+    document.documentElement.dataset.atmosphere = 'practice';
+  });
+  afterEach(() => {
+    document.documentElement.dataset.atmosphere = 'practice';
+  });
+
+  it('renders a drag handle with the locked aria-label when drag callbacks are wired', () => {
+    renderRow({
+      onDragStart: vi.fn(),
+      onDragOverRow: vi.fn(),
+      onDropRow: vi.fn(),
+      onDragEnd: vi.fn(),
+    });
+    expect(screen.getByRole('img', { name: 'Drag to reorder Autumn Leaves' })).toBeInTheDocument();
+  });
+
+  it('makes the <li> draggable when drag callbacks are wired', () => {
+    renderRow({
+      onDragStart: vi.fn(),
+      onDragOverRow: vi.fn(),
+      onDropRow: vi.fn(),
+      onDragEnd: vi.fn(),
+    });
+    const li = screen.getByRole('button', { name: 'Autumn Leaves' }).closest('li');
+    expect(li?.getAttribute('draggable')).toBe('true');
+  });
+
+  it('does NOT render the drag handle when drag callbacks are not wired', () => {
+    renderRow();
+    expect(screen.queryByRole('img', { name: 'Drag to reorder Autumn Leaves' })).toBeNull();
+  });
+
+  it('does NOT mark the <li> draggable when drag callbacks are not wired', () => {
+    renderRow();
+    const li = screen.getByRole('button', { name: 'Autumn Leaves' }).closest('li');
+    expect(li?.hasAttribute('draggable')).toBe(false);
+  });
+
+  it('renders Move up and Move down buttons when keyboard callbacks are wired', () => {
+    renderRow({ onMoveUp: vi.fn(), onMoveDown: vi.fn() });
+    expect(screen.getByRole('button', { name: 'Move up' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Move down' })).toBeInTheDocument();
+  });
+
+  it('marks Move up aria-disabled and inert when isFirstInSection', async () => {
+    const user = userEvent.setup();
+    const onMoveUp = vi.fn();
+    renderRow({ onMoveUp, onMoveDown: vi.fn(), isFirstInSection: true });
+    const moveUp = screen.getByRole('button', { name: 'Move up' });
+    expect(moveUp.getAttribute('aria-disabled')).toBe('true');
+    expect(moveUp).toBeDisabled();
+    // Even bypassing pointer-events, userEvent click on a disabled button is a no-op.
+    await user.click(moveUp);
+    expect(onMoveUp).not.toHaveBeenCalled();
+  });
+
+  it('marks Move down aria-disabled and inert when isLastInSection', async () => {
+    const user = userEvent.setup();
+    const onMoveDown = vi.fn();
+    renderRow({ onMoveUp: vi.fn(), onMoveDown, isLastInSection: true });
+    const moveDown = screen.getByRole('button', { name: 'Move down' });
+    expect(moveDown.getAttribute('aria-disabled')).toBe('true');
+    expect(moveDown).toBeDisabled();
+    await user.click(moveDown);
+    expect(onMoveDown).not.toHaveBeenCalled();
+  });
+
+  it('fires onMoveUp(sectionIndex, songIndex) on click when not first', async () => {
+    const user = userEvent.setup();
+    const onMoveUp = vi.fn();
+    renderRow({ sectionIndex: 1, songIndex: 2, onMoveUp, onMoveDown: vi.fn() });
+    await user.click(screen.getByRole('button', { name: 'Move up' }));
+    expect(onMoveUp).toHaveBeenCalledTimes(1);
+    expect(onMoveUp).toHaveBeenCalledWith(1, 2);
+  });
+
+  it('fires onMoveDown(sectionIndex, songIndex) on click when not last', async () => {
+    const user = userEvent.setup();
+    const onMoveDown = vi.fn();
+    renderRow({ sectionIndex: 0, songIndex: 0, onMoveUp: vi.fn(), onMoveDown });
+    await user.click(screen.getByRole('button', { name: 'Move down' }));
+    expect(onMoveDown).toHaveBeenCalledTimes(1);
+    expect(onMoveDown).toHaveBeenCalledWith(0, 0);
+  });
+});
+
 describe('SetlistSongRow — iPhone (performance)', () => {
   beforeEach(() => {
     document.documentElement.dataset.atmosphere = 'performance';
@@ -190,5 +286,38 @@ describe('SetlistSongRow — iPhone (performance)', () => {
       name: 'Edit per-gig note for Autumn Leaves',
     });
     expect(button.className).toContain('min-h-tap');
+  });
+
+  /*
+   * AC-7: NO drag handle on iPhone — not even sr-only — and NO draggable
+   * attribute on the <li>. This holds even if a (misconfigured) parent
+   * happens to pass drag callbacks down; the platform-routed
+   * IPhoneRow branch ignores them entirely.
+   */
+  it('does NOT render a drag handle on iPhone even when drag callbacks are passed', () => {
+    renderRow({
+      onDragStart: vi.fn(),
+      onDragOverRow: vi.fn(),
+      onDropRow: vi.fn(),
+      onDragEnd: vi.fn(),
+      onMoveUp: vi.fn(),
+      onMoveDown: vi.fn(),
+    });
+    expect(screen.queryByRole('img', { name: 'Drag to reorder Autumn Leaves' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Move up' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Move down' })).toBeNull();
+  });
+
+  it('does NOT mark the iPhone <li> draggable', () => {
+    renderRow({
+      onDragStart: vi.fn(),
+      onDragOverRow: vi.fn(),
+      onDropRow: vi.fn(),
+      onDragEnd: vi.fn(),
+    });
+    const li = screen
+      .getByRole('button', { name: 'Edit per-gig note for Autumn Leaves' })
+      .closest('li');
+    expect(li?.hasAttribute('draggable')).toBe(false);
   });
 });

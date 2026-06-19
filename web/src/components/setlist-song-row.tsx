@@ -1,29 +1,30 @@
 import type { SongRef } from '@gigbuddy/shared';
-import { type JSX, useEffect, useRef, useState } from 'react';
-import { ACTIONS } from '../lib/microcopy.js';
+import { type JSX, type DragEvent as ReactDragEvent, useEffect, useRef, useState } from 'react';
+import { ACTIONS, DRAG_REORDER } from '../lib/microcopy.js';
 import { InlineEditField } from './inline-edit-field.js';
 
 /*
- * SetlistSongRow (Story 3.3, FR-11). Renders one song inside a setlist
- * section with an optional per-gig annotation subline. The row owns two
- * platform-divergent behaviours:
+ * SetlistSongRow (Story 3.3, FR-11; Story 3.6, FR-12). Renders one song
+ * inside a setlist section with an optional per-gig annotation subline.
  *
  *   - MacBook (practice):
  *       * tap on title → navigates to /songs/:songId via onNavigate
  *       * tap on annotation slot → opens an inline `InlineEditField`
  *         pre-filled with the current annotation; blur commits via
  *         onAnnotationChange(sectionIndex, songIndex, newValue)
+ *       * drag handle on the left (revealed on row hover) initiates a
+ *         native HTML5 drag (FR-12); a `Move up` / `Move down` button
+ *         pair gives screen-reader / keyboard parity
  *
  *   - iPhone (performance):
- *       * tap anywhere on the row → opens a bottom-sheet dialog with a
- *         multiline `InlineEditField`; Done commits, × dismisses without
- *         committing. The row does NOT navigate to Song Detail on iPhone
- *         (per AC-10: row-tap is annotation-focused).
+ *       * tap anywhere on the row → opens a bottom-sheet dialog
+ *       * NO drag handle, NO Move up/down buttons, NO `draggable`
+ *         attribute on the <li> (AC-7) — performance-mode safety
  *
- * The annotation persists on the (Setlist, Song) pair embedded in the
- * Setlist record's sections[].songs[] — NOT on the Song record. The
- * parent route owns the whole-record PUT; this component just signals
- * via onAnnotationChange.
+ * Drag state lives in the parent route (`setlist-overview.tsx`); this
+ * component is purely a controlled presenter — it never calls saveSetlist
+ * directly (AR-45 hook boundary). All callbacks are optional so the
+ * iPhone branch can omit drag wiring entirely.
  *
  * Atmosphere detection reads `document.documentElement.dataset.atmosphere`
  * at render time (same pattern as song-detail.tsx and section-heading.tsx).
@@ -40,6 +41,30 @@ export type SetlistSongRowProps = {
   songIndex: number;
   onNavigate: (songId: string) => void;
   onAnnotationChange: (sectionIndex: number, songIndex: number, newAnnotation: string) => void;
+  // Story 3.6 — drag-reorder wiring (MacBook only). All optional so the
+  // iPhone branch can omit them safely; MacBook tests can render the row
+  // in isolation without parent drag state.
+  isDragging?: boolean;
+  isDropTargetAbove?: boolean;
+  isDropTargetBelow?: boolean;
+  isFirstInSection?: boolean;
+  isLastInSection?: boolean;
+  onDragStart?: (sectionIndex: number, songIndex: number, event: ReactDragEvent) => void;
+  onDragOverRow?: (
+    sectionIndex: number,
+    songIndex: number,
+    position: 'above' | 'below',
+    event: ReactDragEvent,
+  ) => void;
+  onDropRow?: (
+    sectionIndex: number,
+    songIndex: number,
+    position: 'above' | 'below',
+    event: ReactDragEvent,
+  ) => void;
+  onDragEnd?: () => void;
+  onMoveUp?: (sectionIndex: number, songIndex: number) => void;
+  onMoveDown?: (sectionIndex: number, songIndex: number) => void;
 };
 
 const TITLE_CLASS =
@@ -47,33 +72,19 @@ const TITLE_CLASS =
 const ANNOTATION_CLASS =
   'italic text-[length:var(--text-practice-body)] leading-[var(--text-practice-body--line-height)] [font-family:var(--font-serif-editorial)] text-[color:var(--color-accent)]';
 
-export function SetlistSongRow({
-  songRef,
-  sectionIndex,
-  songIndex,
-  onNavigate,
-  onAnnotationChange,
-}: SetlistSongRowProps): JSX.Element {
+export function SetlistSongRow(props: SetlistSongRowProps): JSX.Element {
   const atmosphere = readAtmosphere();
   if (atmosphere === 'performance') {
     return (
       <IPhoneRow
-        songRef={songRef}
-        sectionIndex={sectionIndex}
-        songIndex={songIndex}
-        onAnnotationChange={onAnnotationChange}
+        songRef={props.songRef}
+        sectionIndex={props.sectionIndex}
+        songIndex={props.songIndex}
+        onAnnotationChange={props.onAnnotationChange}
       />
     );
   }
-  return (
-    <MacBookRow
-      songRef={songRef}
-      sectionIndex={sectionIndex}
-      songIndex={songIndex}
-      onNavigate={onNavigate}
-      onAnnotationChange={onAnnotationChange}
-    />
-  );
+  return <MacBookRow {...props} />;
 }
 
 function MacBookRow({
@@ -82,6 +93,17 @@ function MacBookRow({
   songIndex,
   onNavigate,
   onAnnotationChange,
+  isDragging,
+  isDropTargetAbove,
+  isDropTargetBelow,
+  isFirstInSection,
+  isLastInSection,
+  onDragStart,
+  onDragOverRow,
+  onDropRow,
+  onDragEnd,
+  onMoveUp,
+  onMoveDown,
 }: SetlistSongRowProps): JSX.Element {
   const [editingAnnotation, setEditingAnnotation] = useState(false);
   const annotation = songRef.perGigAnnotation ?? '';
@@ -92,8 +114,103 @@ function MacBookRow({
     setEditingAnnotation(false);
   };
 
+  // Whether this row participates in native HTML5 drag. The row is only
+  // draggable when the parent has wired the drag callbacks; standalone
+  // renders (some tests) leave drag handlers undefined.
+  const dragEnabled = onDragStart !== undefined && onDropRow !== undefined;
+
+  const handleDragStart = (event: ReactDragEvent): void => {
+    if (!onDragStart) return;
+    // Mark the move semantics (browsers show a "move" cursor instead of
+    // "copy"). The actual identity travels through component state in
+    // the parent, not through dataTransfer — but we set a minimal
+    // payload so Firefox treats the drag as valid.
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', `${sectionIndex}:${songIndex}`);
+    onDragStart(sectionIndex, songIndex, event);
+  };
+
+  const handleDragOver = (event: ReactDragEvent): void => {
+    if (!onDragOverRow) return;
+    // Required to permit a drop (preventDefault flips dropEffect on).
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    const rect = event.currentTarget.getBoundingClientRect();
+    const position: 'above' | 'below' =
+      event.clientY < rect.top + rect.height / 2 ? 'above' : 'below';
+    onDragOverRow(sectionIndex, songIndex, position, event);
+  };
+
+  const handleDrop = (event: ReactDragEvent): void => {
+    if (!onDropRow) return;
+    event.preventDefault();
+    const rect = event.currentTarget.getBoundingClientRect();
+    const position: 'above' | 'below' =
+      event.clientY < rect.top + rect.height / 2 ? 'above' : 'below';
+    onDropRow(sectionIndex, songIndex, position, event);
+  };
+
+  const handleDragEnd = (): void => {
+    onDragEnd?.();
+  };
+
+  // Lift effect while THIS row is the source. Card shadow + slight
+  // opacity keeps the original slot legible. Reduced-motion honored by
+  // the global `transition-duration: 0ms` rule in globals.css.
+  const liClasses = [
+    'group relative flex min-h-tap flex-col gap-[calc(var(--spacing-unit)*1)] py-[calc(var(--spacing-unit)*2)] pl-[calc(var(--spacing-unit)*5)]',
+    'transition-shadow duration-150',
+    isDragging ? 'opacity-60 shadow-[var(--shadow-card)]' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  // Drop-zone highlight rendered as accent-colored bar at top or bottom
+  // of the row. Position is determined by the parent via the
+  // isDropTargetAbove / isDropTargetBelow flags so the parent can
+  // disambiguate "above row N" from "below row N-1" cleanly.
+  const dropBarTop = isDropTargetAbove
+    ? 'before:absolute before:left-0 before:right-0 before:top-0 before:h-[2px] before:bg-[color:var(--color-accent)] before:content-[""]'
+    : '';
+  const dropBarBottom = isDropTargetBelow
+    ? 'after:absolute after:left-0 after:right-0 after:bottom-0 after:h-[2px] after:bg-[color:var(--color-accent)] after:content-[""]'
+    : '';
+
   return (
-    <li className="flex min-h-tap flex-col gap-[calc(var(--spacing-unit)*1)] py-[calc(var(--spacing-unit)*2)]">
+    <li
+      className={`${liClasses} ${dropBarTop} ${dropBarBottom}`.trim()}
+      draggable={dragEnabled || undefined}
+      onDragStart={dragEnabled ? handleDragStart : undefined}
+      onDragOver={dragEnabled ? handleDragOver : undefined}
+      onDrop={dragEnabled ? handleDrop : undefined}
+      onDragEnd={dragEnabled ? handleDragEnd : undefined}
+    >
+      {dragEnabled ? (
+        <span className="pointer-events-none absolute left-0 top-0 flex h-full items-center opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
+          {/* Drag handle: a non-interactive label for the <li>'s draggable
+              affordance. Native HTML5 DnD initiates on mousedown of the
+              <li> itself; the handle exists to surface the affordance
+              visually and to host the aria-label / Move up-down buttons.
+              We mark the handle aria-hidden because the <li>'s combined
+              keyboard buttons provide the screen-reader path. */}
+          <span
+            role="img"
+            aria-label={DRAG_REORDER.handleLabel(songRef.titleSnapshot)}
+            className="pointer-events-auto flex min-h-tap min-w-[calc(var(--spacing-unit)*5)] cursor-grab items-center justify-center text-[color:var(--color-text-secondary)] active:cursor-grabbing"
+          >
+            <svg width="12" height="16" viewBox="0 0 12 16" aria-hidden="true">
+              <title>{DRAG_REORDER.handleLabel(songRef.titleSnapshot)}</title>
+              <circle cx="3" cy="4" r="1.5" fill="currentColor" />
+              <circle cx="9" cy="4" r="1.5" fill="currentColor" />
+              <circle cx="3" cy="8" r="1.5" fill="currentColor" />
+              <circle cx="9" cy="8" r="1.5" fill="currentColor" />
+              <circle cx="3" cy="12" r="1.5" fill="currentColor" />
+              <circle cx="9" cy="12" r="1.5" fill="currentColor" />
+            </svg>
+          </span>
+        </span>
+      ) : null}
+
       <button
         type="button"
         onClick={() => onNavigate(songRef.songId)}
@@ -101,6 +218,7 @@ function MacBookRow({
       >
         {songRef.titleSnapshot}
       </button>
+
       {editingAnnotation ? (
         <InlineEditField
           value={annotation}
@@ -120,7 +238,8 @@ function MacBookRow({
           {annotation}
         </button>
       ) : (
-        // AC-7: no visible affordance when no annotation; sr-only preserves AC-9 keyboard access
+        // AC-7 (Story 3.3): no visible affordance when no annotation;
+        // sr-only preserves AC-9 keyboard access.
         <button
           type="button"
           onClick={() => setEditingAnnotation(true)}
@@ -128,11 +247,39 @@ function MacBookRow({
           className="sr-only"
         />
       )}
+
+      {onMoveUp !== undefined && onMoveDown !== undefined ? (
+        <div className="absolute right-0 top-0 flex h-full items-center gap-[calc(var(--spacing-unit)*1)] opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
+          <button
+            type="button"
+            aria-label={DRAG_REORDER.moveUp}
+            aria-disabled={isFirstInSection ? true : undefined}
+            disabled={isFirstInSection}
+            onClick={isFirstInSection ? undefined : () => onMoveUp(sectionIndex, songIndex)}
+            className="flex min-h-tap min-w-tap items-center justify-center text-[color:var(--color-text-secondary)] disabled:opacity-40"
+          >
+            <span aria-hidden="true">▲</span>
+          </button>
+          <button
+            type="button"
+            aria-label={DRAG_REORDER.moveDown}
+            aria-disabled={isLastInSection ? true : undefined}
+            disabled={isLastInSection}
+            onClick={isLastInSection ? undefined : () => onMoveDown(sectionIndex, songIndex)}
+            className="flex min-h-tap min-w-tap items-center justify-center text-[color:var(--color-text-secondary)] disabled:opacity-40"
+          >
+            <span aria-hidden="true">▼</span>
+          </button>
+        </div>
+      ) : null}
     </li>
   );
 }
 
-type IPhoneRowProps = Omit<SetlistSongRowProps, 'onNavigate'>;
+type IPhoneRowProps = Pick<
+  SetlistSongRowProps,
+  'songRef' | 'sectionIndex' | 'songIndex' | 'onAnnotationChange'
+>;
 
 function IPhoneRow({
   songRef,
@@ -149,6 +296,8 @@ function IPhoneRow({
     setSheetOpen(false);
   };
 
+  // AC-7: NOT draggable. NO drag handle. NO Move up/down. Performance-mode
+  // safety — the row is purely an annotation-edit affordance on iPhone.
   return (
     <li>
       <button

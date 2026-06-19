@@ -31,6 +31,10 @@ export type SongSearchRowProps = {
   onSelect: (songRef: SongRef) => void;
   onAddNew: (title: string) => void;
   onCancel: () => void;
+  /** When true, hides the "+ Add to library" affordance. Use in the
+   *  paste-flow "Pick from library" context where creating a new song
+   *  is not the intent (a visible-but-dead button confuses the user). */
+  hideAddNew?: boolean;
 };
 
 const MAX_RESULTS = 8;
@@ -49,6 +53,7 @@ export function SongSearchRow({
   onSelect,
   onAddNew,
   onCancel,
+  hideAddNew = false,
 }: SongSearchRowProps): JSX.Element {
   const [query, setQuery] = useState('');
   // Imperative autofocus on mount (Biome's `noAutofocus` a11y rule
@@ -72,7 +77,7 @@ export function SongSearchRow({
     ? songs.some((s) => s.title.trim().toLowerCase() === queryLower)
     : false;
 
-  const showAddNew = hasQuery && !hasExactMatch;
+  const showAddNew = hasQuery && !hasExactMatch && !hideAddNew;
   const dropdownOpen = hasQuery && (matches.length > 0 || showAddNew);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {

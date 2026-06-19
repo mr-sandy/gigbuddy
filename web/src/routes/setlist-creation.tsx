@@ -4,39 +4,45 @@ import {
   type SongPutInput,
   type SongRef,
 } from '@gigbuddy/shared';
-import { type JSX, useState } from 'react';
+import { type JSX, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { InlineEditField } from '../components/inline-edit-field.js';
+import { ParseRowStatus } from '../components/parse-row-status.js';
 import { SectionHeading } from '../components/section-heading.js';
 import { SetlistSongRow } from '../components/setlist-song-row.js';
 import { SongSearchRow } from '../components/song-search-row.js';
 import { useSetlistMutation } from '../hooks/use-setlist-mutation.js';
 import { useSongMutation } from '../hooks/use-song-mutation.js';
 import { useSongs } from '../hooks/use-songs.js';
-import { VALIDATION_MESSAGES } from '../lib/microcopy.js';
+import { PASTE_TO_PARSE, VALIDATION_MESSAGES } from '../lib/microcopy.js';
 import { generateSongId } from '../lib/song-id.js';
+import { type MatchResult, matchNormalizedTitle, matchRows } from '../paste-parse/matcher.js';
+import { extractDisplayTitle, normalizeTitle } from '../paste-parse/normalize.js';
+import { type ParseResult, parseSetlist } from '../paste-parse/parser.js';
 
 /*
- * Setlist creation surface (Story 3.4, FR-6 manual).
+ * Setlist creation surface (Story 3.4 manual entry + Story 3.5 paste-to-
+ * parse).
  *
  * `/setlists/new` route — Sandy enters Gig metadata (Venue, Date, optional
- * Time), then adds Sections and Song rows. Song rows use a type-ahead
- * picker (`SongSearchRow`) that filters the active Band's Library; if no
- * match is found Sandy can `+ Add to library` to mint a new minimal Song.
+ * Time). Story 3.5 mounts a `<textarea>` paste area above the manual
+ * sections; pasting plain text triggers `parseSetlist` + `matchRows` to
+ * surface per-row Matched / Fuzzy / Unknown decisions inline. Sandy
+ * resolves each row via single-tap actions on the row — `Yes, that one`
+ * (Fuzzy), `+ Add to library` / `Pick from library` / `Discard`
+ * (Unknown).
+ *
+ * The paste flow's parsed sections are held in transient state separate
+ * from `draft.sections` (which holds Story 3.4 manual additions). On
+ * Save, both are merged into the SetlistPutInput's `sections` array in
+ * order: parsed first, then manual.
+ *
+ * Save is disabled while any Fuzzy or Unknown row remains. `Discard`
+ * removes a row entirely so document-title junk doesn't block the save.
  *
  * All draft state is local `useState` — not persisted, not URL-encoded.
  * Navigating away discards silently (per EXPERIENCE.md Voice & Tone: no
- * interruptions). The route is **transient prep**, not a long-lived edit
- * surface (the saved Setlist's edit surface is Story 3.3's overview).
- *
- * Story 3.5 extends this route by mounting a paste input area above the
- * sections UI; that extension does not touch the manual-entry plumbing
- * here.
- *
- * Persistence: Save → `useSetlistMutation().saveSetlist(...)` enqueues a
- * whole-record PUT (AR-23) then navigates to `/setlists/<newId>` (the
- * Setlist overview). `+ Add to library` calls `useSongMutation().saveSong(...)`
- * directly — both writes flow through the outbox.
+ * interruptions).
  */
 
 type DraftSection = {
@@ -54,6 +60,22 @@ type DraftState = {
 type ValidationErrors = {
   venue?: string;
   date?: string;
+};
+
+/*
+ * RowState — per-row state for the paste flow. `parsedRow` carries the
+ * original `raw` + `normalized` strings; `match` is the current verdict
+ * (mutates as Sandy resolves the row); `displayTitle` is what the
+ * ParseRowStatus shows in its inline edit field; `sectionIndex` pins the
+ * row to its parsed Section so Save can rebuild `DraftSection[]` in
+ * order.
+ */
+type RowState = {
+  sectionIndex: number;
+  raw: string;
+  normalized: string;
+  displayTitle: string;
+  match: MatchResult;
 };
 
 function readAtmosphere(): 'practice' | 'performance' {
@@ -78,15 +100,22 @@ const SECONDARY_BUTTON_CLASS =
   'inline-flex min-h-tap items-center self-start py-[calc(var(--spacing-unit)*2)] text-[length:var(--text-practice-body)] leading-[var(--text-practice-body--line-height)] text-[color:var(--color-accent)] hover:text-[color:var(--color-accent-strong)] focus-visible:text-[color:var(--color-accent-strong)]';
 const SAVE_BUTTON_CLASS =
   'inline-flex min-h-tap items-center self-start rounded-[var(--radius-button)] bg-[color:var(--color-accent)] px-[var(--spacing-card-pad)] py-[calc(var(--spacing-unit)*2)] text-[color:var(--color-bg)] font-[family-name:var(--font-serif-editorial)] text-[length:var(--text-practice-body)]';
+const SAVE_BUTTON_DISABLED_CLASS = `${SAVE_BUTTON_CLASS} opacity-50 cursor-not-allowed`;
 const REMOVE_BUTTON_CLASS =
   'inline-flex min-h-tap min-w-tap items-center justify-center text-[length:var(--text-practice-body)] leading-[var(--text-practice-body--line-height)] text-[color:var(--color-text-secondary)] hover:text-[color:var(--color-accent)] focus-visible:text-[color:var(--color-accent)]';
+const PASTE_TEXTAREA_CLASS =
+  'block w-full min-h-[calc(var(--spacing-tap)*3)] border-[1px] border-[color:var(--color-text-secondary)] bg-transparent p-[calc(var(--spacing-unit)*2)] text-[length:var(--text-practice-body)] leading-[var(--text-practice-body--line-height)] text-[color:var(--color-text-primary)] [font-family:var(--font-mono-slab)] focus:outline-none focus-visible:border-[color:var(--color-accent)]';
+const PASTE_EMPTY_CLASS =
+  'text-[length:var(--text-practice-body)] leading-[var(--text-practice-body--line-height)] text-[color:var(--color-text-secondary)] [font-family:var(--font-mono-slab)]';
+const PARSE_SECTION_LABEL_CLASS =
+  'text-[length:var(--text-section-heading)] leading-[var(--text-section-heading--line-height)] font-[family-name:var(--font-serif-editorial)] text-[color:var(--color-text-secondary)] uppercase tracking-wide [font-variant-caps:small-caps]';
 
 export function SetlistCreation(): JSX.Element {
   const navigate = useNavigate();
   const { saveSetlist } = useSetlistMutation();
   const { saveSong } = useSongMutation();
   const songsQuery = useSongs();
-  const songs = songsQuery.data ?? [];
+  const songs = useMemo(() => songsQuery.data ?? [], [songsQuery.data]);
   const atmosphere = readAtmosphere();
 
   const [draft, setDraft] = useState<DraftState>(INITIAL_DRAFT);
@@ -95,6 +124,11 @@ export function SetlistCreation(): JSX.Element {
   // select / cancel / add-new.
   const [searchingSection, setSearchingSection] = useState<number | null>(null);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
+
+  // Story 3.5 — paste-to-parse transient state.
+  const [pasteText, setPasteText] = useState('');
+  const [parseResult, setParseResult] = useState<ParseResult>({ sections: [] });
+  const [rowStates, setRowStates] = useState<RowState[]>([]);
 
   const handleVenueCommit = (next: string): void => {
     setDraft((d) => ({ ...d, venue: next }));
@@ -175,7 +209,152 @@ export function SetlistCreation(): JSX.Element {
     }));
   };
 
+  // ---- Paste-to-parse handlers (Story 3.5) -----------------------------
+
+  const recomputeFromText = (text: string): void => {
+    const parsed = parseSetlist(text);
+    setParseResult(parsed);
+    const flatRows: { sectionIndex: number; raw: string; normalized: string }[] = [];
+    parsed.sections.forEach((sec, sectionIndex) => {
+      for (const row of sec.rows) {
+        flatRows.push({ sectionIndex, raw: row.raw, normalized: row.normalized });
+      }
+    });
+    const matched = matchRows(
+      flatRows.map((r) => ({ raw: r.raw, normalized: r.normalized })),
+      songs,
+    );
+    const next: RowState[] = flatRows.map((r, i) => {
+      const result = matched[i] ?? { status: 'unknown' as const };
+      // For Unknown rows, use the human-readable cleaned form (not the
+      // normalized/lowercased key) so that "Add to library" writes a
+      // proper title like "Mas Que Nada", not "mas que nada".
+      const displayTitle =
+        result.status === 'matched' || result.status === 'fuzzy'
+          ? result.song.title
+          : extractDisplayTitle(r.raw);
+      return {
+        sectionIndex: r.sectionIndex,
+        raw: r.raw,
+        normalized: r.normalized,
+        displayTitle,
+        match: result,
+      };
+    });
+    setRowStates(next);
+  };
+
+  const handlePasteTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>): void => {
+    const text = e.target.value;
+    setPasteText(text);
+    // Only re-parse when no rows have been generated yet, or when the textarea
+    // is cleared back to empty. Once Sandy starts resolving rows, subsequent
+    // textarea keystrokes must NOT clobber her Fuzzy/Unknown decisions (AC-6/8/12).
+    // To start over Sandy clears the textarea first.
+    if (rowStates.length === 0 || text === '') {
+      recomputeFromText(text);
+    }
+  };
+
+  const updateRow = (index: number, patch: Partial<RowState>): void => {
+    setRowStates((prev) => prev.map((rs, i) => (i === index ? { ...rs, ...patch } : rs)));
+  };
+
+  const handleAcceptFuzzy = (index: number): void => {
+    setRowStates((prev) =>
+      prev.map((rs, i) => {
+        if (i !== index) return rs;
+        if (rs.match.status !== 'fuzzy') return rs;
+        return {
+          ...rs,
+          match: { status: 'matched', song: rs.match.song },
+          displayTitle: rs.match.song.title,
+        };
+      }),
+    );
+  };
+
+  const handleRejectFuzzy = (index: number): void => {
+    setRowStates((prev) =>
+      prev.map((rs, i) => {
+        if (i !== index) return rs;
+        return {
+          ...rs,
+          match: { status: 'unknown' },
+          displayTitle: rs.normalized,
+        };
+      }),
+    );
+  };
+
+  const handleAddToLibrary = (index: number): void => {
+    const rs = rowStates[index];
+    if (!rs) return;
+    const newSongId = generateSongId();
+    const title = rs.displayTitle;
+    const record: SongPutInput = {
+      bandId: ACTIVE_BAND_ID,
+      songId: newSongId,
+      title,
+      clientWrittenAt: new Date().toISOString(),
+      version: 1,
+    };
+    void saveSong(record);
+    // Synthesize a Song-shaped object so the row's MatchResult holds a
+    // real Song reference. The displayTitle becomes the canonical title.
+    const synthesizedSong = {
+      bandId: ACTIVE_BAND_ID,
+      songId: newSongId,
+      title,
+      clientWrittenAt: record.clientWrittenAt,
+      serverReceivedAt: record.clientWrittenAt,
+      version: 1 as const,
+    };
+    updateRow(index, {
+      match: { status: 'matched', song: synthesizedSong },
+      displayTitle: title,
+    });
+  };
+
+  const handlePickFromLibrary = (index: number, songRef: SongRef): void => {
+    // Re-synthesize a Song from the canonical Library entry so downstream
+    // code that reads `match.song.title` stays consistent.
+    const lib = songs.find((s) => s.songId === songRef.songId);
+    const fallbackSong = {
+      bandId: ACTIVE_BAND_ID,
+      songId: songRef.songId,
+      title: songRef.titleSnapshot,
+      clientWrittenAt: new Date().toISOString(),
+      serverReceivedAt: new Date().toISOString(),
+      version: 1 as const,
+    };
+    const song = lib ?? fallbackSong;
+    updateRow(index, {
+      match: { status: 'matched', song },
+      displayTitle: song.title,
+    });
+  };
+
+  const handleDiscard = (index: number): void => {
+    setRowStates((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleTitleEdit = (index: number, newTitle: string): void => {
+    const normalized = normalizeTitle(newTitle);
+    const match = matchNormalizedTitle(normalized, songs);
+    const displayTitle =
+      match.status === 'matched' || match.status === 'fuzzy' ? match.song.title : normalized;
+    updateRow(index, { normalized, displayTitle, match });
+  };
+
+  // ---- Save ------------------------------------------------------------
+
+  const hasPendingRows = rowStates.some(
+    (rs) => rs.match.status === 'fuzzy' || rs.match.status === 'unknown',
+  );
+
   const handleSave = (): void => {
+    if (hasPendingRows) return;
     const errors: ValidationErrors = {};
     const trimmedVenue = draft.venue.trim();
     if (trimmedVenue === '') errors.venue = VALIDATION_MESSAGES.venueRequired;
@@ -186,6 +365,34 @@ export function SetlistCreation(): JSX.Element {
     }
     setValidationErrors({});
 
+    // Rebuild parsed sections from rowStates so Discarded rows are
+    // excluded. Sections with zero rows after rebuild are still emitted
+    // (an empty Setlist remains valid per FR-6 / AC-13).
+    const parsedSections: DraftSection[] = parseResult.sections.map((sec, sectionIndex) => ({
+      name: sec.name,
+      songs: rowStates
+        .filter((rs) => rs.sectionIndex === sectionIndex && rs.match.status === 'matched')
+        .map((rs) => {
+          if (rs.match.status !== 'matched') {
+            // Unreachable — the filter above already proves the
+            // discriminant. Repeat the check here so TypeScript narrows
+            // the union without an explicit assertion.
+            throw new Error('unreachable');
+          }
+          return {
+            songId: rs.match.song.songId,
+            titleSnapshot: rs.match.song.title,
+          };
+        }),
+    }));
+    // Drop parsed sections that ended up entirely empty due to Discards
+    // ONLY if the section was implicit (had no headers in input). Per
+    // AC-13, "Only headers, no songs" still emits zero-row sections.
+    // V1 keeps it simple: emit every parsed section regardless. Sandy can
+    // edit on the overview if he wants to delete a leftover section.
+
+    const merged: DraftSection[] = [...parsedSections, ...draft.sections];
+
     const newSetlistId = generateSongId();
     const input: SetlistPutInput = {
       bandId: ACTIVE_BAND_ID,
@@ -195,13 +402,28 @@ export function SetlistCreation(): JSX.Element {
         date: draft.date,
         ...(draft.time.trim() === '' ? {} : { time: draft.time }),
       },
-      sections: draft.sections,
+      sections: merged,
       clientWrittenAt: new Date().toISOString(),
       version: 1,
     };
     void saveSetlist(input);
     navigate(`/setlists/${newSetlistId}`);
   };
+
+  // Group rowStates by sectionIndex for rendering — preserves the parsed
+  // section order and the row-position keys needed for stable React lists.
+  const groupedRowStates: { sectionName: string; rows: { rs: RowState; flatIndex: number }[] }[] =
+    useMemo(() => {
+      const result = parseResult.sections.map((sec) => ({
+        sectionName: sec.name,
+        rows: [] as { rs: RowState; flatIndex: number }[],
+      }));
+      rowStates.forEach((rs, flatIndex) => {
+        const bucket = result[rs.sectionIndex];
+        if (bucket !== undefined) bucket.rows.push({ rs, flatIndex });
+      });
+      return result;
+    }, [parseResult, rowStates]);
 
   return (
     <section
@@ -247,6 +469,47 @@ export function SetlistCreation(): JSX.Element {
           />
         </FieldRow>
       </header>
+
+      <div className="flex flex-col gap-[calc(var(--spacing-unit)*3)]">
+        <textarea
+          aria-label="Paste setlist"
+          value={pasteText}
+          onChange={handlePasteTextChange}
+          placeholder={PASTE_TO_PARSE.placeholder}
+          rows={6}
+          className={PASTE_TEXTAREA_CLASS}
+        />
+        <div aria-live="polite" className="flex flex-col gap-[var(--spacing-section-gap)]">
+          {rowStates.length === 0 ? (
+            <p className={PASTE_EMPTY_CLASS}>{PASTE_TO_PARSE.emptyResult}</p>
+          ) : (
+            groupedRowStates.map((group, sectionIndex) => (
+              // Parsed-section position is identity; rows are keyed by
+              // position within the section list (same AR-23 reasoning as
+              // the manual sections below).
+              // biome-ignore lint/suspicious/noArrayIndexKey: parsed section order is its identity
+              <div key={sectionIndex} className="flex flex-col gap-[calc(var(--spacing-unit)*2)]">
+                <span className={PARSE_SECTION_LABEL_CLASS}>{group.sectionName}</span>
+                {group.rows.map(({ rs, flatIndex }) => (
+                  <ParseRowStatus
+                    key={flatIndex}
+                    result={rs.match}
+                    rawTitle={rs.raw}
+                    displayTitle={rs.displayTitle}
+                    songs={songs}
+                    onAcceptFuzzy={() => handleAcceptFuzzy(flatIndex)}
+                    onRejectFuzzy={() => handleRejectFuzzy(flatIndex)}
+                    onAddToLibrary={() => handleAddToLibrary(flatIndex)}
+                    onPickFromLibrary={(ref) => handlePickFromLibrary(flatIndex, ref)}
+                    onDiscard={() => handleDiscard(flatIndex)}
+                    onTitleEdit={(t) => handleTitleEdit(flatIndex, t)}
+                  />
+                ))}
+              </div>
+            ))
+          )}
+        </div>
+      </div>
 
       {draft.sections.map((section, sectionIndex) => (
         <section
@@ -326,7 +589,12 @@ export function SetlistCreation(): JSX.Element {
         + Add section
       </button>
 
-      <button type="button" onClick={handleSave} className={SAVE_BUTTON_CLASS}>
+      <button
+        type="button"
+        onClick={hasPendingRows ? undefined : handleSave}
+        aria-disabled={hasPendingRows}
+        className={hasPendingRows ? SAVE_BUTTON_DISABLED_CLASS : SAVE_BUTTON_CLASS}
+      >
         Save
       </button>
 
