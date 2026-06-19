@@ -11,8 +11,13 @@ export function songRecordKey(bandId: string, songId: string): string {
   return `song:${bandId}:${songId}`;
 }
 
+export function setlistRecordKey(bandId: string, setlistId: string): string {
+  return `setlist:${bandId}:${setlistId}`;
+}
+
 export type ParsedRecordKey =
   | { kind: 'song'; bandId: string; songId: string }
+  | { kind: 'setlist'; bandId: string; setlistId: string }
   | { kind: 'unknown' };
 
 export function parseRecordKey(recordKey: string): ParsedRecordKey {
@@ -22,6 +27,12 @@ export function parseRecordKey(recordKey: string): ParsedRecordKey {
     const songId = parts[2] ?? '';
     if (bandId === '' || songId === '') return { kind: 'unknown' };
     return { kind: 'song', bandId, songId };
+  }
+  if (parts.length === 3 && parts[0] === 'setlist') {
+    const bandId = parts[1] ?? '';
+    const setlistId = parts[2] ?? '';
+    if (bandId === '' || setlistId === '') return { kind: 'unknown' };
+    return { kind: 'setlist', bandId, setlistId };
   }
   return { kind: 'unknown' };
 }

@@ -6,6 +6,7 @@ import { authRoute } from './routes/auth.js';
 import { clientErrorsRoute } from './routes/client-errors.js';
 import { healthRoute } from './routes/health.js';
 import { meRoute } from './routes/me.js';
+import { setlistsRoute } from './routes/setlists.js';
 import { songsRoute } from './routes/songs.js';
 
 export const app = new Hono()
@@ -16,4 +17,5 @@ export const app = new Hono()
   .route('/api/v1/auth', authRoute)
   .route('/api/v1/me', meRoute)
   .route('/api/v1/songs', songsRoute)
+  .route('/api/v1/setlists', setlistsRoute)
   .route('/api/v1/client-errors', clientErrorsRoute);

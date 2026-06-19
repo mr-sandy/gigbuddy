@@ -208,7 +208,7 @@ describe('flushOnce', () => {
 
   it('drops an entry with an unrecognised recordKey prefix (poisoned)', async () => {
     await enqueue({
-      recordKey: 'setlist:not:wired',
+      recordKey: 'gig:not:wired',
       payload: { whatever: true },
       clientWrittenAt: '2026-06-17T12:00:00.000Z',
     });

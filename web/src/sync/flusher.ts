@@ -2,7 +2,6 @@ import {
   AppliedResponseSchema,
   DroppedAsStaleResponseSchema,
   ErrorResponseSchema,
-  SongSchema,
 } from '@gigbuddy/shared';
 import type { QueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
@@ -37,10 +36,15 @@ function queryKeyForSong(bandId: string, songId: string): readonly unknown[] {
   return ['song', bandId, songId];
 }
 
+function queryKeyForSetlist(bandId: string, setlistId: string): readonly unknown[] {
+  return ['setlist', bandId, setlistId];
+}
+
 function routeForRecordKey(
   recordKey: string,
 ):
   | { kind: 'song'; method: 'PUT'; url: string; queryKey: readonly unknown[] }
+  | { kind: 'setlist'; method: 'PUT'; url: string; queryKey: readonly unknown[] }
   | { kind: 'unknown' } {
   const parsed = parseRecordKey(recordKey);
   if (parsed.kind === 'song') {
@@ -51,12 +55,25 @@ function routeForRecordKey(
       queryKey: queryKeyForSong(parsed.bandId, parsed.songId),
     };
   }
+  if (parsed.kind === 'setlist') {
+    return {
+      kind: 'setlist',
+      method: 'PUT' as const,
+      url: `/api/v1/setlists/${parsed.setlistId}`,
+      queryKey: queryKeyForSetlist(parsed.bandId, parsed.setlistId),
+    };
+  }
   return { kind: 'unknown' };
 }
 
+// Story 3.1 widens the inner data types to z.unknown() so the flusher
+// accepts both Song and Setlist envelopes. The flusher only needs the
+// envelope `status` field to dispatch — `data` and `currentState` are
+// passed verbatim to the cache, and the consuming hooks
+// (useSong / useSetlist) validate via their own schema on read.
 const PutResponseSchema = z.discriminatedUnion('status', [
-  AppliedResponseSchema(SongSchema),
-  DroppedAsStaleResponseSchema(SongSchema),
+  AppliedResponseSchema(z.unknown()),
+  DroppedAsStaleResponseSchema(z.unknown()),
   ErrorResponseSchema,
 ]);
 

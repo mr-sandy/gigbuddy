@@ -1,5 +1,5 @@
 # generated: 2026-06-09
-# last_updated: 2026-06-19 (epic-2-retrospective → done)
+# last_updated: 2026-06-19 (3-1-setlist-api-ddb-persistence → review)
 # last_status_change: 2026-06-19
 # project: gigbuddy
 # project_key: NOKEY
@@ -36,7 +36,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-06-09
-last_updated: 2026-06-19 (epic-2-retrospective → done)
+last_updated: 2026-06-19 (3-1-setlist-api-ddb-persistence → review)
 project: gigbuddy
 project_key: NOKEY
 tracking_system: file-system
@@ -64,8 +64,8 @@ development_status:
   epic-2-retrospective: done
 
   # Epic 3: Setlists Home, Paste-to-Parse & Setlist Management
-  epic-3: backlog
-  3-1-setlist-api-ddb-persistence: backlog
+  epic-3: in-progress
+  3-1-setlist-api-ddb-persistence: review
   3-2-setlists-home-tonight-upcoming-past: backlog
   3-3-setlist-overview-surface-section-heading-per-gig-annotation: backlog
   3-4-setlist-creation-with-manual-entry-path: backlog
