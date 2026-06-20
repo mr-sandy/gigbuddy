@@ -184,15 +184,40 @@ for (const story of runnable) {
   // about-to-run commit step would bundle it into THIS story's commit
   // (which is exactly what happened to stories 3.3 and 3.5 — both bundled
   // into the next story's commit, destroying `git log` archaeology).
+  //
+  // Exception: on resume after a spec-review halt, the current story's spec
+  // file and the sprint-status.yaml status flip are legitimately uncommitted
+  // — they were produced by the prior attempt's create-story step and will
+  // be folded into this story's eventual commit. Allow those two paths;
+  // anything else still halts.
   const preflight = await agent(
     `Run "git status --porcelain" and return its raw output as { porcelain: string }. Do not interpret the output, do not commit, do not stash — just capture and return.`,
     { label: `preflight-clean-tree:${story.id}`, model: 'sonnet', schema: { type: 'object', properties: { porcelain: { type: 'string' } }, required: ['porcelain'] } },
   )
-  if (preflight.porcelain.trim().length > 0) {
+  const allowedDirtyPaths = [
+    sprintStatusPath,
+    story.sprintStatusKey ? `${specDir}/${story.sprintStatusKey}.md` : null,
+  ].filter(Boolean)
+  // Don't trim leading whitespace per line — porcelain uses leading-space
+  // status codes (e.g. " M path" for unstaged modified). Match the path
+  // suffix instead of column-counting, so we're robust to subagent output
+  // normalisation that may strip the leading column.
+  const dirtyLines = preflight.porcelain.split('\n').filter((l) => l.length > 0)
+  const offending = dirtyLines.filter((line) => {
+    const trimmed = line.trim()
+    return !allowedDirtyPaths.some((p) => trimmed.endsWith(` ${p}`) || trimmed.endsWith(p))
+  })
+  if (offending.length > 0) {
     log(`✋ HARD STOP at ${story.id} (working tree dirty before story start)`)
-    log(`   git status --porcelain output:`)
-    for (const line of preflight.porcelain.trim().split('\n')) log(`     ${line}`)
+    log(`   offending paths (not the current story's spec/sprint-status):`)
+    for (const line of offending) log(`     ${line}`)
+    if (dirtyLines.length > offending.length) {
+      log(`   (allowed in-progress artifacts ignored: ${allowedDirtyPaths.join(', ')})`)
+    }
     throw new Error(`Working tree is not clean before story ${story.id} starts. Prior story did not commit cleanly. Investigate (likely the previous story's commit step no-opped); commit the pending work under the correct story id, then resume with args.attempt=${attempt + 1}.`)
+  }
+  if (dirtyLines.length > 0) {
+    log(`   pre-flight: allowing in-progress artifacts (${dirtyLines.length} line(s)) — spec/sprint-status from prior attempt`)
   }
 
   const expectedSpecPath = story.sprintStatusKey
