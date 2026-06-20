@@ -1,5 +1,5 @@
 # generated: 2026-06-09
-# last_updated: 2026-06-19 (3-6-drag-reorder-on-macbook → review)
+# last_updated: 2026-06-19 (epic-3-retrospective → done)
 # last_status_change: 2026-06-19
 # project: gigbuddy
 # project_key: NOKEY
@@ -64,14 +64,14 @@ development_status:
   epic-2-retrospective: done
 
   # Epic 3: Setlists Home, Paste-to-Parse & Setlist Management
-  epic-3: in-progress
-  3-1-setlist-api-ddb-persistence: review
-  3-2-setlists-home-tonight-upcoming-past: review
-  3-3-setlist-overview-surface-section-heading-per-gig-annotation: review
-  3-4-setlist-creation-with-manual-entry-path: review
-  3-5-paste-to-parse-with-matched-fuzzy-unknown: review
-  3-6-drag-reorder-on-macbook: review
-  epic-3-retrospective: optional
+  epic-3: done
+  3-1-setlist-api-ddb-persistence: done
+  3-2-setlists-home-tonight-upcoming-past: done
+  3-3-setlist-overview-surface-section-heading-per-gig-annotation: done
+  3-4-setlist-creation-with-manual-entry-path: done
+  3-5-paste-to-parse-with-matched-fuzzy-unknown: done
+  3-6-drag-reorder-on-macbook: done
+  epic-3-retrospective: done
 
   # Epic 4: Performance Mode
   epic-4: backlog
