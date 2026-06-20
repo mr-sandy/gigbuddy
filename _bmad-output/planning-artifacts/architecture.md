@@ -839,6 +839,8 @@ Five packages in a pnpm workspace; no monorepo build tool. Type-folder organizat
 
 ### Directory tree
 
+The tree below is **illustrative**, not prescriptive — it shows the canonical shape but small adjustments during implementation (a planned file split that collapsed into one, an extension change for a JSX-bearing module, an additional helper that earned its keep) don't require an amendment here. Material deviations (a new top-level module, a renamed package, a boundary change) still do. Reconciled 2026-06-19 (Epic 3 retro action #8) for the sync/ subtree.
+
 ```
 gigbuddy/
 ├── .github/
@@ -876,13 +878,13 @@ gigbuddy/
 │   │   │   └── currently-performing-strip.tsx
 │   │   ├── sync/                           # sync layer (Step 5 patterns)
 │   │   │   ├── outbox.ts                   # outbox state machine
-│   │   │   ├── flusher.ts                  # outbox flusher
-│   │   │   ├── query-client.ts             # TanStack Query setup + persister
-│   │   │   ├── prefetch.ts                 # pre-fetch rules
-│   │   │   └── lww.ts                      # client-side stale-write handling
+│   │   │   ├── flusher.ts                  # outbox flusher (incl. inline LWW handling)
+│   │   │   ├── query-client.tsx            # TanStack Query setup + PersistQueryClientProvider
+│   │   │   ├── persist.ts                  # IDB-backed query-cache persister
+│   │   │   ├── record-key.ts               # recordKey ↔ {kind, ids} mapping
+│   │   │   └── prefetch.ts                 # pre-fetch rules (Epic 4)
 │   │   ├── cache/                          # IndexedDB persistence
-│   │   │   ├── idb.ts                      # IDB primitives
-│   │   │   └── persist.ts                  # persister + storage.persist()
+│   │   │   └── idb.ts                      # IDB primitives
 │   │   ├── auth/
 │   │   │   ├── auth-context.tsx
 │   │   │   └── auth-api.ts
