@@ -178,6 +178,23 @@ for (const story of runnable) {
   phase(`Story ${story.id}`)
   log(`▶ ${story.id} — ${story.title} (status=${story.status})`)
 
+  // GigBuddy-permanent guard (Epic 3 retro action #2). Each story's commit
+  // must contain ONLY that story's files. If the working tree is dirty
+  // when a story is about to start, prior work was never committed and the
+  // about-to-run commit step would bundle it into THIS story's commit
+  // (which is exactly what happened to stories 3.3 and 3.5 — both bundled
+  // into the next story's commit, destroying `git log` archaeology).
+  const preflight = await agent(
+    `Run "git status --porcelain" and return its raw output as { porcelain: string }. Do not interpret the output, do not commit, do not stash — just capture and return.`,
+    { label: `preflight-clean-tree:${story.id}`, model: 'sonnet', schema: { type: 'object', properties: { porcelain: { type: 'string' } }, required: ['porcelain'] } },
+  )
+  if (preflight.porcelain.trim().length > 0) {
+    log(`✋ HARD STOP at ${story.id} (working tree dirty before story start)`)
+    log(`   git status --porcelain output:`)
+    for (const line of preflight.porcelain.trim().split('\n')) log(`     ${line}`)
+    throw new Error(`Working tree is not clean before story ${story.id} starts. Prior story did not commit cleanly. Investigate (likely the previous story's commit step no-opped); commit the pending work under the correct story id, then resume with args.attempt=${attempt + 1}.`)
+  }
+
   const expectedSpecPath = story.sprintStatusKey
     ? `${specDir}/${story.sprintStatusKey}.md`
     : `${specDir}/${story.id.replace('.', '-')}-<slug>.md`
