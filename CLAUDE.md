@@ -33,3 +33,11 @@ Read these before making non-trivial changes:
 2. Tasks/subtasks are the contract. Don't scaffold things owned by later stories.
 3. Mark checkboxes only when tests pass and acceptance criteria are met.
 4. Update the story's File List and Dev Agent Record as you go.
+
+## Canonical status
+
+`_bmad-output/implementation-artifacts/sprint-status.yaml` is the single source of truth for what's `backlog` / `ready-for-dev` / `in-progress` / `review` / `done`. Story-file `Status:` headers are advisory — they reflect what the dev-story workflow last wrote, not the canonical state. When the two disagree, sprint-status wins (Epic 3 retro action #3).
+
+## Commit cadence
+
+One commit per story. Subject must be `Implement story X.Y: <title>` (the epic-run workflow enforces this). Never bundle two stories into one commit — it destroys `git log` archaeology for that story (Epic 3 retro action #2). The project-snapshot `epic-run.js` carries a pre-flight clean-tree guard that halts if a story is about to start with uncommitted prior work.
