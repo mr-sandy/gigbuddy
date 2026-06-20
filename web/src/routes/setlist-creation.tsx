@@ -14,8 +14,9 @@ import { SongSearchRow } from '../components/song-search-row.js';
 import { useSetlistMutation } from '../hooks/use-setlist-mutation.js';
 import { useSongMutation } from '../hooks/use-song-mutation.js';
 import { useSongs } from '../hooks/use-songs.js';
+import { readAtmosphere } from '../lib/atmosphere.js';
+import { generateId } from '../lib/id.js';
 import { PASTE_TO_PARSE, VALIDATION_MESSAGES } from '../lib/microcopy.js';
-import { generateSongId } from '../lib/song-id.js';
 import { type MatchResult, matchNormalizedTitle, matchRows } from '../paste-parse/matcher.js';
 import { extractDisplayTitle, normalizeTitle } from '../paste-parse/normalize.js';
 import { type ParseResult, parseSetlist } from '../paste-parse/parser.js';
@@ -77,11 +78,6 @@ type RowState = {
   displayTitle: string;
   match: MatchResult;
 };
-
-function readAtmosphere(): 'practice' | 'performance' {
-  if (typeof document === 'undefined') return 'practice';
-  return document.documentElement.dataset.atmosphere === 'performance' ? 'performance' : 'practice';
-}
 
 const INITIAL_DRAFT: DraftState = {
   venue: '',
@@ -183,7 +179,7 @@ export function SetlistCreation(): JSX.Element {
   };
 
   const handleAddNewSong = (sectionIndex: number, title: string): void => {
-    const newSongId = generateSongId();
+    const newSongId = generateId();
     const record: SongPutInput = {
       bandId: ACTIVE_BAND_ID,
       songId: newSongId,
@@ -290,7 +286,7 @@ export function SetlistCreation(): JSX.Element {
   const handleAddToLibrary = (index: number): void => {
     const rs = rowStates[index];
     if (!rs) return;
-    const newSongId = generateSongId();
+    const newSongId = generateId();
     const title = rs.displayTitle;
     const record: SongPutInput = {
       bandId: ACTIVE_BAND_ID,
@@ -393,7 +389,7 @@ export function SetlistCreation(): JSX.Element {
 
     const merged: DraftSection[] = [...parsedSections, ...draft.sections];
 
-    const newSetlistId = generateSongId();
+    const newSetlistId = generateId();
     const input: SetlistPutInput = {
       bandId: ACTIVE_BAND_ID,
       setlistId: newSetlistId,

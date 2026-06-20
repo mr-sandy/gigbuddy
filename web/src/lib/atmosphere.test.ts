@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { applyBootAtmosphere } from './atmosphere.js';
+import { applyBootAtmosphere, readAtmosphere } from './atmosphere.js';
 
 function stubUserAgent(value: string): void {
   vi.stubGlobal('navigator', { ...navigator, userAgent: value });
@@ -37,5 +37,34 @@ describe('applyBootAtmosphere', () => {
     document.documentElement.dataset.atmosphere = 'practice';
     applyBootAtmosphere();
     expect(document.documentElement.dataset.atmosphere).toBe('performance');
+  });
+});
+
+describe('readAtmosphere', () => {
+  beforeEach(() => {
+    document.documentElement.removeAttribute('data-atmosphere');
+  });
+
+  afterEach(() => {
+    document.documentElement.removeAttribute('data-atmosphere');
+  });
+
+  it('returns "performance" when the html dataset atmosphere is "performance"', () => {
+    document.documentElement.dataset.atmosphere = 'performance';
+    expect(readAtmosphere()).toBe('performance');
+  });
+
+  it('returns "practice" when the html dataset atmosphere is "practice"', () => {
+    document.documentElement.dataset.atmosphere = 'practice';
+    expect(readAtmosphere()).toBe('practice');
+  });
+
+  it('falls back to "practice" when no atmosphere is set', () => {
+    expect(readAtmosphere()).toBe('practice');
+  });
+
+  it('falls back to "practice" for any unrecognised value', () => {
+    document.documentElement.dataset.atmosphere = 'gig-night';
+    expect(readAtmosphere()).toBe('practice');
   });
 });

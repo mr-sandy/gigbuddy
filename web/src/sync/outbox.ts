@@ -1,7 +1,7 @@
 import { clear, del, entries, set } from 'idb-keyval';
 import { customAlphabet } from 'nanoid';
 import { outboxStore } from '../cache/idb.js';
-import { URL_SAFE_ALPHABET } from '../lib/song-id.js';
+import { URL_SAFE_ALPHABET } from '../lib/id.js';
 
 /*
  * IndexedDB-backed outbox for optimistic writes (architecture.md

@@ -1,5 +1,6 @@
 import type { SongRef } from '@gigbuddy/shared';
 import { type JSX, type DragEvent as ReactDragEvent, useEffect, useRef, useState } from 'react';
+import { readAtmosphere } from '../lib/atmosphere.js';
 import { ACTIONS, DRAG_REORDER } from '../lib/microcopy.js';
 import { InlineEditField } from './inline-edit-field.js';
 
@@ -26,14 +27,8 @@ import { InlineEditField } from './inline-edit-field.js';
  * directly (AR-45 hook boundary). All callbacks are optional so the
  * iPhone branch can omit drag wiring entirely.
  *
- * Atmosphere detection reads `document.documentElement.dataset.atmosphere`
- * at render time (same pattern as song-detail.tsx and section-heading.tsx).
+ * Atmosphere comes from the shared `readAtmosphere()` helper.
  */
-
-function readAtmosphere(): 'practice' | 'performance' {
-  if (typeof document === 'undefined') return 'practice';
-  return document.documentElement.dataset.atmosphere === 'performance' ? 'performance' : 'practice';
-}
 
 export type SetlistSongRowProps = {
   songRef: SongRef;

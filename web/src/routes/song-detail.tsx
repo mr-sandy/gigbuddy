@@ -6,8 +6,9 @@ import { ChordChart } from '../components/chord-chart.js';
 import { InlineEditField } from '../components/inline-edit-field.js';
 import { useSong } from '../hooks/use-song.js';
 import { useSongMutation } from '../hooks/use-song-mutation.js';
+import { readAtmosphere } from '../lib/atmosphere.js';
+import { generateId } from '../lib/id.js';
 import { ACTIONS, EMPTY_STATES, FIELD_LABELS } from '../lib/microcopy.js';
-import { generateSongId } from '../lib/song-id.js';
 
 /*
  * Song Detail surface (FR-1, FR-2, FR-3, FR-5).
@@ -56,11 +57,6 @@ function useDebouncedFire<Args extends unknown[]>(
   );
 }
 
-function readAtmosphere(): 'practice' | 'performance' {
-  if (typeof document === 'undefined') return 'practice';
-  return document.documentElement.dataset.atmosphere === 'performance' ? 'performance' : 'practice';
-}
-
 function songToPutInput(song: Song): SongPutInput {
   return {
     bandId: song.bandId,
@@ -90,7 +86,7 @@ export function SongDetail(): JSX.Element {
 
 function CreateBranch(): JSX.Element {
   const navigate = useNavigate();
-  const [draftSongId] = useState(() => generateSongId());
+  const [draftSongId] = useState(() => generateId());
   const { saveSong } = useSongMutation();
 
   const debouncedCreate = useDebouncedFire<[string]>(async (title) => {

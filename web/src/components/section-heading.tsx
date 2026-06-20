@@ -1,4 +1,5 @@
 import type { JSX } from 'react';
+import { readAtmosphere } from '../lib/atmosphere.js';
 import { InlineEditField } from './inline-edit-field.js';
 
 /*
@@ -13,19 +14,13 @@ import { InlineEditField } from './inline-edit-field.js';
  *     edit affordance is mounted (FR-10 — section names are not editable
  *     on iPhone).
  *
- * Atmosphere detection is read at render time from
- * `document.documentElement.dataset.atmosphere` — same `readAtmosphere()`
- * pattern as song-detail.tsx (boot-fixed, never changes mid-session).
+ * Atmosphere comes from the shared `readAtmosphere()` helper (boot-fixed,
+ * never changes mid-session).
  *
  * The count badge is part of the heading line: `Set 1 · 4 songs`. The
  * badge is rendered in mono `text-secondary` to differentiate from the
  * editorial-serif name.
  */
-
-function readAtmosphere(): 'practice' | 'performance' {
-  if (typeof document === 'undefined') return 'practice';
-  return document.documentElement.dataset.atmosphere === 'performance' ? 'performance' : 'practice';
-}
 
 export type SectionHeadingProps = {
   name: string;
