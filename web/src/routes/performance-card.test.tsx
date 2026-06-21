@@ -12,14 +12,21 @@ import { PerformanceCard } from './performance-card.js';
  * viewport-meta effect are exercised via direct DOM assertions.
  */
 
-const { useSetlistMock, useSongMock, navigateMock } = vi.hoisted(() => ({
+const { useSetlistMock, useSongMock, navigateMock, useWakeLockIndicatorMock } = vi.hoisted(() => ({
   useSetlistMock: vi.fn(),
   useSongMock: vi.fn(),
   navigateMock: vi.fn(),
+  // Story 4.2 — default to wakeLockHeld=true so the indicator is hidden
+  // and the existing 23 test cases continue to assert against the
+  // pre-Story-4.2 DOM. Targeted indicator cases below override this.
+  useWakeLockIndicatorMock: vi.fn(() => ({ wakeLockHeld: true })),
 }));
 
 vi.mock('../hooks/use-setlist.js', () => ({ useSetlist: useSetlistMock }));
 vi.mock('../hooks/use-song.js', () => ({ useSong: useSongMock }));
+vi.mock('../performance/use-wake-lock-indicator.js', () => ({
+  useWakeLockIndicator: useWakeLockIndicatorMock,
+}));
 vi.mock('react-router', async () => {
   const actual = await vi.importActual<typeof import('react-router')>('react-router');
   return { ...actual, useNavigate: () => navigateMock };
@@ -81,6 +88,7 @@ beforeEach(() => {
   useSetlistMock.mockReset();
   useSongMock.mockReset();
   navigateMock.mockReset();
+  useWakeLockIndicatorMock.mockReset().mockReturnValue({ wakeLockHeld: true });
   document.documentElement.dataset.atmosphere = 'practice';
   // Ensure a viewport meta tag exists for the effect to mutate.
   let meta = document.querySelector('meta[name="viewport"]') as HTMLMetaElement | null;
@@ -336,5 +344,33 @@ describe('PerformanceCard — graceful not-found', () => {
     // Setlist has 3 flat songs; index 3 is out of bounds.
     renderRoute('setlistid0000001', '3');
     expect(screen.getByText(/Setlist not found/i)).toBeInTheDocument();
+  });
+});
+
+describe('PerformanceCard — wake-lock indicator (Story 4.2)', () => {
+  it('renders the indicator with aria-label "Screen may sleep" when wakeLockHeld is false', () => {
+    useWakeLockIndicatorMock.mockReturnValue({ wakeLockHeld: false });
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    useSongMock.mockReturnValue({ data: makeSong(), isLoading: false });
+    renderRoute();
+    expect(screen.getByLabelText(PERFORMANCE_CARD.ariaWakeLockNotHeld)).toBeInTheDocument();
+  });
+
+  it('does not render the indicator when wakeLockHeld is true', () => {
+    useWakeLockIndicatorMock.mockReturnValue({ wakeLockHeld: true });
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    useSongMock.mockReturnValue({ data: makeSong(), isLoading: false });
+    renderRoute();
+    expect(screen.queryByLabelText(PERFORMANCE_CARD.ariaWakeLockNotHeld)).toBeNull();
+  });
+
+  it('indicator carries aria-live="assertive" and role="status" (UX-DR6)', () => {
+    useWakeLockIndicatorMock.mockReturnValue({ wakeLockHeld: false });
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    useSongMock.mockReturnValue({ data: makeSong(), isLoading: false });
+    renderRoute();
+    const indicator = screen.getByLabelText(PERFORMANCE_CARD.ariaWakeLockNotHeld);
+    expect(indicator.getAttribute('aria-live')).toBe('assertive');
+    expect(indicator.getAttribute('role')).toBe('status');
   });
 });

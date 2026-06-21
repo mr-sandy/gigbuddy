@@ -96,4 +96,8 @@ export const PERFORMANCE_CARD = {
   ariaNextSong: 'Next song',
   ariaPreviousSong: 'Previous song',
   ariaSongPosition: (n: number, total: number) => `Song ${n} of ${total}`,
+  // Story 4.2 — persistent indicator on the Performance Card when the
+  // Wake Lock is NOT held (FR-18, NFR-27, UX-DR6). Voice & Tone: short,
+  // no exclamation, no marketing voice — assistive-tech-only string.
+  ariaWakeLockNotHeld: 'Screen may sleep',
 } as const;

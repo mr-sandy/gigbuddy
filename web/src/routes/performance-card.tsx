@@ -4,6 +4,7 @@ import { ChordChart } from '../components/chord-chart.js';
 import { useSetlist } from '../hooks/use-setlist.js';
 import { useSong } from '../hooks/use-song.js';
 import { EMPTY_STATES, PERFORMANCE_CARD } from '../lib/microcopy.js';
+import { useWakeLockIndicator } from '../performance/use-wake-lock-indicator.js';
 
 /*
  * Performance Card route — Story 4.1 (FR-15, FR-16, FR-17, UX-DR4, UX-DR9).
@@ -53,6 +54,11 @@ export function PerformanceCard(): JSX.Element {
   const { setlistId, songIndex } = useParams<{ setlistId: string; songIndex: string }>();
   const navigate = useNavigate();
   const nextButtonRef = useRef<HTMLButtonElement>(null);
+  // Story 4.2 — subscribe to the wake-lock state. The hook also calls
+  // `wakeLock.acquire()` on mount (additive to the entry-path acquire in
+  // `useStartPerformance`) so the lock is reacquired after card remount,
+  // e.g. on Story 4.3 Resume ›.
+  const { wakeLockHeld } = useWakeLockIndicator();
 
   const parsedSongIndex = useMemo(() => {
     const parsed = Number.parseInt(songIndex ?? '', 10);
@@ -147,17 +153,38 @@ export function PerformanceCard(): JSX.Element {
           <h1 className="text-[length:var(--text-perf-title)] leading-[var(--text-perf-title--line-height)] font-[family-name:var(--font-serif-editorial)] text-[color:var(--color-text-primary)]">
             {song?.title ?? ''}
           </h1>
-          {/* Position indicator — `role="status"` makes the span an accepted
-              host for aria-label (Biome a11y rule
-              `useAriaPropsSupportedByRole`) and gives assistive tech a live
-              announcement of the current position. */}
-          <span
-            role="status"
-            aria-label={PERFORMANCE_CARD.ariaSongPosition(currentPosition, totalSongs)}
-            className="ml-[calc(var(--spacing-unit)*2)] shrink-0 text-[length:var(--text-perf-meta)] leading-[var(--text-perf-meta--line-height)] font-[family-name:var(--font-mono-slab)] text-[color:var(--color-text-secondary)]"
-          >
-            {currentPosition} / {totalSongs}
-          </span>
+          {/* Right-hand slot — wake-lock indicator (Story 4.2, conditional)
+              then position indicator (Story 4.1, always present). The
+              wake-lock indicator sits inside the position indicator so the
+              position number stays at the far right edge for consistent
+              spatial scanning. */}
+          <div className="ml-[calc(var(--spacing-unit)*2)] flex shrink-0 items-center gap-[calc(var(--spacing-unit)*2)]">
+            {/* Wake-lock indicator — Story 4.2 (FR-18, NFR-27, UX-DR6).
+                Static, no animation, no onClick. `aria-live="assertive"`
+                announces "Screen may sleep" once on first appearance. */}
+            {!wakeLockHeld && (
+              <span
+                role="status"
+                aria-live="assertive"
+                aria-atomic="true"
+                aria-label={PERFORMANCE_CARD.ariaWakeLockNotHeld}
+                className="text-[length:var(--text-perf-meta)] leading-[var(--text-perf-meta--line-height)] text-[color:var(--color-text-secondary)]"
+              >
+                ☽
+              </span>
+            )}
+            {/* Position indicator — `role="status"` makes the span an
+                accepted host for aria-label (Biome a11y rule
+                `useAriaPropsSupportedByRole`) and gives assistive tech a
+                live announcement of the current position. */}
+            <span
+              role="status"
+              aria-label={PERFORMANCE_CARD.ariaSongPosition(currentPosition, totalSongs)}
+              className="text-[length:var(--text-perf-meta)] leading-[var(--text-perf-meta--line-height)] font-[family-name:var(--font-mono-slab)] text-[color:var(--color-text-secondary)]"
+            >
+              {currentPosition} / {totalSongs}
+            </span>
+          </div>
         </div>
         {(song?.key !== undefined && song.key !== '') ||
         (song?.patch !== undefined && song.patch !== '') ? (
