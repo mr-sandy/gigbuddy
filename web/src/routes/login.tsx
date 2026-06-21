@@ -1,7 +1,8 @@
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { fetchMe, login } from '../auth/auth-api.js';
 import { useAuth } from '../auth/auth-context.js';
+import { clearSessionMarker } from '../performance/session-resume.js';
 
 export function Login() {
   const [password, setPassword] = useState('');
@@ -9,6 +10,16 @@ export function Login() {
   const [error, setError] = useState<string | null>(null);
   const { setAuth } = useAuth();
   const navigate = useNavigate();
+
+  // Story 4.5 (AC-13 follow-up) — landing on `/login` means the prior
+  // session is no longer authenticated; clear any stale session-resume
+  // marker so the next cold relaunch doesn't trap an unauthenticated
+  // user in a `/login`-redirect loop via the marker-driven URL rewrite
+  // in `main.tsx`. Idempotent — `localStorage.removeItem` is a no-op
+  // when the key is absent.
+  useEffect(() => {
+    clearSessionMarker();
+  }, []);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();

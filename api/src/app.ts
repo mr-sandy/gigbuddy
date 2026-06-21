@@ -8,6 +8,7 @@ import { healthRoute } from './routes/health.js';
 import { meRoute } from './routes/me.js';
 import { setlistsRoute } from './routes/setlists.js';
 import { songsRoute } from './routes/songs.js';
+import { upcomingGigsRoute } from './routes/upcoming-gigs.js';
 
 export const app = new Hono()
   .use('*', loggerMiddleware)
@@ -18,4 +19,5 @@ export const app = new Hono()
   .route('/api/v1/me', meRoute)
   .route('/api/v1/songs', songsRoute)
   .route('/api/v1/setlists', setlistsRoute)
+  .route('/api/v1/upcoming-gigs', upcomingGigsRoute)
   .route('/api/v1/client-errors', clientErrorsRoute);

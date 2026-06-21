@@ -5,7 +5,9 @@ import { useSetlist } from '../hooks/use-setlist.js';
 import { useSong } from '../hooks/use-song.js';
 import { EMPTY_STATES, PERFORMANCE_CARD } from '../lib/microcopy.js';
 import {
+  usePerformanceActive,
   useSetActiveSongIndex,
+  useSetPerformanceActive,
   useSetPerformanceView,
 } from '../performance/performance-context.js';
 import { useWakeLockIndicator } from '../performance/use-wake-lock-indicator.js';
@@ -79,6 +81,16 @@ export function PerformanceCard(): JSX.Element {
   // index.
   const setPerformanceView = useSetPerformanceView();
   const setActiveSongIndex = useSetActiveSongIndex();
+  // Story 4.5 (AC-8) — on cold-relaunch the session-resume marker in
+  // `main.tsx` rewrites the URL to `/performance/...` before React mounts,
+  // but `useStartPerformance` (the only other caller of `setActive(true)`)
+  // never runs on that path. Without this mount-effect, `performanceActive`
+  // would stay false on relaunch: chrome would show, 401 would redirect to
+  // `/login`, and Wake Lock would not reacquire — all AR-28 violations.
+  // The setter is idempotent (no-op when already true), so this is also
+  // safe when entered via the normal `Start performance ›` path.
+  const performanceActive = usePerformanceActive();
+  const setPerformanceActive = useSetPerformanceActive();
 
   const parsedSongIndex = useMemo(() => {
     const parsed = Number.parseInt(songIndex ?? '', 10);
@@ -140,6 +152,17 @@ export function PerformanceCard(): JSX.Element {
       setPerformanceView(null);
     };
   }, [setPerformanceView]);
+
+  // Story 4.5 (AC-8) — ensure `performanceActive` is true while this
+  // route is mounted. Story 4.4's `endPerformance` is the only place
+  // that flips it back to false (on real navigate-away); unmounting the
+  // card via × exit must NOT clear the flag (the strip on the overview
+  // still needs it). So no cleanup here.
+  useEffect(() => {
+    if (!performanceActive) {
+      setPerformanceActive(true);
+    }
+  }, [performanceActive, setPerformanceActive]);
 
   // Story 4.3 — mirror the URL `:songIndex` into the context
   // `activeSongIndex` so the `CurrentlyPerformingStrip` on the overview

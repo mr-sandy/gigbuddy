@@ -20,6 +20,7 @@ const {
   setPerformanceViewMock,
   setActiveSongIndexMock,
   setPerformanceActiveMock,
+  performanceActiveMock,
 } = vi.hoisted(() => ({
   useSetlistMock: vi.fn(),
   useSongMock: vi.fn(),
@@ -34,6 +35,7 @@ const {
   setPerformanceViewMock: vi.fn(),
   setActiveSongIndexMock: vi.fn(),
   setPerformanceActiveMock: vi.fn(),
+  performanceActiveMock: vi.fn(() => false),
 }));
 
 vi.mock('../hooks/use-setlist.js', () => ({ useSetlist: useSetlistMock }));
@@ -45,6 +47,7 @@ vi.mock('../performance/performance-context.js', () => ({
   useSetPerformanceView: () => setPerformanceViewMock,
   useSetActiveSongIndex: () => setActiveSongIndexMock,
   useSetPerformanceActive: () => setPerformanceActiveMock,
+  usePerformanceActive: () => performanceActiveMock(),
 }));
 vi.mock('react-router', async () => {
   const actual = await vi.importActual<typeof import('react-router')>('react-router');
@@ -111,6 +114,7 @@ beforeEach(() => {
   setPerformanceViewMock.mockReset();
   setActiveSongIndexMock.mockReset();
   setPerformanceActiveMock.mockReset();
+  performanceActiveMock.mockReset().mockReturnValue(false);
   document.documentElement.dataset.atmosphere = 'practice';
   // Ensure a viewport meta tag exists for the effect to mutate.
   let meta = document.querySelector('meta[name="viewport"]') as HTMLMetaElement | null;
@@ -134,6 +138,22 @@ describe('PerformanceCard — atmosphere + viewport effects', () => {
     useSongMock.mockReturnValue({ data: makeSong(), isLoading: false });
     renderRoute();
     expect(document.documentElement.dataset.atmosphere).toBe('performance');
+  });
+
+  it('reactivates performanceActive=true on mount when it was false (Story 4.5 AC-8 — cold-relaunch resume)', () => {
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    useSongMock.mockReturnValue({ data: makeSong(), isLoading: false });
+    performanceActiveMock.mockReturnValue(false);
+    renderRoute();
+    expect(setPerformanceActiveMock).toHaveBeenCalledWith(true);
+  });
+
+  it('does NOT re-call setPerformanceActive on mount when it is already true (idempotent entry from Start performance ›)', () => {
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    useSongMock.mockReturnValue({ data: makeSong(), isLoading: false });
+    performanceActiveMock.mockReturnValue(true);
+    renderRoute();
+    expect(setPerformanceActiveMock).not.toHaveBeenCalled();
   });
 
   it('restores data-atmosphere to the prior value on unmount', () => {
@@ -416,13 +436,17 @@ describe('PerformanceCard — × exit (Story 4.3)', () => {
     expect(navigateMock).toHaveBeenCalledWith('/setlists/setlistid0000001');
   });
 
-  it('tapping × does NOT call setPerformanceActive (state preserved per FR-19)', async () => {
+  it('tapping × does NOT clear performanceActive (state preserved per FR-19)', async () => {
     const user = userEvent.setup();
     useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
     useSongMock.mockReturnValue({ data: makeSong(), isLoading: false });
     renderRoute();
+    setPerformanceActiveMock.mockClear();
     await user.click(screen.getByRole('button', { name: PERFORMANCE_CARD.ariaExitPerformance }));
-    expect(setPerformanceActiveMock).not.toHaveBeenCalled();
+    // The mount effect (Story 4.5 / AC-8) may have called setActive(true)
+    // before this clear; what matters for FR-19 is that × never flips it
+    // off. Assert no `false` call happened on or after the tap.
+    expect(setPerformanceActiveMock).not.toHaveBeenCalledWith(false);
   });
 
   it('× appears spatially before ‹ in DOM order (UX-DR9 four-corner separation)', () => {
