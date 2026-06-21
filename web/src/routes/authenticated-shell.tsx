@@ -3,6 +3,7 @@ import { BottomTabs } from '../components/bottom-tabs.js';
 import { ReauthBanner } from '../components/reauth-banner.js';
 import { TopNav } from '../components/top-nav.js';
 import { useChromeVisible } from '../hooks/use-chrome-visible.js';
+import { useNavigateAwayGuard } from '../hooks/use-navigate-away-guard.js';
 import { ACTIONS } from '../lib/microcopy.js';
 import { isIPhone } from '../lib/platform.js';
 import { StaleWriteBanner } from '../sync/stale-write-banner.js';
@@ -20,6 +21,12 @@ import { StaleWriteBanner } from '../sync/stale-write-banner.js';
 export function AuthenticatedShell() {
   const chromeVisible = useChromeVisible();
   const iPhone = isIPhone();
+  // Story 4.4 — navigate-away end-state detector (FR-21). Mounted here
+  // because `AuthenticatedShell` is always rendered while Sandy is
+  // authenticated; the hook returns void and runs as a pure effect on
+  // every authenticated navigation. Calls `endPerformance()` when the
+  // new pathname is outside the active Setlist chain.
+  useNavigateAwayGuard();
   // Story 3.4: MacBook gets `+ New setlist` mounted in the TopNav's
   // `rightActions` slot. iPhone has no TopNav — the equivalent affordance
   // lives in the Home route (no chrome-level link).

@@ -41,7 +41,10 @@ interface PerformanceModeContextValue {
   setActive: (active: boolean) => void;
   activeSetlistId: string | null;
   activeSongIndex: number;
-  setPerformanceSession: (setlistId: string, songIndex: number) => void;
+  // Story 4.4: `setlistId` is `string | null` so end-state cleanup can
+  // reset the session pointer alongside `setActive(false)`. Existing
+  // callers (`useStartPerformance`) pass a string at entry — no regression.
+  setPerformanceSession: (setlistId: string | null, songIndex: number) => void;
   setActiveSongIndex: (songIndex: number) => void;
   performanceView: PerformanceView;
   setPerformanceView: (view: PerformanceView) => void;
@@ -64,7 +67,7 @@ export function PerformanceModeProvider({ children }: { children: ReactNode }) {
   const setActive = useCallback((active: boolean) => {
     setPerformanceActive(active);
   }, []);
-  const setPerformanceSession = useCallback((setlistId: string, songIndex: number) => {
+  const setPerformanceSession = useCallback((setlistId: string | null, songIndex: number) => {
     setActiveSetlistIdState(setlistId);
     setActiveSongIndexState(songIndex);
   }, []);
@@ -142,8 +145,25 @@ export function useActivePerformanceSession(): {
   return { activeSetlistId, activeSongIndex };
 }
 
-export function useSetActivePerformanceSession(): (setlistId: string, songIndex: number) => void {
+export function useSetActivePerformanceSession(): (
+  setlistId: string | null,
+  songIndex: number,
+) => void {
   return useCtx().setPerformanceSession;
+}
+
+/*
+ * Story 4.4 — convenience hook returning a stable callback that resets the
+ * session pointer (activeSetlistId → null, activeSongIndex → 0). Used by
+ * `usePerformanceEnd()` to clear the session as part of end-state cleanup
+ * so a subsequent `Start performance ›` on the same or a different Setlist
+ * starts from a clean slate.
+ */
+export function useResetPerformanceSession(): () => void {
+  const { setPerformanceSession } = useCtx();
+  return useCallback(() => {
+    setPerformanceSession(null, 0);
+  }, [setPerformanceSession]);
 }
 
 export function useSetActiveSongIndex(): (songIndex: number) => void {

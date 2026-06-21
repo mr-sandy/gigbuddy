@@ -36,7 +36,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-06-09
-last_updated: 2026-06-21 (4-3-exit-via-x-currently-performing-strip-resume → review)
+last_updated: 2026-06-21 (4-4-end-performance-state-on-navigate-away-last-song-inert-next → review)
 project: gigbuddy
 project_key: NOKEY
 tracking_system: file-system
@@ -78,7 +78,7 @@ development_status:
   4-1-performance-mode-entry-card-layout-single-tap-navigation: review
   4-2-wake-lock-with-persistent-indicator-and-backoff: review
   4-3-exit-via-x-currently-performing-strip-resume: review
-  4-4-end-performance-state-on-navigate-away-last-song-inert-next: backlog
+  4-4-end-performance-state-on-navigate-away-last-song-inert-next: review
   4-5-backgrounding-survives-tonight-gig-pre-fetch-upcoming-gigs: backlog
   epic-4-retrospective: optional
 

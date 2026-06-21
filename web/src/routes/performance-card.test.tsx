@@ -461,3 +461,95 @@ describe('PerformanceCard — × exit (Story 4.3)', () => {
     expect(setActiveSongIndexMock).toHaveBeenCalledWith(1);
   });
 });
+
+describe('PerformanceCard — last-song inert NEXT › (Story 4.4)', () => {
+  // The default `makeSetlist()` has 3 flat songs across 2 sections; the
+  // last flat index is 2 (Take Five in Set 2). songIndex=2 is therefore
+  // the last-Song case.
+  it('NEXT › is `disabled` on the last Song (songIndex=flatSongs.length-1)', () => {
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    useSongMock.mockReturnValue({
+      data: makeSong({ songId: 'song0000000003cc', title: 'Take Five' }),
+      isLoading: false,
+    });
+    renderRoute('setlistid0000001', '2');
+    const nextButton = screen.getByRole('button', {
+      name: PERFORMANCE_CARD.ariaNextSong,
+    }) as HTMLButtonElement;
+    expect(nextButton.disabled).toBe(true);
+  });
+
+  it('NEXT › carries `aria-disabled="true"` on the last Song', () => {
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    useSongMock.mockReturnValue({
+      data: makeSong({ songId: 'song0000000003cc', title: 'Take Five' }),
+      isLoading: false,
+    });
+    renderRoute('setlistid0000001', '2');
+    const nextButton = screen.getByRole('button', { name: PERFORMANCE_CARD.ariaNextSong });
+    expect(nextButton.getAttribute('aria-disabled')).toBe('true');
+  });
+
+  it('tapping NEXT › on the last Song does NOT call navigate', async () => {
+    const user = userEvent.setup();
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    useSongMock.mockReturnValue({
+      data: makeSong({ songId: 'song0000000003cc', title: 'Take Five' }),
+      isLoading: false,
+    });
+    renderRoute('setlistid0000001', '2');
+    await user.click(screen.getByRole('button', { name: PERFORMANCE_CARD.ariaNextSong }));
+    expect(navigateMock).not.toHaveBeenCalled();
+  });
+
+  it('NEXT › carries `disabled:opacity-40` styling on the last Song', () => {
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    useSongMock.mockReturnValue({
+      data: makeSong({ songId: 'song0000000003cc', title: 'Take Five' }),
+      isLoading: false,
+    });
+    renderRoute('setlistid0000001', '2');
+    const nextButton = screen.getByRole('button', { name: PERFORMANCE_CARD.ariaNextSong });
+    expect(nextButton.className).toContain('disabled:opacity-40');
+  });
+
+  it('next-song preview is empty on the last Song (no "End of setlist" or any other copy)', () => {
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    useSongMock.mockReturnValue({
+      data: makeSong({ songId: 'song0000000003cc', title: 'Take Five' }),
+      isLoading: false,
+    });
+    renderRoute('setlistid0000001', '2');
+    // The preview span is aria-hidden but it sits between the ‹ and NEXT ›
+    // buttons in the footer. We assert by ensuring no end-of-setlist copy
+    // is anywhere in the document.
+    expect(screen.queryByText(/end of setlist/i)).toBeNull();
+    // And confirm the title of the current Song (Take Five) renders as the
+    // <h1> heading — not as a preview repeat.
+    expect(screen.getByRole('heading', { level: 1, name: 'Take Five' })).toBeInTheDocument();
+  });
+
+  it('NEXT › is NOT disabled on a non-last Song (songIndex=0)', () => {
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    useSongMock.mockReturnValue({ data: makeSong(), isLoading: false });
+    renderRoute('setlistid0000001', '0');
+    const nextButton = screen.getByRole('button', {
+      name: PERFORMANCE_CARD.ariaNextSong,
+    }) as HTMLButtonElement;
+    expect(nextButton.disabled).toBe(false);
+    expect(nextButton.getAttribute('aria-disabled')).toBe('false');
+  });
+
+  it('NEXT › is NOT disabled on the second-to-last Song (songIndex=1)', () => {
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    useSongMock.mockReturnValue({
+      data: makeSong({ songId: 'song0000000002bb', title: 'Black Orpheus' }),
+      isLoading: false,
+    });
+    renderRoute('setlistid0000001', '1');
+    const nextButton = screen.getByRole('button', {
+      name: PERFORMANCE_CARD.ariaNextSong,
+    }) as HTMLButtonElement;
+    expect(nextButton.disabled).toBe(false);
+  });
+});

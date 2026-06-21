@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
 import { useEffect } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router';
@@ -15,28 +16,41 @@ vi.mock('../lib/platform.js', () => ({
   isIPhone: isIPhoneMock,
 }));
 
+// Story 4.4: AuthenticatedShell now mounts `useNavigateAwayGuard`, which
+// reads from TanStack Query cache via `useSetlist`. Each test wraps the
+// tree in a fresh QueryClient. Performance Mode is inactive in all tests
+// here (the guard short-circuits on `performanceActive === false`), so no
+// network call is dispatched.
+let queryClient: QueryClient;
+
 beforeEach(() => {
   isIPhoneMock.mockReset();
   isIPhoneMock.mockReturnValue(false);
+  queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+  });
 });
 
 afterEach(() => {
   vi.clearAllMocks();
+  queryClient.clear();
 });
 
 function renderShell(auth: AuthState, wrapper?: (children: React.ReactNode) => React.ReactNode) {
   const tree = (
-    <MemoryRouter initialEntries={['/']}>
-      <PerformanceModeProvider>
-        <AuthProvider initial={auth}>
-          <Routes>
-            <Route path="/" element={<AuthenticatedShell />}>
-              <Route index element={<div data-testid="route-content">route content</div>} />
-            </Route>
-          </Routes>
-        </AuthProvider>
-      </PerformanceModeProvider>
-    </MemoryRouter>
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={['/']}>
+        <PerformanceModeProvider>
+          <AuthProvider initial={auth}>
+            <Routes>
+              <Route path="/" element={<AuthenticatedShell />}>
+                <Route index element={<div data-testid="route-content">route content</div>} />
+              </Route>
+            </Routes>
+          </AuthProvider>
+        </PerformanceModeProvider>
+      </MemoryRouter>
+    </QueryClientProvider>
   );
   return render(wrapper ? wrapper(tree) : tree);
 }
@@ -68,18 +82,20 @@ describe('AuthenticatedShell', () => {
       return null;
     }
     render(
-      <MemoryRouter initialEntries={['/']}>
-        <PerformanceModeProvider>
-          <AuthProvider initial={{ status: 'authenticated', daysUntilExpiry: 365 }}>
-            <ActivateOnMount />
-            <Routes>
-              <Route path="/" element={<AuthenticatedShell />}>
-                <Route index element={<div data-testid="route-content">route content</div>} />
-              </Route>
-            </Routes>
-          </AuthProvider>
-        </PerformanceModeProvider>
-      </MemoryRouter>,
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/']}>
+          <PerformanceModeProvider>
+            <AuthProvider initial={{ status: 'authenticated', daysUntilExpiry: 365 }}>
+              <ActivateOnMount />
+              <Routes>
+                <Route path="/" element={<AuthenticatedShell />}>
+                  <Route index element={<div data-testid="route-content">route content</div>} />
+                </Route>
+              </Routes>
+            </AuthProvider>
+          </PerformanceModeProvider>
+        </MemoryRouter>
+      </QueryClientProvider>,
     );
     expect(screen.queryByRole('navigation', { name: 'Primary' })).toBeNull();
     expect(screen.queryByRole('navigation', { name: 'Tabs' })).toBeNull();

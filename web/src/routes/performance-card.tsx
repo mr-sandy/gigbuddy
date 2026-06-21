@@ -46,11 +46,14 @@ import { useWakeLockIndicator } from '../performance/use-wake-lock-indicator.js'
  * rule prohibits the React `autoFocus` prop, so we use a ref +
  * `useEffect`.
  *
- * Last-Song behaviour: Story 4.4 owns the inert-`NEXT ›`-on-last-Song
- * treatment (disabled visual, aria-disabled, no-op onClick, suppressed
- * preview). Story 4.1 leaves `NEXT ›` always-enabled — if Sandy lands on
- * `songIndex == flatSongs.length` the route falls through to the
- * graceful not-found branch below.
+ * Last-Song behaviour (Story 4.4, FR-21): on the last Song, `NEXT ›` is
+ * rendered inert — `disabled` + `aria-disabled="true"` + no-op onClick +
+ * `disabled:opacity-40` styling. The next-song preview is empty (no
+ * "End of setlist" copy — silent per Voice & Tone). NEXT › must NEVER
+ * transform into a terminating action at the last Song (locked memory
+ * note); Sandy ends Performance state exclusively by navigating away
+ * from the active Setlist chain. Out-of-bounds `songIndex` (e.g. a stale
+ * URL) still falls through to the graceful not-found branch below.
  *
  * Story 4.3 additions: × exit button (top-left of the header) navigates
  * back to `/setlists/:setlistId` without ending Performance state (FR-19
@@ -177,8 +180,19 @@ export function PerformanceCard(): JSX.Element {
   // `currentSongRef` is the matching SongRef from the Setlist.
   const totalSongs = flatSongs.length;
   const currentPosition = parsedSongIndex + 1; // 1-based for the indicator
+  // On the last Song, `nextSongRef` is `null` (out-of-bounds index) so the
+  // preview `<span>` below renders an empty string — silent per Voice &
+  // Tone (no "End of setlist" copy). Story 4.4 also disables `NEXT ›` so
+  // the button can't navigate past the end.
   const nextSongRef = flatSongs[parsedSongIndex + 1] ?? null;
   const isFirst = parsedSongIndex === 0;
+  // Story 4.4 — last-Song detection. When true, `NEXT ›` is rendered
+  // inert (disabled visual + no-op onClick) per FR-21 and the locked
+  // memory note. NEXT › must NEVER transform into an end-performance
+  // action at the last Song — prefer inert/disabled. Sandy ends
+  // Performance state only by navigating away from the active Setlist
+  // chain (the navigate-away guard, Story 4.4, owns that path).
+  const isLast = parsedSongIndex === flatSongs.length - 1;
   const chordChartText = song?.chordChart ?? '';
 
   return (
@@ -284,12 +298,23 @@ export function PerformanceCard(): JSX.Element {
         >
           {nextSongRef?.titleSnapshot ?? ''}
         </span>
+        {/* Story 4.4 — last-Song NEXT › is inert (disabled visual + no-op
+            onClick). Mirrors the existing `‹`/`isFirst` pattern above for
+            defence-in-depth. NEXT › must NEVER transform into a
+            terminating action at the last Song (FR-21, locked memory
+            note). Sandy ends Performance state via navigate-away only;
+            the × exit (Story 4.3) PRESERVES state. */}
         <button
           ref={nextButtonRef}
           type="button"
           aria-label={PERFORMANCE_CARD.ariaNextSong}
-          onClick={() => navigate(`/performance/${setlistId}/${parsedSongIndex + 1}`)}
-          className="min-h-tap rounded-[var(--radius-button)] bg-[color:var(--color-accent)] px-[calc(var(--spacing-unit)*4)] text-[length:var(--text-section-heading)] leading-[var(--text-section-heading--line-height)] font-[family-name:var(--font-serif-editorial)] text-[color:var(--color-bg)]"
+          disabled={isLast}
+          aria-disabled={isLast}
+          onClick={() => {
+            if (isLast) return;
+            navigate(`/performance/${setlistId}/${parsedSongIndex + 1}`);
+          }}
+          className="min-h-tap rounded-[var(--radius-button)] bg-[color:var(--color-accent)] px-[calc(var(--spacing-unit)*4)] text-[length:var(--text-section-heading)] leading-[var(--text-section-heading--line-height)] font-[family-name:var(--font-serif-editorial)] text-[color:var(--color-bg)] disabled:opacity-40"
         >
           {PERFORMANCE_CARD.nextSong}
         </button>
