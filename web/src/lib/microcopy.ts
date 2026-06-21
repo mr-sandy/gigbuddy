@@ -100,4 +100,21 @@ export const PERFORMANCE_CARD = {
   // Wake Lock is NOT held (FR-18, NFR-27, UX-DR6). Voice & Tone: short,
   // no exclamation, no marketing voice — assistive-tech-only string.
   ariaWakeLockNotHeld: 'Screen may sleep',
+  // Story 4.3 — × exit control on the Performance Card (FR-19, UX-DR9).
+  // The on-screen glyph is `×`; the aria-label is the spoken name.
+  exitButton: '×',
+  ariaExitPerformance: 'Exit performance mode',
+} as const;
+
+/*
+ * Currently-performing strip copy — Story 4.3 (FR-19, FR-20). Top-anchored
+ * strip on the active Setlist overview while Performance Mode is active.
+ * Voice & Tone: short, no exclamation, no marketing voice — the `›`
+ * chevron mirrors the `Start performance ›` action chevron.
+ */
+export const CURRENTLY_PERFORMING = {
+  label: 'Currently performing:',
+  ariaRegion: 'Currently performing',
+  resumeButton: 'Resume ›',
+  ariaResumeButton: 'Resume performance',
 } as const;

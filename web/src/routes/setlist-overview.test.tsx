@@ -12,14 +12,29 @@ import { SetlistOverview } from './setlist-overview.js';
  * is mocked per-suite to drive the iPhone-only CTA branch.
  */
 
-const { useSetlistMock, saveSetlistMock, navigateMock, isIPhoneMock, startPerformanceMock } =
-  vi.hoisted(() => ({
-    useSetlistMock: vi.fn(),
-    saveSetlistMock: vi.fn().mockResolvedValue(undefined),
-    navigateMock: vi.fn(),
-    isIPhoneMock: vi.fn().mockReturnValue(false),
-    startPerformanceMock: vi.fn().mockResolvedValue(undefined),
-  }));
+const {
+  useSetlistMock,
+  saveSetlistMock,
+  navigateMock,
+  isIPhoneMock,
+  startPerformanceMock,
+  performanceActiveMock,
+  activePerformanceSessionMock,
+  setPerformanceViewMock,
+} = vi.hoisted(() => ({
+  useSetlistMock: vi.fn(),
+  saveSetlistMock: vi.fn().mockResolvedValue(undefined),
+  navigateMock: vi.fn(),
+  isIPhoneMock: vi.fn().mockReturnValue(false),
+  startPerformanceMock: vi.fn().mockResolvedValue(undefined),
+  // Story 4.3 — Performance Mode context defaults. The pre-existing tests
+  // run with `performanceActive=false`; the new strip cases override.
+  performanceActiveMock: vi.fn<() => boolean>(() => false),
+  activePerformanceSessionMock: vi.fn<
+    () => { activeSetlistId: string | null; activeSongIndex: number }
+  >(() => ({ activeSetlistId: null, activeSongIndex: 0 })),
+  setPerformanceViewMock: vi.fn(),
+}));
 
 vi.mock('../hooks/use-setlist.js', () => ({ useSetlist: useSetlistMock }));
 vi.mock('../hooks/use-setlist-mutation.js', () => ({
@@ -31,6 +46,11 @@ vi.mock('../lib/platform.js', () => ({
 }));
 vi.mock('../performance/use-start-performance.js', () => ({
   useStartPerformance: () => startPerformanceMock,
+}));
+vi.mock('../performance/performance-context.js', () => ({
+  usePerformanceActive: () => performanceActiveMock(),
+  useActivePerformanceSession: () => activePerformanceSessionMock(),
+  useSetPerformanceView: () => setPerformanceViewMock,
 }));
 vi.mock('react-router', async () => {
   const actual = await vi.importActual<typeof import('react-router')>('react-router');
@@ -82,6 +102,14 @@ beforeEach(() => {
   navigateMock.mockReset();
   isIPhoneMock.mockReset().mockReturnValue(false);
   startPerformanceMock.mockReset().mockResolvedValue(undefined);
+  // Story 4.3 — default to Performance Mode inactive so the pre-existing
+  // tests continue to assert against the pre-strip DOM. Targeted cases
+  // below override.
+  performanceActiveMock.mockReset().mockReturnValue(false);
+  activePerformanceSessionMock
+    .mockReset()
+    .mockReturnValue({ activeSetlistId: null, activeSongIndex: 0 });
+  setPerformanceViewMock.mockReset();
   document.documentElement.dataset.atmosphere = 'practice';
 });
 
@@ -538,5 +566,90 @@ describe('SetlistOverview — Start performance CTA (Story 4.1)', () => {
     useSetlistMock.mockReturnValue({ data: undefined, isLoading: true });
     renderRoute();
     expect(screen.queryByRole('button', { name: ACTIONS.startPerformance })).toBeNull();
+  });
+});
+
+describe('SetlistOverview — CurrentlyPerformingStrip (Story 4.3)', () => {
+  it('renders the strip when performanceActive is true and setlistId matches', () => {
+    performanceActiveMock.mockReturnValue(true);
+    activePerformanceSessionMock.mockReturnValue({
+      activeSetlistId: 'setlistid0000001',
+      activeSongIndex: 1,
+    });
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    renderRoute('setlistid0000001');
+    expect(screen.getByRole('region', { name: 'Currently performing' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Resume performance' })).toBeInTheDocument();
+  });
+
+  it('strip displays the title of the song at activeSongIndex (titleSnapshot)', () => {
+    performanceActiveMock.mockReturnValue(true);
+    activePerformanceSessionMock.mockReturnValue({
+      activeSetlistId: 'setlistid0000001',
+      // Index 1 → Black Orpheus (flat order over Set 1 / Set 2).
+      activeSongIndex: 1,
+    });
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    renderRoute('setlistid0000001');
+    const region = screen.getByRole('region', { name: 'Currently performing' });
+    expect(region).toHaveTextContent('Black Orpheus');
+  });
+
+  it('does NOT render the strip when performanceActive is false', () => {
+    performanceActiveMock.mockReturnValue(false);
+    activePerformanceSessionMock.mockReturnValue({
+      activeSetlistId: 'setlistid0000001',
+      activeSongIndex: 0,
+    });
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    renderRoute('setlistid0000001');
+    expect(screen.queryByRole('region', { name: 'Currently performing' })).toBeNull();
+  });
+
+  it('does NOT render the strip when setlistId does not match the active setlist', () => {
+    performanceActiveMock.mockReturnValue(true);
+    activePerformanceSessionMock.mockReturnValue({
+      activeSetlistId: 'somethingelse00',
+      activeSongIndex: 0,
+    });
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    renderRoute('setlistid0000001');
+    expect(screen.queryByRole('region', { name: 'Currently performing' })).toBeNull();
+  });
+
+  it('Resume › navigates to /performance/<setlistId>/<activeSongIndex>', async () => {
+    const user = userEvent.setup();
+    performanceActiveMock.mockReturnValue(true);
+    activePerformanceSessionMock.mockReturnValue({
+      activeSetlistId: 'setlistid0000001',
+      activeSongIndex: 2,
+    });
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    renderRoute('setlistid0000001');
+    await user.click(screen.getByRole('button', { name: 'Resume performance' }));
+    expect(navigateMock).toHaveBeenCalledWith('/performance/setlistid0000001/2');
+  });
+
+  it('marks performanceView as "overview" while the strip is active', () => {
+    performanceActiveMock.mockReturnValue(true);
+    activePerformanceSessionMock.mockReturnValue({
+      activeSetlistId: 'setlistid0000001',
+      activeSongIndex: 0,
+    });
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    renderRoute('setlistid0000001');
+    expect(setPerformanceViewMock).toHaveBeenCalledWith('overview');
+  });
+
+  it('moves focus to the Resume › button after the strip mounts (AC-10)', () => {
+    performanceActiveMock.mockReturnValue(true);
+    activePerformanceSessionMock.mockReturnValue({
+      activeSetlistId: 'setlistid0000001',
+      activeSongIndex: 0,
+    });
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    renderRoute('setlistid0000001');
+    const resume = screen.getByRole('button', { name: 'Resume performance' });
+    expect(document.activeElement).toBe(resume);
   });
 });

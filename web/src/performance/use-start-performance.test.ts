@@ -18,6 +18,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const navigateMock = vi.fn();
 const setActiveMock = vi.fn();
+const setPerformanceSessionMock = vi.fn();
 const acquireMock = vi.fn(async () => {});
 const getSetlistMock = vi.fn();
 const getSongMock = vi.fn();
@@ -28,6 +29,7 @@ vi.mock('react-router', async () => {
 });
 vi.mock('./performance-context.js', () => ({
   useSetPerformanceActive: () => setActiveMock,
+  useSetActivePerformanceSession: () => setPerformanceSessionMock,
 }));
 vi.mock('./wake-lock.js', () => ({
   acquire: () => acquireMock(),
@@ -66,6 +68,7 @@ function makeSetlist(sections: Section[]): Setlist {
 beforeEach(() => {
   navigateMock.mockReset();
   setActiveMock.mockReset();
+  setPerformanceSessionMock.mockReset();
   acquireMock.mockReset().mockImplementation(async () => {});
   getSetlistMock.mockReset();
   getSongMock.mockReset();
@@ -227,5 +230,21 @@ describe('useStartPerformance', () => {
     const first = result.current;
     rerender();
     expect(result.current).toBe(first);
+  });
+
+  it('seeds the Performance session pointer with (setlistId, 0) on entry (Story 4.3)', async () => {
+    const setlist = makeSetlist([
+      {
+        name: 'Set 1',
+        songs: [{ songId: 'song000000000001', titleSnapshot: 'Autumn Leaves' }],
+      },
+    ]);
+    getSetlistMock.mockResolvedValue(setlist);
+    getSongMock.mockResolvedValue({});
+
+    const { result } = renderHook(() => useStartPerformance(), { wrapper });
+    await result.current('setlist000000001');
+
+    expect(setPerformanceSessionMock).toHaveBeenCalledWith('setlist000000001', 0);
   });
 });

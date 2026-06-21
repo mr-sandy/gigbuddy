@@ -1,6 +1,7 @@
 import type { Section, SetlistPutInput, SongRef } from '@gigbuddy/shared';
-import { type JSX, useState } from 'react';
+import { type JSX, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
+import { CurrentlyPerformingStrip } from '../components/currently-performing-strip.js';
 import { SectionHeading } from '../components/section-heading.js';
 import { SetlistSongRow } from '../components/setlist-song-row.js';
 import { useSetlist } from '../hooks/use-setlist.js';
@@ -8,6 +9,11 @@ import { useSetlistMutation } from '../hooks/use-setlist-mutation.js';
 import { formatGigDate } from '../lib/gig-date.js';
 import { ACTIONS, EMPTY_STATES } from '../lib/microcopy.js';
 import { isIPhone } from '../lib/platform.js';
+import {
+  useActivePerformanceSession,
+  usePerformanceActive,
+  useSetPerformanceView,
+} from '../performance/performance-context.js';
 import { useStartPerformance } from '../performance/use-start-performance.js';
 
 /*
@@ -63,6 +69,38 @@ export function SetlistOverview(): JSX.Element {
   const iphone = isIPhone();
   const [dragState, setDragState] = useState<DragState>(null);
   const [dropTarget, setDropTarget] = useState<DropTarget>(null);
+  // Story 4.3 — Performance Mode session context. `performanceActive` plus
+  // a matching `activeSetlistId` mean Sandy has exited the Performance
+  // Card via × and is back on the active Setlist overview (FR-19). The
+  // strip + chrome-visible override flow from this state.
+  const performanceActive = usePerformanceActive();
+  const { activeSetlistId, activeSongIndex } = useActivePerformanceSession();
+  const setPerformanceView = useSetPerformanceView();
+  const resumeButtonRef = useRef<HTMLButtonElement>(null);
+  const isActiveSetlist =
+    performanceActive && setlistId !== undefined && activeSetlistId === setlistId;
+
+  // Tell the chrome system this is the "overview" view of the active
+  // performance so `useChromeVisible()` reveals the tabs even while
+  // `performanceActive === true` (FR-19). When this overview is NOT the
+  // active one, leave the view untouched — the chrome rule defaults to
+  // hidden in Performance Mode for unrelated routes.
+  useEffect(() => {
+    if (!isActiveSetlist) return;
+    setPerformanceView('overview');
+    return () => {
+      setPerformanceView(null);
+    };
+  }, [isActiveSetlist, setPerformanceView]);
+
+  // AC-10 — restore focus to the Resume › button on the strip after
+  // arriving from × exit. The strip only mounts when `isActiveSetlist` is
+  // true, so the ref is populated by then.
+  useEffect(() => {
+    if (isActiveSetlist) {
+      resumeButtonRef.current?.focus();
+    }
+  }, [isActiveSetlist]);
 
   if (isLoading || setlist === undefined) {
     // Quiet skeleton (no spinner, no copy). The route renders an empty
@@ -253,13 +291,30 @@ export function SetlistOverview(): JSX.Element {
   // the button is `disabled`/`aria-disabled` so a tap produces no
   // observable action.
   const hasAnySong = setlist.sections.some((s) => s.songs.length > 0);
+  // Story 4.3: derive the title of the Song currently being performed
+  // from the active session pointer. Uses `titleSnapshot` from the
+  // Setlist (AR-11 snapshot-at-author-time) — the strip is bound to the
+  // gig context, not the latest Song record.
+  const flatActiveSongs = isActiveSetlist ? setlist.sections.flatMap((s) => s.songs) : [];
+  const currentPerformanceSongTitle = flatActiveSongs[activeSongIndex]?.titleSnapshot ?? '';
 
   return (
     <section
       aria-labelledby="setlist-overview-heading"
       className="flex flex-col gap-[var(--spacing-section-gap)]"
     >
-      {/* Epic 4: <CurrentlyPerformingStrip /> mounts here. */}
+      {/* Story 4.3 — CurrentlyPerformingStrip renders only when Performance
+          Mode is active AND the URL setlistId matches the active session
+          (the user has × exited from the Performance Card of THIS
+          Setlist). On other Setlist overviews or with Performance Mode
+          inactive, the strip is omitted. */}
+      {isActiveSetlist ? (
+        <CurrentlyPerformingStrip
+          ref={resumeButtonRef}
+          currentSongTitle={currentPerformanceSongTitle}
+          onResume={() => navigate(`/performance/${setlist.setlistId}/${activeSongIndex}`)}
+        />
+      ) : null}
       <header className="flex flex-col gap-[calc(var(--spacing-unit)*1)]">
         <h1
           id="setlist-overview-heading"

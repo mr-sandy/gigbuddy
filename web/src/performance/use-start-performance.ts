@@ -4,7 +4,7 @@ import { useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { getSetlist } from '../api/setlists.js';
 import { getSong } from '../api/songs.js';
-import { useSetPerformanceActive } from './performance-context.js';
+import { useSetActivePerformanceSession, useSetPerformanceActive } from './performance-context.js';
 import * as wakeLock from './wake-lock.js';
 
 /*
@@ -44,6 +44,10 @@ import * as wakeLock from './wake-lock.js';
 export function useStartPerformance(): (setlistId: string) => Promise<void> {
   const queryClient = useQueryClient();
   const setActive = useSetPerformanceActive();
+  // Story 4.3 — seed the session pointer at entry so the
+  // `CurrentlyPerformingStrip` can target the correct Setlist + Song
+  // index from the moment Performance Mode is active.
+  const setPerformanceSession = useSetActivePerformanceSession();
   const navigate = useNavigate();
 
   return useCallback(
@@ -78,10 +82,11 @@ export function useStartPerformance(): (setlistId: string) => Promise<void> {
       );
 
       await wakeLock.acquire();
+      setPerformanceSession(setlistId, 0);
       setActive(true);
       navigate(`/performance/${setlistId}/0`);
     },
-    [queryClient, setActive, navigate],
+    [queryClient, setActive, setPerformanceSession, navigate],
   );
 }
 

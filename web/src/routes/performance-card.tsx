@@ -4,6 +4,10 @@ import { ChordChart } from '../components/chord-chart.js';
 import { useSetlist } from '../hooks/use-setlist.js';
 import { useSong } from '../hooks/use-song.js';
 import { EMPTY_STATES, PERFORMANCE_CARD } from '../lib/microcopy.js';
+import {
+  useSetActiveSongIndex,
+  useSetPerformanceView,
+} from '../performance/performance-context.js';
 import { useWakeLockIndicator } from '../performance/use-wake-lock-indicator.js';
 
 /*
@@ -14,7 +18,9 @@ import { useWakeLockIndicator } from '../performance/use-wake-lock-indicator.js'
  * three-region Performance Card on a single Song:
  *
  *   ┌──────────────────────────────┐   shrink-0   ← fixed top chrome:
- *   │  title · key · patch         │              title + key + patch
+ *   │  ×           wake · n/N      │              × top-left, position
+ *   │  title                       │              top-right, title on
+ *   │  key · patch                 │              its own row below.
  *   ├──────────────────────────────┤
  *   │                              │              ← scrollable middle:
  *   │  chord chart                 │   flex-1     ChordChart + per-gig
@@ -46,9 +52,13 @@ import { useWakeLockIndicator } from '../performance/use-wake-lock-indicator.js'
  * `songIndex == flatSongs.length` the route falls through to the
  * graceful not-found branch below.
  *
- * The `×` exit button (top-left) and the persistent wake-lock indicator
- * are introduced by Story 4.3 and Story 4.2 respectively. The
- * placeholder comments below mark their landing zones.
+ * Story 4.3 additions: × exit button (top-left of the header) navigates
+ * back to `/setlists/:setlistId` without ending Performance state (FR-19
+ * state preservation — `setActive(false)` and `wakeLock.release()` are
+ * NOT called). Performance view + session pointer in context are kept in
+ * sync as Sandy navigates between songs so the `CurrentlyPerformingStrip`
+ * on the overview renders the correct Song title and `Resume ›` returns
+ * to the preserved index.
  */
 export function PerformanceCard(): JSX.Element {
   const { setlistId, songIndex } = useParams<{ setlistId: string; songIndex: string }>();
@@ -59,6 +69,13 @@ export function PerformanceCard(): JSX.Element {
   // `useStartPerformance`) so the lock is reacquired after card remount,
   // e.g. on Story 4.3 Resume ›.
   const { wakeLockHeld } = useWakeLockIndicator();
+  // Story 4.3 — mark the current view as `'card'` so chrome (bottom tabs
+  // on iPhone) stays hidden, and keep the context `activeSongIndex` in
+  // sync with the URL `:songIndex` so the strip on the overview surfaces
+  // the correct Song title and `Resume ›` returns to the preserved
+  // index.
+  const setPerformanceView = useSetPerformanceView();
+  const setActiveSongIndex = useSetActiveSongIndex();
 
   const parsedSongIndex = useMemo(() => {
     const parsed = Number.parseInt(songIndex ?? '', 10);
@@ -108,6 +125,29 @@ export function PerformanceCard(): JSX.Element {
     nextButtonRef.current?.focus();
   }, []);
 
+  // Story 4.3 — mark `performanceView` = 'card' on mount so chrome stays
+  // hidden, and clear it on unmount so a subsequent route (the Setlist
+  // overview after × exit, or any post-end navigation) can re-decide the
+  // view. Resetting to `null` is correct: the overview itself sets the
+  // value to `'overview'` when it detects active performance for the
+  // matching setlistId.
+  useEffect(() => {
+    setPerformanceView('card');
+    return () => {
+      setPerformanceView(null);
+    };
+  }, [setPerformanceView]);
+
+  // Story 4.3 — mirror the URL `:songIndex` into the context
+  // `activeSongIndex` so the `CurrentlyPerformingStrip` on the overview
+  // surfaces the currently-playing Song title and `Resume ›` returns to
+  // the preserved index after × exit.
+  useEffect(() => {
+    if (parsedSongIndex >= 0) {
+      setActiveSongIndex(parsedSongIndex);
+    }
+  }, [parsedSongIndex, setActiveSongIndex]);
+
   const isLoading = setlist === undefined || (currentSongRef !== undefined && song === undefined);
   const notFound =
     setlist === null || parsedSongIndex < 0 || currentSongRef === undefined || song === null;
@@ -148,17 +188,25 @@ export function PerformanceCard(): JSX.Element {
         className="shrink-0 bg-[color:var(--color-surface)] px-[var(--spacing-gutter)] py-[calc(var(--spacing-unit)*4)]"
         style={{ paddingTop: 'calc(env(safe-area-inset-top) + 16px)' }}
       >
-        {/* × exit: Story 4.3 lands the button here (top-left). */}
-        <div className="flex items-start justify-between">
-          <h1 className="text-[length:var(--text-perf-title)] leading-[var(--text-perf-title--line-height)] font-[family-name:var(--font-serif-editorial)] text-[color:var(--color-text-primary)]">
-            {song?.title ?? ''}
-          </h1>
+        {/* Story 4.3 — top row: × exit (top-left) | wake-lock indicator +
+            position indicator (top-right). The four Performance Card
+            controls live in four separate corners per UX-DR9: × top-left,
+            position indicator top-right, ‹ bottom-left, NEXT › bottom-right. */}
+        <div className="flex items-center justify-between">
+          <button
+            type="button"
+            aria-label={PERFORMANCE_CARD.ariaExitPerformance}
+            onClick={() => navigate(`/setlists/${setlistId}`)}
+            className="min-h-tap min-w-tap flex items-center justify-center text-[length:var(--text-perf-meta)] leading-[var(--text-perf-meta--line-height)] text-[color:var(--color-text-secondary)]"
+          >
+            {PERFORMANCE_CARD.exitButton}
+          </button>
           {/* Right-hand slot — wake-lock indicator (Story 4.2, conditional)
               then position indicator (Story 4.1, always present). The
               wake-lock indicator sits inside the position indicator so the
               position number stays at the far right edge for consistent
               spatial scanning. */}
-          <div className="ml-[calc(var(--spacing-unit)*2)] flex shrink-0 items-center gap-[calc(var(--spacing-unit)*2)]">
+          <div className="flex shrink-0 items-center gap-[calc(var(--spacing-unit)*2)]">
             {/* Wake-lock indicator — Story 4.2 (FR-18, NFR-27, UX-DR6).
                 Static, no animation, no onClick. `aria-live="assertive"`
                 announces "Screen may sleep" once on first appearance. */}
@@ -186,6 +234,9 @@ export function PerformanceCard(): JSX.Element {
             </span>
           </div>
         </div>
+        <h1 className="mt-[calc(var(--spacing-unit)*2)] text-[length:var(--text-perf-title)] leading-[var(--text-perf-title--line-height)] font-[family-name:var(--font-serif-editorial)] text-[color:var(--color-text-primary)]">
+          {song?.title ?? ''}
+        </h1>
         {(song?.key !== undefined && song.key !== '') ||
         (song?.patch !== undefined && song.patch !== '') ? (
           <div className="mt-[calc(var(--spacing-unit)*2)] flex flex-wrap gap-[calc(var(--spacing-unit)*4)] text-[length:var(--text-perf-meta)] leading-[var(--text-perf-meta--line-height)] font-[family-name:var(--font-mono-slab)] text-[color:var(--color-text-secondary)]">

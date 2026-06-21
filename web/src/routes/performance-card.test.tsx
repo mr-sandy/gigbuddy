@@ -12,7 +12,15 @@ import { PerformanceCard } from './performance-card.js';
  * viewport-meta effect are exercised via direct DOM assertions.
  */
 
-const { useSetlistMock, useSongMock, navigateMock, useWakeLockIndicatorMock } = vi.hoisted(() => ({
+const {
+  useSetlistMock,
+  useSongMock,
+  navigateMock,
+  useWakeLockIndicatorMock,
+  setPerformanceViewMock,
+  setActiveSongIndexMock,
+  setPerformanceActiveMock,
+} = vi.hoisted(() => ({
   useSetlistMock: vi.fn(),
   useSongMock: vi.fn(),
   navigateMock: vi.fn(),
@@ -20,12 +28,23 @@ const { useSetlistMock, useSongMock, navigateMock, useWakeLockIndicatorMock } = 
   // and the existing 23 test cases continue to assert against the
   // pre-Story-4.2 DOM. Targeted indicator cases below override this.
   useWakeLockIndicatorMock: vi.fn(() => ({ wakeLockHeld: true })),
+  // Story 4.3 — context setters for performanceView + activeSongIndex. The
+  // × exit handler also explicitly does NOT call `setPerformanceActive` —
+  // the mock below exists so tests can ASSERT it is never invoked.
+  setPerformanceViewMock: vi.fn(),
+  setActiveSongIndexMock: vi.fn(),
+  setPerformanceActiveMock: vi.fn(),
 }));
 
 vi.mock('../hooks/use-setlist.js', () => ({ useSetlist: useSetlistMock }));
 vi.mock('../hooks/use-song.js', () => ({ useSong: useSongMock }));
 vi.mock('../performance/use-wake-lock-indicator.js', () => ({
   useWakeLockIndicator: useWakeLockIndicatorMock,
+}));
+vi.mock('../performance/performance-context.js', () => ({
+  useSetPerformanceView: () => setPerformanceViewMock,
+  useSetActiveSongIndex: () => setActiveSongIndexMock,
+  useSetPerformanceActive: () => setPerformanceActiveMock,
 }));
 vi.mock('react-router', async () => {
   const actual = await vi.importActual<typeof import('react-router')>('react-router');
@@ -89,6 +108,9 @@ beforeEach(() => {
   useSongMock.mockReset();
   navigateMock.mockReset();
   useWakeLockIndicatorMock.mockReset().mockReturnValue({ wakeLockHeld: true });
+  setPerformanceViewMock.mockReset();
+  setActiveSongIndexMock.mockReset();
+  setPerformanceActiveMock.mockReset();
   document.documentElement.dataset.atmosphere = 'practice';
   // Ensure a viewport meta tag exists for the effect to mutate.
   let meta = document.querySelector('meta[name="viewport"]') as HTMLMetaElement | null;
@@ -372,5 +394,70 @@ describe('PerformanceCard — wake-lock indicator (Story 4.2)', () => {
     const indicator = screen.getByLabelText(PERFORMANCE_CARD.ariaWakeLockNotHeld);
     expect(indicator.getAttribute('aria-live')).toBe('assertive');
     expect(indicator.getAttribute('role')).toBe('status');
+  });
+});
+
+describe('PerformanceCard — × exit (Story 4.3)', () => {
+  it('renders the × button with aria-label "Exit performance mode"', () => {
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    useSongMock.mockReturnValue({ data: makeSong(), isLoading: false });
+    renderRoute();
+    expect(
+      screen.getByRole('button', { name: PERFORMANCE_CARD.ariaExitPerformance }),
+    ).toBeInTheDocument();
+  });
+
+  it('tapping × navigates back to /setlists/<setlistId>', async () => {
+    const user = userEvent.setup();
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    useSongMock.mockReturnValue({ data: makeSong(), isLoading: false });
+    renderRoute('setlistid0000001', '1');
+    await user.click(screen.getByRole('button', { name: PERFORMANCE_CARD.ariaExitPerformance }));
+    expect(navigateMock).toHaveBeenCalledWith('/setlists/setlistid0000001');
+  });
+
+  it('tapping × does NOT call setPerformanceActive (state preserved per FR-19)', async () => {
+    const user = userEvent.setup();
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    useSongMock.mockReturnValue({ data: makeSong(), isLoading: false });
+    renderRoute();
+    await user.click(screen.getByRole('button', { name: PERFORMANCE_CARD.ariaExitPerformance }));
+    expect(setPerformanceActiveMock).not.toHaveBeenCalled();
+  });
+
+  it('× appears spatially before ‹ in DOM order (UX-DR9 four-corner separation)', () => {
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    useSongMock.mockReturnValue({ data: makeSong(), isLoading: false });
+    renderRoute();
+    const exitButton = screen.getByRole('button', {
+      name: PERFORMANCE_CARD.ariaExitPerformance,
+    });
+    const prevButton = screen.getByRole('button', {
+      name: PERFORMANCE_CARD.ariaPreviousSong,
+    });
+    // × lives in the header chrome (top-left); ‹ lives in the footer
+    // toolbar (bottom-left). DOM order: × comes before ‹.
+    const position = exitButton.compareDocumentPosition(prevButton);
+    expect(position & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('marks performanceView as "card" on mount and clears it on unmount', () => {
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    useSongMock.mockReturnValue({ data: makeSong(), isLoading: false });
+    const { unmount } = renderRoute();
+    expect(setPerformanceViewMock).toHaveBeenCalledWith('card');
+    setPerformanceViewMock.mockClear();
+    unmount();
+    expect(setPerformanceViewMock).toHaveBeenCalledWith(null);
+  });
+
+  it('mirrors the URL songIndex into context activeSongIndex on mount', () => {
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    useSongMock.mockReturnValue({
+      data: makeSong({ songId: 'song0000000002bb', title: 'Black Orpheus' }),
+      isLoading: false,
+    });
+    renderRoute('setlistid0000001', '1');
+    expect(setActiveSongIndexMock).toHaveBeenCalledWith(1);
   });
 });
