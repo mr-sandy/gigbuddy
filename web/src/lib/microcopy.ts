@@ -82,3 +82,18 @@ export const DRAG_REORDER = {
   moveUp: 'Move up',
   moveDown: 'Move down',
 } as const;
+
+/*
+ * Performance Card copy — Story 4.1 (FR-15, FR-16, FR-17). iPhone-only
+ * surface used on the Performance Card route. Glyph labels (`NEXT ›`, `‹`)
+ * are the on-screen text; the `aria*` strings are spoken by assistive
+ * technology in place of the glyph. Voice & Tone: short, no exclamation,
+ * no marketing voice.
+ */
+export const PERFORMANCE_CARD = {
+  nextSong: 'NEXT ›',
+  previousSong: '‹',
+  ariaNextSong: 'Next song',
+  ariaPreviousSong: 'Previous song',
+  ariaSongPosition: (n: number, total: number) => `Song ${n} of ${total}`,
+} as const;

@@ -12,12 +12,14 @@ import { SetlistOverview } from './setlist-overview.js';
  * is mocked per-suite to drive the iPhone-only CTA branch.
  */
 
-const { useSetlistMock, saveSetlistMock, navigateMock, isIPhoneMock } = vi.hoisted(() => ({
-  useSetlistMock: vi.fn(),
-  saveSetlistMock: vi.fn().mockResolvedValue(undefined),
-  navigateMock: vi.fn(),
-  isIPhoneMock: vi.fn().mockReturnValue(false),
-}));
+const { useSetlistMock, saveSetlistMock, navigateMock, isIPhoneMock, startPerformanceMock } =
+  vi.hoisted(() => ({
+    useSetlistMock: vi.fn(),
+    saveSetlistMock: vi.fn().mockResolvedValue(undefined),
+    navigateMock: vi.fn(),
+    isIPhoneMock: vi.fn().mockReturnValue(false),
+    startPerformanceMock: vi.fn().mockResolvedValue(undefined),
+  }));
 
 vi.mock('../hooks/use-setlist.js', () => ({ useSetlist: useSetlistMock }));
 vi.mock('../hooks/use-setlist-mutation.js', () => ({
@@ -26,6 +28,9 @@ vi.mock('../hooks/use-setlist-mutation.js', () => ({
 vi.mock('../lib/platform.js', () => ({
   isIPhone: () => isIPhoneMock(),
   isStandalone: () => false,
+}));
+vi.mock('../performance/use-start-performance.js', () => ({
+  useStartPerformance: () => startPerformanceMock,
 }));
 vi.mock('react-router', async () => {
   const actual = await vi.importActual<typeof import('react-router')>('react-router');
@@ -76,6 +81,7 @@ beforeEach(() => {
   saveSetlistMock.mockReset().mockResolvedValue(undefined);
   navigateMock.mockReset();
   isIPhoneMock.mockReset().mockReturnValue(false);
+  startPerformanceMock.mockReset().mockResolvedValue(undefined);
   document.documentElement.dataset.atmosphere = 'practice';
 });
 
@@ -459,7 +465,7 @@ describe('SetlistOverview — reorder flow (drag-and-drop path)', () => {
   });
 });
 
-describe('SetlistOverview — Start performance CTA', () => {
+describe('SetlistOverview — Start performance CTA (Story 4.1)', () => {
   it('renders the Start performance CTA on iPhone', () => {
     isIPhoneMock.mockReturnValue(true);
     useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
@@ -474,15 +480,63 @@ describe('SetlistOverview — Start performance CTA', () => {
     expect(screen.queryByRole('button', { name: ACTIONS.startPerformance })).toBeNull();
   });
 
-  it('the iPhone CTA has no onClick handler in Epic 3 (Epic 4 wires it)', async () => {
+  it('tapping the CTA invokes useStartPerformance with the setlist id', async () => {
     const user = userEvent.setup();
     isIPhoneMock.mockReturnValue(true);
     useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
     renderRoute();
-    const cta = screen.getByRole('button', { name: ACTIONS.startPerformance });
-    // Clicking the CTA must not navigate or save anything in Epic 3.
+    await user.click(screen.getByRole('button', { name: ACTIONS.startPerformance }));
+    expect(startPerformanceMock).toHaveBeenCalledTimes(1);
+    expect(startPerformanceMock).toHaveBeenCalledWith('setlistid0000001');
+  });
+
+  it('disables the CTA when the Setlist has no Songs in any Section (AC-2)', async () => {
+    const user = userEvent.setup();
+    isIPhoneMock.mockReturnValue(true);
+    useSetlistMock.mockReturnValue({
+      data: makeSetlist({
+        sections: [
+          { name: 'Set 1', songs: [] },
+          { name: 'Set 2', songs: [] },
+        ],
+      }),
+      isLoading: false,
+    });
+    renderRoute();
+    const cta = screen.getByRole('button', {
+      name: ACTIONS.startPerformance,
+    }) as HTMLButtonElement;
+    expect(cta.disabled).toBe(true);
+    expect(cta.getAttribute('aria-disabled')).toBe('true');
     await user.click(cta);
-    expect(navigateMock).not.toHaveBeenCalled();
-    expect(saveSetlistMock).not.toHaveBeenCalled();
+    expect(startPerformanceMock).not.toHaveBeenCalled();
+  });
+
+  it('keeps the CTA enabled when at least one Section has at least one Song', () => {
+    isIPhoneMock.mockReturnValue(true);
+    useSetlistMock.mockReturnValue({
+      data: makeSetlist({
+        sections: [
+          { name: 'Set 1', songs: [] },
+          {
+            name: 'Set 2',
+            songs: [{ songId: 'song0000000003cc', titleSnapshot: 'Take Five' }],
+          },
+        ],
+      }),
+      isLoading: false,
+    });
+    renderRoute();
+    const cta = screen.getByRole('button', {
+      name: ACTIONS.startPerformance,
+    }) as HTMLButtonElement;
+    expect(cta.disabled).toBe(false);
+  });
+
+  it('does not render the CTA while the Setlist query is loading', () => {
+    isIPhoneMock.mockReturnValue(true);
+    useSetlistMock.mockReturnValue({ data: undefined, isLoading: true });
+    renderRoute();
+    expect(screen.queryByRole('button', { name: ACTIONS.startPerformance })).toBeNull();
   });
 });

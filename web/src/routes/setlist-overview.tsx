@@ -8,6 +8,7 @@ import { useSetlistMutation } from '../hooks/use-setlist-mutation.js';
 import { formatGigDate } from '../lib/gig-date.js';
 import { ACTIONS, EMPTY_STATES } from '../lib/microcopy.js';
 import { isIPhone } from '../lib/platform.js';
+import { useStartPerformance } from '../performance/use-start-performance.js';
 
 /*
  * Setlist overview surface (Story 3.3, FR-13 / FR-10 / FR-11; Story 3.6
@@ -58,6 +59,7 @@ export function SetlistOverview(): JSX.Element {
   const { data: setlist, isLoading } = useSetlist(setlistId ?? null);
   const { saveSetlist } = useSetlistMutation();
   const navigate = useNavigate();
+  const onStartPerformance = useStartPerformance();
   const iphone = isIPhone();
   const [dragState, setDragState] = useState<DragState>(null);
   const [dropTarget, setDropTarget] = useState<DropTarget>(null);
@@ -246,6 +248,11 @@ export function SetlistOverview(): JSX.Element {
 
   const { venue, date, time } = setlist.gigMeta;
   const dateDisplay = time ? `${formatGigDate(date)} · ${time}` : formatGigDate(date);
+  // Story 4.1: the Start performance CTA is enabled only when at least one
+  // Section contains at least one Song (AC-2). When every Section is empty
+  // the button is `disabled`/`aria-disabled` so a tap produces no
+  // observable action.
+  const hasAnySong = setlist.sections.some((s) => s.songs.length > 0);
 
   return (
     <section
@@ -335,10 +342,20 @@ export function SetlistOverview(): JSX.Element {
       ))}
 
       {iphone ? (
+        // Story 4.1 wires the entry handler. The button is `disabled` when
+        // every Section is empty (AC-2) so a tap produces no observable
+        // action. The handler itself also short-circuits an empty Setlist
+        // (defence-in-depth — see `useStartPerformance`).
         <button
           type="button"
           aria-label={ACTIONS.startPerformance}
-          className="fixed inset-x-0 bottom-0 z-40 flex min-h-[64px] items-start justify-center bg-[color:var(--color-accent)] pt-[calc(var(--spacing-unit)*3)] text-[length:var(--text-section-heading)] leading-[var(--text-section-heading--line-height)] font-[family-name:var(--font-serif-editorial)] text-[color:var(--color-bg)]"
+          disabled={!hasAnySong}
+          aria-disabled={!hasAnySong}
+          onClick={() => {
+            if (!hasAnySong) return;
+            void onStartPerformance(setlist.setlistId);
+          }}
+          className="fixed inset-x-0 bottom-0 z-40 flex min-h-[64px] items-start justify-center bg-[color:var(--color-accent)] pt-[calc(var(--spacing-unit)*3)] text-[length:var(--text-section-heading)] leading-[var(--text-section-heading--line-height)] font-[family-name:var(--font-serif-editorial)] text-[color:var(--color-bg)] disabled:opacity-60"
           style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 50px)' }}
         >
           {ACTIONS.startPerformance}
