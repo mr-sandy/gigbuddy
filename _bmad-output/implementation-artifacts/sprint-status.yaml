@@ -36,7 +36,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-06-09
-last_updated: 2026-06-21 (4-5-backgrounding-survives-tonight-gig-pre-fetch-upcoming-gigs → review)
+last_updated: 2026-06-21 (Epic 4 stories verified live on gig.cormie.com → done; pivoting to UX review before Epic 5)
 project: gigbuddy
 project_key: NOKEY
 tracking_system: file-system
@@ -74,12 +74,12 @@ development_status:
   epic-3-retrospective: done
 
   # Epic 4: Performance Mode
-  epic-4: in-progress
-  4-1-performance-mode-entry-card-layout-single-tap-navigation: review
-  4-2-wake-lock-with-persistent-indicator-and-backoff: review
-  4-3-exit-via-x-currently-performing-strip-resume: review
-  4-4-end-performance-state-on-navigate-away-last-song-inert-next: review
-  4-5-backgrounding-survives-tonight-gig-pre-fetch-upcoming-gigs: review
+  epic-4: done
+  4-1-performance-mode-entry-card-layout-single-tap-navigation: done
+  4-2-wake-lock-with-persistent-indicator-and-backoff: done
+  4-3-exit-via-x-currently-performing-strip-resume: done
+  4-4-end-performance-state-on-navigate-away-last-song-inert-next: done
+  4-5-backgrounding-survives-tonight-gig-pre-fetch-upcoming-gigs: done
   epic-4-retrospective: optional
 
   # Epic 5: Export & Verified Restore Ship-Gate
