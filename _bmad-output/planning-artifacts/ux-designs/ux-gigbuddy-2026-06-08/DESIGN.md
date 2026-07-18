@@ -201,7 +201,7 @@ Visual specs. Behavioral rules live in `EXPERIENCE.md.Component Patterns`.
 | `Start performance ›` CTA | Bottom-fixed full-width bar (above iPhone tab bar). `accent` background; `bg` text. Tall (≥ 64pt) for clear thumb target. |
 | `× exit` (performance) | Small (28pt icon target) top-left. Low emphasis — `text-secondary` color. Reach is intentional. |
 | `Bottom tabs` | Two tabs (`Setlists` / `Library`). `text-secondary` inactive, `accent` active. ~50pt tall above home-indicator inset. |
-| `Top nav` (MacBook) | Editorial serif `GigBuddy · The Jack Ruby 5` left, nav items right. Hairline divider below. Generous vertical padding. |
+| `Top nav` (MacBook) | Editorial serif `GigBuddy · The Jack Ruby 5` left, nav items right. Hairline divider below. Generous vertical padding. **Active page** (the nav item matching the current route) renders in `accent`; inactive items in `text-primary`. Parallel to the bottom-tabs active-state rule. (Locked 2026-06-27.) |
 | `Inline edit field` | No visible border in display state. On focus: thin `accent` underline (practice) or `accent` glow (performance — though edit primarily happens in practice mode). |
 | `Parse-row status` | `✓` matched: green dot, `text-secondary` row. `?` fuzzy: amber dot, `attention-fuzzy` row with inline accept/reject buttons. `+` unknown: red dot, `attention-unknown` row with inline `+ Add to library` button. Icon + color + label always together (never color alone). |
 | `Currently performing` strip | Top-anchored strip on setlist overview, `accent` background, `bg` text. Compact (~48pt tall). `Resume ›` button right-aligned. |
