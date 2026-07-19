@@ -1845,3 +1845,312 @@ So that before V1 ships I have proof — not theory — that PITR + AWS Backup a
 **And** the V1 ship gate is cleared
 **And** future drills (e.g., quarterly) re-execute the runbook and append new Sign-off entries
 
+---
+
+## Epic 6: P1 Performance-Mode Enhancements — Jumps, Detours & Section-Break Orientation
+
+Deliver the non-linear half of the performance journey locked in the P1 mockup brief (2026-07-19). Epic 4 shipped the linear happy-path — Sandy taps `Start performance ›`, `NEXT ›` walks him song by song, `×` exits, `Resume ›` returns. This epic delivers the reality: bands jump mid-set. Sandy needs to reach any song in the setlist (B3) or any song in the library (B4) without abandoning the plan, see at a glance when he's on a detour, orient himself between sets (B8), and have the app respect the "plan is a starting point, not a script" model throughout. Sources: `_bmad-output/planning-artifacts/mockups/p1-performance.md` (locked picks), `_bmad-output/planning-artifacts/journeys/journey-p1-performance.md` (state-machine semantics), `_bmad-output/planning-artifacts/mockups/rendered/p1-performance/iteration-{2,3}/` (approved renderings).
+
+### Story 6.1: Compact chord-glyph notation in `<ChordChart>` (P1 chord-chart lock)
+
+As Sandy,
+I want the shipped `<ChordChart text={...}>` component to render chord tokens with compact typographic notation (base note + accidentals + tension/quality as superscript or symbol) while keeping the V1 text-flow structure (no cards, no grid, no elevation, authored line breaks respected),
+So that the chord chart on the Performance Card reads as engraved musical notation rather than raw text, without the failed V2 card-grid rhythm.
+
+**Acceptance Criteria:**
+
+**Given** a chord-chart body containing tokens like `Dbmaj7`, `Gm7`, `Gb9`, `G7sus4`
+**When** `<ChordChart>` renders on the Performance Card (Club Warm atmosphere)
+**Then** each token renders with compact notation:
+  - `Dbmaj7` → `Db△` (base + accidental + `△` symbol for major-seventh)
+  - `Gm7` → `G` with `m7` typeset as superscript
+  - `Gb9` → `Gb` with `9` typeset as superscript
+  - `G7sus4` → `G` with `7sus4` typeset as superscript
+**And** every authored line break is preserved (each authored line renders as one visual line; no reflow/wrap by the component)
+**And** the surrounding chord region contains no card borders, no 2-column grid, and no elevation shadows
+**And** typography follows `perf-chord` (mono/slab, 32pt) per DESIGN.md Performance palette
+
+**Given** slash chords (e.g. `Bm/D`) and altered dominants (e.g. `G7♭9`, `G7#5`)
+**When** the tokens are rendered
+**Then** the base note + accidental + tension parse per rules documented in the story's Dev Notes (final transformation rules owned by this story's implementation, following the pattern established for the four examples above)
+
+**Given** a chord token the parser cannot classify (malformed or unknown quality)
+**When** the token is rendered
+**Then** it renders as verbatim text (fall back gracefully — do not throw, do not blank the row)
+**And** the fallback is visible in the component's test suite
+
+**Given** the same chord-chart body rendered on the Practice atmosphere (MacBook, Song Detail)
+**When** `<ChordChart>` renders
+**Then** the same compact-notation rules apply (the component is atmosphere-agnostic; typography tokens differ per atmosphere but the parse+render logic is shared)
+
+**Given** the Song Detail edit surface (Story 2.6) with the same chord-chart body
+**When** Sandy edits the raw text
+**Then** the edit surface shows the authored (un-transformed) source (`Dbmaj7`, not `Db△`) — the transformation is a render-time concern only, never persisted or shown in edit mode
+
+**Given** the shipped Performance Card, plan-baseline state (`iteration-2/state-1a-plan-v1-floor-text-chart.png`) as the reference rendering
+**When** the story is code-reviewed
+**Then** the shipped rendering matches the approved mockup at chord-token level (visual inspection; no pixel-diff test required)
+
+---
+
+### Story 6.2: Chrome polish — single-row key/patch + `Set 1   6 songs` section-count format on iPhone performance surfaces
+
+As Sandy,
+I want the key + patch chrome on every Performance Card state to render as a single inline row (`G   Rhodes` — key glyph large mono, patch smaller mono, generous whitespace, no `KEY` / `PATCH` labels) and section headings on iPhone setlist-overview surfaces to render as `Set 1   6 songs` (literal count + word `songs`),
+So that the performance-card chrome matches the locked mockup and section headings match the T4 MacBook lock without cluttering the surface with redundant labels.
+
+**Acceptance Criteria:**
+
+**Given** any Performance Card state (plan, detour, last song, wake-lock-lost)
+**When** the top chrome renders
+**Then** below the song title, a single inline row displays `<key>   <patch>` (e.g. `G   Rhodes`, `Am   Rhodes`, `Em   Wurli`)
+**And** the key is typeset in `perf-meta` mono (large); the patch is typeset in `perf-meta` mono (smaller, secondary emphasis)
+**And** neither `KEY` nor `PATCH` labels are rendered
+**And** the row is not a two-column card — no card border, no grid alignment against a second column
+
+**Given** a Song with no patch value
+**When** the Performance Card renders
+**Then** only the key glyph renders; the patch slot is empty (no `-`, no `(unset)`, no placeholder)
+
+**Given** a Song with no key value
+**When** the Performance Card renders
+**Then** only the patch renders; the key slot is empty (same rule)
+
+**Given** iPhone setlist-overview surfaces (used by the jump overlay, section-break orientation view, and the shipped Setlist overview)
+**When** section headings render
+**Then** each heading reads `Set 1   6 songs` (or `Set 2   5 songs`, etc.) — literal `Set <n>`, whitespace, integer count, whitespace, word `songs`
+**And** the format is used on every iPhone surface that renders a section heading in a performance-adjacent context (the MacBook Setlist overview retains its own T4-locked format, which is the same string but derived from a shared microcopy helper if practical)
+
+**Given** a section containing exactly one song
+**When** the section heading renders
+**Then** it reads `Set 1   1 song` (singular; the microcopy handles the `songs`/`song` inflection)
+
+**Given** the shipped Performance Card and Setlist overview components
+**When** existing tests run
+**Then** the tests are updated to assert the new key/patch and section-heading strings; no visual regressions land elsewhere
+
+---
+
+### Story 6.3: Jump affordance `≡ jump` in bottom toolbar (P1 jump-affordance A2 lock)
+
+As Sandy,
+I want a third control in the Performance Card bottom toolbar — placed between `‹` and `NEXT ›`, rendered as `≡ jump` — that opens a dismissable overlay above the performance card without releasing wake lock or unmounting the card,
+So that from the sacred-state surface I can reach for any song in the setlist or the library with a single tap in a spatially predictable location.
+
+**Acceptance Criteria:**
+
+**Given** any Performance Card state (plan, detour, last song, wake-lock-lost)
+**When** the bottom toolbar renders
+**Then** the toolbar contains three controls left-to-right: `‹` (back, low-emphasis), `≡ jump` (new, low-emphasis mid-toolbar), `NEXT ›` (right-biased, `accent` fill, `bg` text)
+**And** the four-corners spatial-safety rule holds: `×` top-left, position indicator top-right, `‹` bottom-left, `NEXT ›` bottom-right; `≡ jump` occupies the toolbar interior between `‹` and `NEXT ›` (never a corner)
+**And** the next-song preview text (`next: <title>`) compresses to `next: <trunc…>` when the label of the jump control would otherwise collide (per the mockup lock — compression is the accepted trade-off, not a wrap or reflow)
+
+**Given** Sandy taps the `≡ jump` control
+**When** the tap is registered
+**Then** an overlay mounts on top of the Performance Card
+**And** the performance card DOES NOT unmount; wake lock DOES NOT release; the plan cursor DOES NOT change
+**And** the overlay presents its own dismiss control (`‹` top-left, glyph only, low-emphasis)
+**And** tapping the overlay's `‹` dismisses it and returns focus to the Performance Card in its prior state
+
+**Given** the overlay is open in this story's scope
+**When** it renders
+**Then** it renders as a minimal shell (dismiss control + empty content region) — the full setlist-overview + search content is delivered by Story 6.4
+**And** the shell is styled in the Club Warm atmosphere with no bottom tab bar and no top nav
+**And** the shell mounts and dismisses without visible lag on iPhone 13 (transitions ≤150ms; `prefers-reduced-motion` collapses to instant per NFR-21)
+
+**Given** the overlay is open
+**When** any performance-mode API call would normally 401 (per AR-28)
+**Then** the 401 is held (no redirect to `/login`) — the overlay inherits the same in-performance auth-hold rule as the underlying card
+
+**Given** the `≡ jump` control
+**When** an accessibility audit runs
+**Then** the control has `aria-label="Open setlist and library jump overlay"` (or equivalent — final wording owned by implementation Dev Notes, verified via `bmad-editorial-review-prose`)
+**And** the label does not read as "menu" (avoid hamburger connotations per the mockup brief)
+
+---
+
+### Story 6.4: Jump overlay 5-a — pinned search + scrolling setlist overview + library reach (P1 5-a lock, unified-jump-scope)
+
+As Sandy,
+I want the jump overlay (opened by `≡ jump` from Story 6.3) to show a pinned search field above a scrolling setlist overview, with library results appearing under an `In library` group when the query has no setlist match — one surface, one path, setlist-first,
+So that whether I'm reaching for a song in tonight's plan (B3) or reaching outside it to a library song (B4), the interaction is a single search-or-scan and a single tap.
+
+**Acceptance Criteria:**
+
+**Given** the jump overlay is open (from the Story 6.3 shell)
+**When** the overlay renders
+**Then** the top chrome is: `‹` dismiss control (top-left) followed by a pinned search input labelled `Search this setlist or library` (serif placeholder)
+**And** below the search input, the setlist overview renders as a vertical scroll: sections labelled per Story 6.2 (`Set 1   6 songs` / `Set 2   5 songs`), each section listing its song rows with title (serif) + key (mono, small)
+**And** no `NEXT ›`, no wake-lock indicator, no position indicator renders inside the overlay (those belong to the card beneath)
+**And** the row corresponding to the plan cursor is highlighted with `accent` fill (`bg`-colored text) — this is the sole signal telling Sandy "you are jumping from here"
+
+**Given** the overlay is open with no query typed
+**When** the overlay renders
+**Then** every setlist song row is visible in sectioned order
+**And** no library rows are rendered
+**And** the `In library` group heading is absent
+
+**Given** Sandy types a query that has any match in the current setlist
+**When** the overlay filters
+**Then** the setlist rows filter in place to matching rows only
+**And** rows are grouped under an `In this setlist` small-caps heading (`text-secondary`) if a group heading is required for legibility (the heading may be omitted when zero library results are present — implementation picks the cleanest composition per the mockup)
+**And** no library rows render
+
+**Given** Sandy types a query that has no match in the current setlist but does match one or more library songs
+**When** the overlay filters
+**Then** the setlist section is empty (or omitted)
+**And** an `In library` small-caps heading (`text-secondary`) renders
+**And** matching library songs render beneath the heading as tap-target rows (same title + key row shape as setlist rows)
+**And** the library query hits the client-side library cache (Story 2.5 / Story 2.6 provide the data) — no new API endpoint required by this story
+
+**Given** Sandy types a query that matches both setlist and library rows
+**When** the overlay filters
+**Then** setlist matches render first (grouped under `In this setlist`), library matches render second (grouped under `In library`), in that order
+
+**Given** Sandy taps any row in the overlay (setlist match or library match)
+**When** the tap is registered
+**Then** the overlay dismisses
+**And** the Performance Card underneath advances to the tapped song
+**And** the wake lock stays held throughout
+**And** if the tapped song is not the plan cursor + 1, the card enters the **detour state** (semantics owned by Story 6.5; this story guarantees the transition triggers)
+**And** the plan cursor DOES NOT change (jumps do not modify the plan per P1 §B3 decision 1)
+
+**Given** the overlay is open with a query typed
+**When** Sandy taps the `‹` dismiss control
+**Then** the overlay dismisses without changing the current song
+**And** the query state is discarded (re-opening the overlay starts fresh with no query — the "jumps are cheap" model)
+
+**Given** the overlay is open
+**When** the wake lock is lost while the overlay is visible
+**Then** the `☽` glyph does NOT render on the overlay's chrome (locked 2026-07-18 — indicator lives on the card beneath and reappears on dismiss)
+**And** the wake lock indicator on the underlying card renders correctly when the overlay dismisses
+
+**Given** the overlay is open on iPhone with `prefers-reduced-motion`
+**When** search filtering runs on each keystroke
+**Then** the filter is applied instantly (no cross-fade animation on results); rows appear/disappear without transition
+**And** without reduced-motion, filter transitions are ≤150ms per NFR-1
+
+---
+
+### Story 6.5: Detour state (D3) + Currently-performing strip detour signal (P1 D3 lock, plan-cursor persistence)
+
+As Sandy,
+I want the Performance Card to show `DETOUR` in the top-right position slot whenever I'm on a jumped-to song (with no numeric indicator, no hairline), `NEXT ›` from the detour to return to plan-cursor + 1, `‹` from the detour to undo the jump, and the Currently-performing strip after `×` to signal a detour via italic title + `↩` prefix,
+So that a glance at the card tells me whether I'm on plan or detoured, and both the return-to-plan and exit-then-resume paths respect the "plan is a starting point, not a script" model.
+
+**Acceptance Criteria:**
+
+**Given** the Performance Card is on the plan cursor (not detoured)
+**When** the top chrome renders
+**Then** the top-right position slot renders the numeric indicator `<n> / <total>` (shipped format)
+**And** no `DETOUR` word appears
+**And** no chrome cue (hairline / label) indicates detour
+
+**Given** Sandy taps a row in the jump overlay (from Story 6.4) that is NOT equal to plan cursor + 1
+**When** the Performance Card advances to the tapped song
+**Then** the card enters the detour state
+**And** the top-right position slot renders the word `DETOUR` (typography per DESIGN.md — mono, `perf-meta` sizing, secondary emphasis; final treatment owned by implementation and verified against `iteration-3/state-2a-detour-v1-floor-text-chart.png`)
+**And** no numeric indicator is shown in the detour state
+**And** no hairline or additional chrome cue is required (D3 is dropped-numeric only)
+
+**Given** Sandy is on a detour song
+**When** Sandy taps `NEXT ›`
+**Then** the card advances to `plan cursor + 1` (the song after the return anchor in the setlist, traversing section boundaries per Story 4.1 rules)
+**And** the plan cursor updates to `plan cursor + 1` (i.e. the return anchor is consumed — Sandy has continued past it on plan)
+**And** the card exits the detour state (position slot returns to `<n> / <total>`)
+
+**Given** Sandy is on a detour song
+**When** Sandy taps `‹`
+**Then** the card returns to the return anchor (the plan-cursor song from which the detour was launched)
+**And** the plan cursor is unchanged
+**And** the card exits the detour state
+
+**Given** Sandy is on the plan cursor and the plan cursor is the last song of the setlist
+**When** Sandy is jumped to a detour song via the overlay
+**Then** the detour state renders as above
+**And** `NEXT ›` from the detour is inert (there is no `plan cursor + 1`; the card is on the last song's return anchor already — inert-not-terminating per Story 4.4 and `[[feedback-no-terminate-on-advance-gesture]]`)
+**And** `‹` from the detour returns to the plan cursor as above
+
+**Given** the Currently-performing strip (shipped Story 4.3) renders after Sandy taps `×` mid-detour
+**When** the strip renders on `/setlists/:setlistId`
+**Then** the strip's current-song text renders in italic serif
+**And** a `↩` (U+21A9) prefix appears before the song title (`Currently performing: ↩ Sunny`)
+**And** tapping `Resume ›` returns Sandy to the detour song with detour state intact (position slot re-shows `DETOUR`; return anchor preserved)
+
+**Given** the strip renders after `×` from a plan song (no detour active at exit)
+**When** the strip renders
+**Then** the current-song text renders in the shipped non-italic serif
+**And** no `↩` prefix is present (the strip signals detour only when a detour is active)
+
+**Given** the strip is present with detour signal
+**When** an accessibility audit runs
+**Then** the italic + `↩` signal is paired with a text-based semantic (e.g. `aria-label="Currently performing on a detour: Sunny"` or equivalent — color/style is never the only signal per DESIGN.md)
+
+**Given** the shipped detour renderings in `iteration-3/state-2a-detour-v1-floor-text-chart.png` (card) and `iteration-2/state-7-strip-detour-signalled.png` (strip)
+**When** the story is code-reviewed
+**Then** the shipped renderings match the approved mockups at glance-level
+
+---
+
+### Story 6.6: Section-break orientation view (S2 CTA) — auto-open overlay between sets (P1 §B8, one-overview-three-contexts)
+
+As Sandy,
+I want tapping `NEXT ›` on the last song of a section (other than the final section) to auto-open the jump overlay scrolled to the next section with the first song highlighted, plus a bottom-fixed `Start Set 2 ›` (etc.) CTA parallel to `Start performance ›`,
+So that between sets I can orient myself without hunting for a control, put the phone down for 10–15 minutes, and start the next set with a single deliberate tap.
+
+**Acceptance Criteria:**
+
+**Given** Sandy is on the last song of a non-final section (e.g. song 6 of Set 1 in a two-section setlist)
+**When** Sandy taps `NEXT ›`
+**Then** the jump overlay auto-opens on top of the Performance Card
+**And** the overlay auto-scrolls so the first song of the next section is prominent at the top of the viewport (with a small breathing gap allowed)
+**And** the first song of the next section is highlighted with `accent` fill / `bg` text (same "current row" treatment used for the plan cursor in the mid-performance jump overlay)
+**And** Set 1 rows render at **full strength** (not dimmed) — they remain valid tap targets for encores and skipped-song replays
+**And** wake lock stays held
+**And** the Performance Card underneath does NOT unmount
+
+**Given** the section-break overlay is open
+**When** it renders
+**Then** a bottom-fixed CTA renders with copy `Start Set 2 ›` (or the appropriate section name — `Start <section-name> ›`, always all-title-case serif on `accent` fill, full-width, matching the shape of the shipped `Start performance ›` CTA)
+**And** the CTA is the primary tap target for entering the next section
+**And** the highlighted first-row is ALSO tappable and produces the same outcome as the CTA (row and CTA are equivalent affordances; highlight signals intent, CTA is the safe hit target)
+
+**Given** Sandy taps the `Start Set 2 ›` CTA (or the highlighted first-row)
+**When** the tap is registered
+**Then** the overlay dismisses
+**And** the Performance Card advances to the first song of the next section
+**And** the plan cursor updates to that song (this is a plan advance, not a detour — the section-break enter is on-plan)
+**And** wake lock stays held
+
+**Given** the section-break overlay is open
+**When** Sandy taps a Set 1 row (an on-plan-but-not-current row)
+**Then** the card advances to that Set 1 song
+**And** the card enters the detour state (per Story 6.5 — tapping any non-plan-cursor+1 row is a detour)
+**And** the plan cursor does not change
+
+**Given** the section-break overlay is open
+**When** Sandy taps the `‹` dismiss control (top-left)
+**Then** the overlay dismisses without advancing
+**And** the Performance Card is back on the last song of the previous section (the pre-tap state)
+**And** wake lock stays held
+
+**Given** Sandy is on the last song of the final section of the setlist
+**When** Sandy taps `NEXT ›`
+**Then** the tap is inert per Story 4.4 (last-song `NEXT ›` inert, not terminating)
+**And** the section-break overlay does NOT auto-open (there is no next section)
+
+**Given** the section-break overlay is open and Sandy types a query in the search field
+**When** the query has any match
+**Then** the section-break overlay behaves as a jump overlay from that point (Story 6.4 filtering behaviour applies — setlist matches first, library matches under `In library`)
+**And** the auto-scroll and Set 2 first-row highlight are cleared while a query is active (the CTA also hides while filtering — the CTA is only meaningful for the "enter as auto-scrolled" default)
+**And** clearing the query restores the auto-scroll / highlight / CTA to the section-break-orientation shape
+
+**Given** the section-break overlay renders in an accessibility audit
+**When** the overlay opens
+**Then** focus is placed on the `Start Set 2 ›` CTA (primary action)
+**And** the CTA has `aria-label="Start <section name>"` (parallel to the shipped `Start performance ›` label pattern)
+
+**Given** the shipped Section-break rendering in `iteration-2/state-6-section-break-S2-cta.png`
+**When** the story is code-reviewed
+**Then** the shipped rendering matches the approved mockup (auto-scroll position, first-row highlight, CTA placement/copy, `‹` dismiss)
+

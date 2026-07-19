@@ -36,7 +36,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-06-09
-last_updated: 2026-07-19 (Story 5.2 → review; Task 4 manual drill still owed by Sandy)
+last_updated: 2026-07-19 (Epic 6 P1 performance enhancements drafted from mockup lock)
 project: gigbuddy
 project_key: NOKEY
 tracking_system: file-system
@@ -87,3 +87,13 @@ development_status:
   5-1-json-export-endpoint-library-footer-affordance: review
   5-2-verified-restore-drill-runbook-v1-ship-gate: review
   epic-5-retrospective: optional
+
+  # Epic 6: P1 Performance-Mode Enhancements — Jumps, Detours & Section-Break Orientation
+  epic-6: backlog
+  6-1-compact-chord-glyph-notation-in-chord-chart: backlog
+  6-2-chrome-polish-key-patch-single-row-section-count-format: backlog
+  6-3-jump-affordance-bottom-toolbar-a2: backlog
+  6-4-jump-overlay-5a-pinned-search-setlist-library-reach: backlog
+  6-5-detour-state-d3-currently-performing-strip-detour-signal: backlog
+  6-6-section-break-orientation-view-s2-cta: backlog
+  epic-6-retrospective: optional
