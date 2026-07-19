@@ -36,7 +36,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-06-09
-last_updated: 2026-07-19 (Story 5.1 → review)
+last_updated: 2026-07-19 (Story 5.2 → review; Task 4 manual drill still owed by Sandy)
 project: gigbuddy
 project_key: NOKEY
 tracking_system: file-system
@@ -85,5 +85,5 @@ development_status:
   # Epic 5: Export & Verified Restore Ship-Gate
   epic-5: in-progress
   5-1-json-export-endpoint-library-footer-affordance: review
-  5-2-verified-restore-drill-runbook-v1-ship-gate: backlog
+  5-2-verified-restore-drill-runbook-v1-ship-gate: review
   epic-5-retrospective: optional

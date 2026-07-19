@@ -13,7 +13,11 @@ import { defineConfig, devices } from '@playwright/test';
  * the "Playwright starts both servers" half of the contract.
  */
 export default defineConfig({
-  testDir: '.',
+  // Scope the smoke config to `smoke/` only. The restore-drill spec at
+  // `restore/verified-restore.spec.ts` needs its own config (deployed URL
+  // + env-var credentials, no local dev servers) and is invoked via
+  // `pnpm test:e2e:restore`, not by this smoke run.
+  testDir: './smoke',
   testMatch: '**/*.spec.ts',
   fullyParallel: false,
   retries: 0,

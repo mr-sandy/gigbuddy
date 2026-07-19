@@ -278,10 +278,11 @@ for a stack trace, and verify both SSM parameters exist with
 `aws ssm get-parameters --names /gigbuddy/jwt-key /gigbuddy/password-hash --with-decryption --region eu-west-2 --query 'Parameters[].Name'`
 (lists names only — never echo `Values` in shell history).
 
-> Rotation runbooks (`rotate-jwt-key.md`, `rotate-password.md`) ship in
-> Story 5.2 alongside the verified-restore drill. Until then, manual
-> rotation is: write a new SSM SecureString value, redeploy
-> `GigbuddyApi`, log back in. All prior sessions invalidate.
+> Rotation runbooks (`rotate-jwt-key.md`, `rotate-password.md`) are not
+> yet scheduled to a story — author on-demand before the first
+> rotation is needed. Until then, manual rotation is: write a new SSM
+> SecureString value, redeploy `GigbuddyApi`, log back in. All prior
+> sessions invalidate.
 
 ## 9. Emergency: deploy-force.yml
 
