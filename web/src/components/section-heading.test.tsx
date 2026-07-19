@@ -29,12 +29,12 @@ describe('SectionHeading — MacBook (practice)', () => {
 
   it('renders the song count badge with the correct pluralisation', () => {
     render(<SectionHeading name="Set 1" songCount={4} sectionIndex={0} onRename={() => {}} />);
-    expect(screen.getByText('· 4 songs')).toBeInTheDocument();
+    expect(screen.getByText('4 songs')).toBeInTheDocument();
   });
 
   it('uses the singular form when songCount is 1', () => {
     render(<SectionHeading name="Encore" songCount={1} sectionIndex={2} onRename={() => {}} />);
-    expect(screen.getByText('· 1 song')).toBeInTheDocument();
+    expect(screen.getByText('1 song')).toBeInTheDocument();
   });
 
   it('calls onRename(sectionIndex, newName) on blur when the value changed', async () => {
@@ -77,7 +77,7 @@ describe('SectionHeading — iPhone (performance)', () => {
 
   it('still renders the song count badge', () => {
     render(<SectionHeading name="Set 1" songCount={4} sectionIndex={0} onRename={() => {}} />);
-    expect(screen.getByText('· 4 songs')).toBeInTheDocument();
+    expect(screen.getByText('4 songs')).toBeInTheDocument();
   });
 
   it('accepts onRename for type compatibility but never calls it (no edit affordance mounted)', () => {

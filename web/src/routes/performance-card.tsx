@@ -276,9 +276,26 @@ export function PerformanceCard(): JSX.Element {
         </h1>
         {(song?.key !== undefined && song.key !== '') ||
         (song?.patch !== undefined && song.patch !== '') ? (
-          <div className="mt-[calc(var(--spacing-unit)*2)] flex flex-wrap gap-[calc(var(--spacing-unit)*4)] text-[length:var(--text-perf-meta)] leading-[var(--text-perf-meta--line-height)] font-[family-name:var(--font-mono-slab)] text-[color:var(--color-text-secondary)]">
-            {song?.key !== undefined && song.key !== '' ? <span>{song.key}</span> : null}
-            {song?.patch !== undefined && song.patch !== '' ? <span>{song.patch}</span> : null}
+          // Story 6.2 (AC-1) — single inline row, no `KEY`/`PATCH` labels, no
+          // bordered/shaded container. Key and patch share font family
+          // (mono-slab) and colour (text-secondary), but the key is typeset
+          // at the larger `--text-perf-meta` (22px) and the patch at the
+          // smaller `--text-perf-body` (18px) — both are already-shipped
+          // invariant type-scale tokens (no new tokens introduced). Missing
+          // key or patch is rendered gracefully (empty slot, no placeholder);
+          // when both are absent the row is omitted entirely by the outer
+          // conditional above (AC-2, unchanged from the shipped behaviour).
+          <div className="mt-[calc(var(--spacing-unit)*2)] flex flex-wrap items-baseline gap-[calc(var(--spacing-unit)*4)] font-[family-name:var(--font-mono-slab)] text-[color:var(--color-text-secondary)]">
+            {song?.key !== undefined && song.key !== '' ? (
+              <span className="text-[length:var(--text-perf-meta)] leading-[var(--text-perf-meta--line-height)]">
+                {song.key}
+              </span>
+            ) : null}
+            {song?.patch !== undefined && song.patch !== '' ? (
+              <span className="text-[length:var(--text-perf-body)] leading-[var(--text-perf-body--line-height)]">
+                {song.patch}
+              </span>
+            ) : null}
           </div>
         ) : null}
       </header>

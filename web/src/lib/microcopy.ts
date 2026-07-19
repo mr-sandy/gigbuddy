@@ -109,6 +109,22 @@ export const PERFORMANCE_CARD = {
 } as const;
 
 /*
+ * Section heading copy — Story 6.2 (AC-3). Shared helper used by the
+ * `SectionHeading` component and (looking ahead) by every iPhone surface
+ * that renders a section-heading-shaped row in a performance-adjacent
+ * context — the jump overlay (Story 6.4) and the section-break
+ * orientation view (Story 6.6) will call this helper rather than
+ * re-deriving the pluralisation. Format: `<n> song` when n === 1, else
+ * `<n> songs`. No leading separator (the visible whitespace between the
+ * section name and the count is produced by the caller's flex `gap-*` —
+ * see `SectionHeading` for the current layout, matching the T4 MacBook
+ * setlist-overview lock).
+ */
+export const SECTION_HEADING = {
+  songCount: (n: number) => `${n} ${n === 1 ? 'song' : 'songs'}`,
+} as const;
+
+/*
  * Currently-performing strip copy — Story 4.3 (FR-19, FR-20). Top-anchored
  * strip on the active Setlist overview while Performance Mode is active.
  * Voice & Tone: short, no exclamation, no marketing voice — the `›`

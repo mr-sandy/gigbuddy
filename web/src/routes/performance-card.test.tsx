@@ -188,6 +188,23 @@ describe('PerformanceCard — loaded state rendering', () => {
     expect(screen.getByText('Rhodes')).toBeInTheDocument();
   });
 
+  it('renders the key at --text-perf-meta and the patch at --text-perf-body (Story 6.2 AC-1)', () => {
+    // Key/patch chrome must render as a single inline row with a size
+    // differentiation between the (larger) key glyph and the (smaller)
+    // patch text — both mono/slab, both text-secondary. This asserts the
+    // specific invariant type-scale tokens the story locks in.
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    useSongMock.mockReturnValue({ data: makeSong(), isLoading: false });
+    renderRoute();
+    const keySpan = screen.getByText('Em');
+    const patchSpan = screen.getByText('Rhodes');
+    expect(keySpan.className).toContain('text-[length:var(--text-perf-meta)]');
+    expect(patchSpan.className).toContain('text-[length:var(--text-perf-body)]');
+    // And confirm the patch is NOT rendered at the larger key size (the
+    // pre-story shipped bug this story fixes).
+    expect(patchSpan.className).not.toContain('text-[length:var(--text-perf-meta)]');
+  });
+
   it('renders the chord chart in performance atmosphere (urlsTappable=false)', () => {
     useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
     useSongMock.mockReturnValue({ data: makeSong(), isLoading: false });

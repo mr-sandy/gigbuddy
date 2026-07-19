@@ -1,5 +1,6 @@
 import type { JSX } from 'react';
 import { readAtmosphere } from '../lib/atmosphere.js';
+import { SECTION_HEADING } from '../lib/microcopy.js';
 import { InlineEditField } from './inline-edit-field.js';
 
 /*
@@ -17,9 +18,16 @@ import { InlineEditField } from './inline-edit-field.js';
  * Atmosphere comes from the shared `readAtmosphere()` helper (boot-fixed,
  * never changes mid-session).
  *
- * The count badge is part of the heading line: `Set 1 · 4 songs`. The
- * badge is rendered in mono `text-secondary` to differentiate from the
- * editorial-serif name.
+ * The count badge is part of the heading line: `Set 1   4 songs` (Story
+ * 6.2 AC-3 — literal integer + `songs`/`song`, no middle-dot `·`
+ * separator). The visible whitespace between the section name and the
+ * count is produced by the flex `gap-*` between the two spans, not by
+ * characters embedded in the string. The badge is rendered in mono
+ * `text-secondary` to differentiate from the editorial-serif name. The
+ * count-label microcopy comes from `SECTION_HEADING.songCount(n)` so
+ * future setlist-overview-shaped surfaces (Stories 6.4 jump overlay, 6.6
+ * section-break orientation view) render the identical format without
+ * re-deriving the pluralisation.
  */
 
 export type SectionHeadingProps = {
@@ -42,7 +50,7 @@ export function SectionHeading({
   onRename,
 }: SectionHeadingProps): JSX.Element {
   const atmosphere = readAtmosphere();
-  const countLabel = `· ${songCount} ${songCount === 1 ? 'song' : 'songs'}`;
+  const countLabel = SECTION_HEADING.songCount(songCount);
 
   if (atmosphere === 'performance') {
     return (
