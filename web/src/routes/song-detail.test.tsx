@@ -87,6 +87,23 @@ describe('SongDetail — edit existing song', () => {
     expect(screen.getByTestId('chord-chart')).toBeInTheDocument();
   });
 
+  // Story 6.1 AC-5 — the edit surface must always show the raw authored
+  // source, never the compact-notation rendering. `Dbmaj7` is the smallest
+  // token whose rendered output (`Db△`) visibly differs from the source, so
+  // it's the correct probe for this non-transformation guarantee (the older
+  // `Dm A7 Dm` case above happens to look identical whether transformed
+  // or not, so it can't prove this on its own).
+  it('shows the authored chord-chart source verbatim in the edit control (never the transformed rendering)', () => {
+    const song = makeSong('abc', {
+      title: 'So What',
+      chordChart: 'Dbmaj7',
+    });
+    useSongMock.mockReturnValue({ data: song, isLoading: false });
+    renderAtEdit('abc');
+
+    expect(screen.getByLabelText(FIELD_LABELS.chordChart)).toHaveValue('Dbmaj7');
+  });
+
   it('debounces a single-field edit to one saveSong call with the merged record', async () => {
     const user = userEvent.setup();
     const song = makeSong('abc', { title: 'Original' });

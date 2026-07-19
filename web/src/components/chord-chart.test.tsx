@@ -65,4 +65,63 @@ describe('ChordChart', () => {
     });
     expect(kinds).toEqual(['section', 'line', 'blank', 'section', 'line']);
   });
+
+  // Story 6.1 — compact chord-glyph notation composition with existing pipeline.
+
+  it('preserves multi-space chord alignment and superscripts each chord suffix', () => {
+    const { container } = render(<ChordChart text="Dm    A7    Dm" urlsTappable={false} />);
+    const line = container.querySelector('[data-chord-chart-line]');
+    expect(line).not.toBeNull();
+    // Whitespace runs preserved verbatim inside the <pre>.
+    expect(line?.textContent).toBe('Dm    A7    Dm');
+    // Each of the three tokens produces one <sup> (m, 7, m).
+    const sups = line?.querySelectorAll('sup') ?? [];
+    expect(sups).toHaveLength(3);
+    expect(Array.from(sups).map((s) => s.textContent)).toEqual(['m', '7', 'm']);
+  });
+
+  it('does not superscript anything inside a {Section} heading line', () => {
+    const { container } = render(<ChordChart text="{Verse 1}" urlsTappable={false} />);
+    const section = container.querySelector('[data-chord-chart-section]');
+    expect(section).not.toBeNull();
+    expect(section?.textContent).toBe('Verse 1');
+    // Section-heading branch is untouched by Story 6.1.
+    expect(section?.querySelector('sup')).toBeNull();
+  });
+
+  it('never chord-tokenizes a URL segment (no <sup> appears inside the anchor text)', () => {
+    render(<ChordChart text="See https://example.com" urlsTappable />);
+    const link = screen.getByRole('link', { name: 'https://example.com' });
+    expect(link.textContent).toBe('https://example.com');
+    expect(link.querySelector('sup')).toBeNull();
+  });
+
+  it('never chord-tokenizes a URL segment when urlsTappable=false either (plain text URL, no <sup> inside it)', () => {
+    const { container } = render(
+      <ChordChart text="Dm https://example.com A7" urlsTappable={false} />,
+    );
+    const line = container.querySelector('[data-chord-chart-line]');
+    expect(line?.textContent).toBe('Dm https://example.com A7');
+    // The URL itself is not chord-tokenized — only Dm and A7 produce <sup>.
+    const sups = line?.querySelectorAll('sup') ?? [];
+    expect(Array.from(sups).map((s) => s.textContent)).toEqual(['m', '7']);
+  });
+
+  it('renders a line mixing malformed and valid tokens: malformed verbatim, valid transformed, order preserved', () => {
+    const { container } = render(<ChordChart text="Dm H7 A7" urlsTappable={false} />);
+    const line = container.querySelector('[data-chord-chart-line]');
+    expect(line).not.toBeNull();
+    // Textually the line is unchanged.
+    expect(line?.textContent).toBe('Dm H7 A7');
+    // Only Dm and A7 produce <sup> — H7 falls back verbatim.
+    const sups = line?.querySelectorAll('sup') ?? [];
+    expect(Array.from(sups).map((s) => s.textContent)).toEqual(['m', '7']);
+  });
+
+  it('renders Dbmaj7 with the △ symbol at baseline (no <sup> for maj7)', () => {
+    const { container } = render(<ChordChart text="Dbmaj7" urlsTappable={false} />);
+    const line = container.querySelector('[data-chord-chart-line]');
+    expect(line?.textContent).toBe('Db△');
+    expect(line?.querySelector('sup')).toBeNull();
+  });
 });

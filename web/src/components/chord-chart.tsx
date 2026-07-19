@@ -1,4 +1,5 @@
-import type { JSX, ReactNode } from 'react';
+import { Fragment, type JSX, type ReactNode } from 'react';
+import { renderChordToken } from './chord-notation.js';
 
 /*
  * Chord chart V1 floor (UX-DR5, EXPERIENCE.md "Chord chart").
@@ -11,6 +12,12 @@ import type { JSX, ReactNode } from 'react';
  *     Consecutive blanks are NOT collapsed — the architecture's "blank
  *     lines preserved" rule applies literally.
  *   - Every other line renders as monospaced text at perf-chord size.
+ *     Content lines are additionally tokenized on whitespace runs (Story
+ *     6.1) so each non-whitespace token can be rendered as compact chord
+ *     notation via `renderChordToken` (root at baseline + `<sup>` suffix
+ *     + optional `/bass` at baseline; `maj7` → `△`). Whitespace runs are
+ *     preserved verbatim so multi-space chord alignment is never
+ *     collapsed. Tokens that fail to parse render verbatim.
  *
  * URL handling — `urlsTappable` is set by the route from
  * `document.documentElement.dataset.atmosphere` (Practice → true,
@@ -18,6 +25,11 @@ import type { JSX, ReactNode } from 'react';
  * inert text (no anchor, no color shift). Practice wraps each URL in an
  * `<a target="_blank" rel="noopener noreferrer">`. The regex is the V1
  * floor (`https?:\/\/\S+`) — not RFC-compliant; pragmatically sufficient.
+ * URL segments are never passed through chord tokenization — the URL
+ * split runs first, and only non-URL segments are chord-tokenized. This
+ * means Story 6.1's compact notation applies identically in both
+ * atmospheres; `urlsTappable` continues to gate only the URL <a>
+ * treatment, not chord tokenization.
  *
  * Honest-empty: a text of zero non-whitespace characters renders nothing
  * (no empty box, no placeholder — EXPERIENCE.md State Patterns).
@@ -81,23 +93,42 @@ export function ChordChart({ text, urlsTappable }: Props): JSX.Element | null {
 }
 
 function renderLineContent(line: string, urlsTappable: boolean): ReactNode {
-  if (!urlsTappable) return line;
   const parts = line.split(URL_REGEX);
   return parts.map((part, idx) => {
     if (/^https?:\/\/\S+$/.test(part)) {
-      return (
-        <a
-          // biome-ignore lint/suspicious/noArrayIndexKey: split-index is the identity here
-          key={idx}
-          href={part}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-[color:var(--color-accent)] underline hover:text-[color:var(--color-accent-strong)]"
-        >
-          {part}
-        </a>
-      );
+      if (urlsTappable) {
+        return (
+          <a
+            // biome-ignore lint/suspicious/noArrayIndexKey: split-index is the identity here
+            key={idx}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[color:var(--color-accent)] underline hover:text-[color:var(--color-accent-strong)]"
+          >
+            {part}
+          </a>
+        );
+      }
+      return part;
     }
-    return part;
+    return (
+      <Fragment
+        // biome-ignore lint/suspicious/noArrayIndexKey: split-index is the identity here
+        key={idx}
+      >
+        {renderChordLine(part, `seg-${idx}`)}
+      </Fragment>
+    );
+  });
+}
+
+function renderChordLine(text: string, keyPrefix: string): ReactNode {
+  return text.split(/(\s+)/).map((part, idx) => {
+    const key = `${keyPrefix}-${idx}`;
+    if (/^\s*$/.test(part)) {
+      return <Fragment key={key}>{part}</Fragment>;
+    }
+    return renderChordToken(part, key);
   });
 }

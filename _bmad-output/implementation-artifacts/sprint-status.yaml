@@ -36,7 +36,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-06-09
-last_updated: 2026-07-19 (Epic 6 P1 performance enhancements drafted from mockup lock)
+last_updated: 2026-07-19 (Story 6.1 → review)
 project: gigbuddy
 project_key: NOKEY
 tracking_system: file-system
@@ -89,8 +89,8 @@ development_status:
   epic-5-retrospective: optional
 
   # Epic 6: P1 Performance-Mode Enhancements — Jumps, Detours & Section-Break Orientation
-  epic-6: backlog
-  6-1-compact-chord-glyph-notation-in-chord-chart: backlog
+  epic-6: in-progress
+  6-1-compact-chord-glyph-notation-in-chord-chart: review
   6-2-chrome-polish-key-patch-single-row-section-count-format: backlog
   6-3-jump-affordance-bottom-toolbar-a2: backlog
   6-4-jump-overlay-5a-pinned-search-setlist-library-reach: backlog
