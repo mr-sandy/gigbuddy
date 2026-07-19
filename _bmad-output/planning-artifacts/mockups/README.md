@@ -22,20 +22,17 @@ This directory holds the source briefs for the visual mockup pass that gates Epi
 
 ## Atmosphere
 
-All four briefs in this pass live in the **MacBook practice atmosphere** — warm paper cream, daylight, editorial serif. iPhone-side journeys are not yet drafted; performance-atmosphere briefs (warm-dark "Club Warm") will come later.
+The MacBook pass (T1/T3/T4) lives in the **practice atmosphere** — warm paper cream, daylight, editorial serif. The iPhone pass (P1) lives in the **performance atmosphere** — Club Warm (warm-dark, dim-bar, engraved). Same design tokens; different rooms.
 
 ## Brief inventory
 
-Four briefs covering 21 surface states across three journeys (T1, T3, T4). Each brief covers multiple states of one surface.
-
-**Status (2026-06-28): all four briefs `mockup approved`. The Epic 5 mockup gate is lifted.**
-
-| Brief | Surface | Journey | States | Status |
-|---|---|---|---|---|
-| [`t3-library.md`](t3-library.md) | `/library` | T3 | 4 — empty input · filter query typed · no-match · empty library | **mockup approved 2026-06-28** |
-| [`t3-song-detail.md`](t3-song-detail.md) | `/songs/:songId` + `/songs/new` | T3 | 3 (+ chord-chart aspiration variant on State 1) | **mockup approved 2026-06-28** |
-| [`t4-setlist-new-manual.md`](t4-setlist-new-manual.md) | `/setlists/new` (manual entry) | T4 | 9 — fresh · flat list · multi-section · remove-section confirm · draft indicator · SongSearchRow type-ahead · SongSearchRow `+ Add to library` · within-section drag · cross-section drag | **mockup approved 2026-06-28** |
-| [`t1-setlist-new-paste.md`](t1-setlist-new-paste.md) | `/setlists/new` (paste-to-parse) | T1 | 5 — Phase A textarea+preview · Phase A annotation detail · Phase B transition · Phase B fully resolved · Phase B inline split chevron | **mockup approved 2026-06-28** |
+| Brief | Surface | Journey | Atmosphere | States | Status |
+|---|---|---|---|---|---|
+| [`t3-library.md`](t3-library.md) | `/library` | T3 | Practice | 4 — empty input · filter query typed · no-match · empty library | **mockup approved 2026-06-28** |
+| [`t3-song-detail.md`](t3-song-detail.md) | `/songs/:songId` + `/songs/new` | T3 | Practice | 3 (+ chord-chart aspiration variant on State 1) | **mockup approved 2026-06-28** |
+| [`t4-setlist-new-manual.md`](t4-setlist-new-manual.md) | `/setlists/new` (manual entry) | T4 | Practice | 9 — fresh · flat list · multi-section · remove-section confirm · draft indicator · SongSearchRow type-ahead · SongSearchRow `+ Add to library` · within-section drag · cross-section drag | **mockup approved 2026-06-28** |
+| [`t1-setlist-new-paste.md`](t1-setlist-new-paste.md) | `/setlists/new` (paste-to-parse) | T1 | Practice | 5 — Phase A textarea+preview · Phase A annotation detail · Phase B transition · Phase B fully resolved · Phase B inline split chevron | **mockup approved 2026-06-28** |
+| [`p1-performance.md`](p1-performance.md) | `/performance/:setlistId/:songIndex` + jump overlay + section-break view + Currently-performing strip | P1 | Performance (Club Warm) | 8 approved (from a 3-iteration exploration of 12 alternatives) — plan song · detour (D3) · last song · wake-lock lost · jump overlay (5-a-i/ii) · section-break (S2) · Currently-performing strip | **mockup approved 2026-07-19** |
 
 Status legend:
 - **brief drafted** — written, awaiting Sandy's critique.
