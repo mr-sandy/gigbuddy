@@ -31,6 +31,8 @@ export const ACTIONS = {
   backToLibrary: 'Back to library',
   startPerformance: 'Start performance ›',
   done: 'Done',
+  // Story 5.1 (FR-33) — MacBook Library footer affordance.
+  exportAllData: 'Export all data',
 } as const;
 
 export const FIELD_LABELS = {

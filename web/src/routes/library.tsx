@@ -2,6 +2,7 @@ import { Link } from 'react-router';
 import { LibrarySongRow } from '../components/library-song-row.js';
 import { useSongs } from '../hooks/use-songs.js';
 import { ACTIONS, EMPTY_STATES } from '../lib/microcopy.js';
+import { isIPhone } from '../lib/platform.js';
 
 /*
  * Library (FR-4). Lists the active Band's Songs alphabetically — the
@@ -14,11 +15,20 @@ import { ACTIONS, EMPTY_STATES } from '../lib/microcopy.js';
  * avoid flashing "No songs in this library yet." during the cold-load
  * fetch. After the persister restore lands (Story 2.4), this window
  * only exists on the very first ever visit.
+ *
+ * Story 5.1 (FR-33) — MacBook-only footer affordance: a low-emphasis
+ * `Export all data` link that hits `GET /api/v1/export`. Must be a plain
+ * `<a>` (NOT React Router's `<Link>`) — this needs a real browser
+ * navigation so the `Content-Disposition: attachment` response header
+ * fires the native save-dialog; a client-side `<Link>` would route the
+ * click through the SPA router and never trigger a download. iPhone
+ * intentionally has no export affordance in V1.
  */
 export function Library() {
   const { data, isLoading } = useSongs();
   const isInitialLoad = data === undefined && isLoading;
   const hasSongs = data !== undefined && data.length > 0;
+  const showExport = !isIPhone();
 
   return (
     <section aria-labelledby="library-heading">
@@ -44,6 +54,16 @@ export function Library() {
           {EMPTY_STATES.noSongsInLibrary}
         </p>
       )}
+      {showExport ? (
+        <footer className="mt-[var(--spacing-section-gap)]">
+          <a
+            href="/api/v1/export"
+            className="inline-flex min-h-tap items-center py-[calc(var(--spacing-unit)*2)] text-[length:var(--text-practice-body)] leading-[var(--text-practice-body--line-height)] text-[color:var(--color-text-secondary)] hover:text-[color:var(--color-text-primary)] focus-visible:text-[color:var(--color-text-primary)]"
+          >
+            {ACTIONS.exportAllData}
+          </a>
+        </footer>
+      ) : null}
     </section>
   );
 }

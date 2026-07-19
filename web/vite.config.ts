@@ -36,6 +36,17 @@ export default defineConfig({
             urlPattern: ({ url, sameOrigin }) => sameOrigin && url.pathname === '/api/v1/health',
             handler: 'NetworkOnly',
           },
+          // Story 5.1 (FR-33): `/api/v1/export` is a one-tap browser download
+          // triggered by a plain `<a>` navigation on the MacBook Library
+          // page. A link-click to a same-origin URL has `request.mode ==
+          // 'navigate'` even when the response is `Content-Disposition:
+          // attachment`; without this rule the response would fall through
+          // to the catch-all app-shell `NetworkFirst` and pollute
+          // app-shell-v1 with a stale export payload. Bypass all caching.
+          {
+            urlPattern: ({ url, sameOrigin }) => sameOrigin && url.pathname === '/api/v1/export',
+            handler: 'NetworkOnly',
+          },
           {
             urlPattern: ({ url, request, sameOrigin }) =>
               sameOrigin &&

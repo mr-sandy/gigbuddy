@@ -4,6 +4,7 @@ import { loggerMiddleware } from './middleware/logger.js';
 import { serverNowMiddleware } from './middleware/server-now.js';
 import { authRoute } from './routes/auth.js';
 import { clientErrorsRoute } from './routes/client-errors.js';
+import { exportRoute } from './routes/export.js';
 import { healthRoute } from './routes/health.js';
 import { meRoute } from './routes/me.js';
 import { setlistsRoute } from './routes/setlists.js';
@@ -20,4 +21,5 @@ export const app = new Hono()
   .route('/api/v1/songs', songsRoute)
   .route('/api/v1/setlists', setlistsRoute)
   .route('/api/v1/upcoming-gigs', upcomingGigsRoute)
+  .route('/api/v1/export', exportRoute)
   .route('/api/v1/client-errors', clientErrorsRoute);
