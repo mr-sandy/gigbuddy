@@ -133,6 +133,22 @@ export const SECTION_HEADING = {
 } as const;
 
 /*
+ * Jump overlay copy — Story 6.4 (P1 5-a lock, unified-jump-scope). iPhone-
+ * only surface reached by tapping `≡ jump` on the Performance Card. The
+ * overlay pins a search field over a scrolling setlist overview and,
+ * when the query has no setlist match, surfaces library results under
+ * an `In library` group. All strings are locked verbatim in the mockup
+ * brief / epics.md (`Search this setlist or library`, `In this setlist`,
+ * `In library`) — do not paraphrase. Append-only surface, same convention
+ * as `PERFORMANCE_CARD` / `SECTION_HEADING`.
+ */
+export const JUMP_OVERLAY = {
+  searchLabel: 'Search this setlist or library',
+  inThisSetlistHeading: 'In this setlist',
+  inLibraryHeading: 'In library',
+} as const;
+
+/*
  * Currently-performing strip copy — Story 4.3 (FR-19, FR-20). Top-anchored
  * strip on the active Setlist overview while Performance Mode is active.
  * Voice & Tone: short, no exclamation, no marketing voice — the `›`

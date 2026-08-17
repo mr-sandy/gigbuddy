@@ -102,10 +102,34 @@ export function PerformanceCard(): JSX.Element {
   // transient single-route UI state that dies with this component instance.
   const [isJumpOverlayOpen, setIsJumpOverlayOpen] = useState(false);
 
+  // Story 6.4 — display-override plumbing. When set, the card renders
+  // this song (fetched via `useSong(displaySongId)`) INSTEAD of the
+  // plan-cursor's song, WITHOUT touching the URL (`:songIndex`).
+  // Deliberately component-local (NOT PerformanceModeContext) — mirrors
+  // the Story 6.3 `isJumpOverlayOpen` precedent. Story 6.5 may promote
+  // this concept into context (so the CurrentlyPerformingStrip on the
+  // overview route can render the `↩` detour signal); that migration is
+  // 6.5's job, not this story's. The full detour semantics (`DETOUR`
+  // position label, `NEXT ›` returns to plan cursor + 1, `‹` undoes the
+  // jump) are also owned by Story 6.5 — this story only ships the
+  // display-override plumbing.
+  const [detourSongId, setDetourSongId] = useState<string | null>(null);
+
   const parsedSongIndex = useMemo(() => {
     const parsed = Number.parseInt(songIndex ?? '', 10);
     return Number.isNaN(parsed) ? -1 : parsed;
   }, [songIndex]);
+
+  // Clear any detour override whenever the URL-encoded plan cursor
+  // changes (i.e. `NEXT ›` / `‹` navigation, or a fresh route load).
+  // Without this, tapping `NEXT ›` while displaying a jumped-to song
+  // would advance the URL but the card would keep rendering the old
+  // detour song because `displaySongId` would still resolve to the
+  // leftover `detourSongId`.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `parsedSongIndex` is the trigger — the effect body doesn't read it, but its identity change is exactly what should re-run this clearing.
+  useEffect(() => {
+    setDetourSongId(null);
+  }, [parsedSongIndex]);
 
   const { data: setlist } = useSetlist(setlistId ?? null);
 
@@ -115,7 +139,14 @@ export function PerformanceCard(): JSX.Element {
   }, [setlist]);
 
   const currentSongRef = flatSongs[parsedSongIndex];
-  const { data: song } = useSong(currentSongRef?.songId ?? null);
+  // Story 6.4 — `displaySongId` overrides the plan cursor for FETCH +
+  // DISPLAY only. `displaySongRef` is used ONLY for the per-gig
+  // annotation lookup (a library-only detour target may have no
+  // matching SongRef, in which case no annotation renders).
+  const displaySongId = detourSongId ?? currentSongRef?.songId ?? null;
+  const displaySongRef =
+    detourSongId !== null ? flatSongs.find((s) => s.songId === detourSongId) : currentSongRef;
+  const { data: song } = useSong(displaySongId);
 
   // Atmosphere flip — runs once on mount, restores on unmount. The boot
   // atmosphere is set by `applyBootAtmosphere()` (iPhone → 'performance',
@@ -184,7 +215,7 @@ export function PerformanceCard(): JSX.Element {
     }
   }, [parsedSongIndex, setActiveSongIndex]);
 
-  const isLoading = setlist === undefined || (currentSongRef !== undefined && song === undefined);
+  const isLoading = setlist === undefined || (displaySongId !== null && song === undefined);
   const notFound =
     setlist === null || parsedSongIndex < 0 || currentSongRef === undefined || song === null;
 
@@ -310,9 +341,10 @@ export function PerformanceCard(): JSX.Element {
           is the only interaction. */}
       <main className="flex-1 overflow-y-auto px-[var(--spacing-gutter)] py-[calc(var(--spacing-unit)*3)]">
         <ChordChart text={chordChartText} urlsTappable={false} />
-        {currentSongRef.perGigAnnotation !== undefined && currentSongRef.perGigAnnotation !== '' ? (
+        {displaySongRef?.perGigAnnotation !== undefined &&
+        displaySongRef.perGigAnnotation !== '' ? (
           <p className="mt-[calc(var(--spacing-unit)*4)] text-[length:var(--text-perf-annotation)] leading-[var(--text-perf-annotation--line-height)] font-[family-name:var(--font-serif-editorial)] italic text-[color:var(--color-accent)]">
-            {currentSongRef.perGigAnnotation}
+            {displaySongRef.perGigAnnotation}
           </p>
         ) : null}
       </main>
@@ -379,7 +411,19 @@ export function PerformanceCard(): JSX.Element {
           inset-0 z-50 inside the component). The card itself stays
           mounted underneath — wake lock, performanceActive, and the plan
           cursor are all unaffected by the overlay lifecycle. */}
-      {isJumpOverlayOpen ? <JumpOverlay onDismiss={() => setIsJumpOverlayOpen(false)} /> : null}
+      {isJumpOverlayOpen ? (
+        <JumpOverlay
+          sections={setlist.sections}
+          currentSongId={displaySongId ?? ''}
+          onDismiss={() => setIsJumpOverlayOpen(false)}
+          onSelectSong={(songId) => {
+            // Story 6.4 — selecting the plan-cursor's own row clears any
+            // override (returns to plan); selecting anything else sets
+            // the override. The URL / plan cursor is never touched here.
+            setDetourSongId(songId === currentSongRef?.songId ? null : songId);
+          }}
+        />
+      ) : null}
     </div>
   );
 }

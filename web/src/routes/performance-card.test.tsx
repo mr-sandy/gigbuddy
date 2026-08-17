@@ -15,6 +15,7 @@ import { PerformanceCard } from './performance-card.js';
 const {
   useSetlistMock,
   useSongMock,
+  useSongsMock,
   navigateMock,
   useWakeLockIndicatorMock,
   setPerformanceViewMock,
@@ -24,6 +25,10 @@ const {
 } = vi.hoisted(() => ({
   useSetlistMock: vi.fn(),
   useSongMock: vi.fn(),
+  // Story 6.4 — JumpOverlay calls `useSongs()` (transitively, whenever it
+  // mounts). Without a hoisted mock the underlying `useQuery` would throw
+  // "No QueryClient set" the moment any `≡ jump` test opens the overlay.
+  useSongsMock: vi.fn(),
   navigateMock: vi.fn(),
   // Story 4.2 — default to wakeLockHeld=true so the indicator is hidden
   // and the existing 23 test cases continue to assert against the
@@ -40,6 +45,7 @@ const {
 
 vi.mock('../hooks/use-setlist.js', () => ({ useSetlist: useSetlistMock }));
 vi.mock('../hooks/use-song.js', () => ({ useSong: useSongMock }));
+vi.mock('../hooks/use-songs.js', () => ({ useSongs: useSongsMock }));
 vi.mock('../performance/use-wake-lock-indicator.js', () => ({
   useWakeLockIndicator: useWakeLockIndicatorMock,
 }));
@@ -109,6 +115,7 @@ function renderRoute(setlistId = 'setlistid0000001', songIndex = '0') {
 beforeEach(() => {
   useSetlistMock.mockReset();
   useSongMock.mockReset();
+  useSongsMock.mockReset().mockReturnValue({ data: [] });
   navigateMock.mockReset();
   useWakeLockIndicatorMock.mockReset().mockReturnValue({ wakeLockHeld: true });
   setPerformanceViewMock.mockReset();
@@ -642,6 +649,104 @@ describe('PerformanceCard — jump overlay (Story 6.3)', () => {
       screen.getByRole('button', { name: PERFORMANCE_CARD.ariaExitPerformance }),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: PERFORMANCE_CARD.ariaNextSong })).toBeInTheDocument();
+  });
+
+  it('tapping a jump-overlay setlist row for another song re-renders the card with that song, WITHOUT navigating (plan cursor untouched)', async () => {
+    const user = userEvent.setup();
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    // Story 6.4 — the card's `useSong()` fetch key flips to whichever
+    // song the overlay selects. Return a payload that keys off `songId`
+    // so we can verify the card re-renders with the target's title.
+    useSongMock.mockImplementation((songId: string | null) => {
+      if (songId === 'song0000000002bb') {
+        return { data: makeSong({ songId, title: 'Black Orpheus' }), isLoading: false };
+      }
+      return { data: makeSong(), isLoading: false };
+    });
+    useSongsMock.mockReturnValue({
+      data: [
+        makeSong({ songId: 'song0000000001aa', title: 'Autumn Leaves' }),
+        makeSong({ songId: 'song0000000002bb', title: 'Black Orpheus' }),
+        makeSong({ songId: 'song0000000003cc', title: 'Take Five' }),
+      ],
+    });
+    renderRoute('setlistid0000001', '0');
+    expect(screen.getByRole('heading', { level: 1, name: 'Autumn Leaves' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: PERFORMANCE_CARD.ariaOpenJumpOverlay }));
+    const dialog = screen.getByRole('dialog', { name: 'Jump to a song' });
+    const navigateCallsBefore = navigateMock.mock.calls.length;
+    await user.click(within(dialog).getByRole('button', { name: /Black Orpheus/ }));
+    // Card re-renders with the jumped-to song.
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { level: 1, name: 'Black Orpheus' })).toBeInTheDocument(),
+    );
+    // Plan cursor / URL untouched.
+    expect(navigateMock.mock.calls.length).toBe(navigateCallsBefore);
+  });
+
+  it('tapping a jump-overlay library-only row re-renders the card with that song, still WITHOUT navigating', async () => {
+    const user = userEvent.setup();
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    useSongMock.mockImplementation((songId: string | null) => {
+      if (songId === 'song0000000099zz') {
+        return { data: makeSong({ songId, title: 'Sunny' }), isLoading: false };
+      }
+      return { data: makeSong(), isLoading: false };
+    });
+    useSongsMock.mockReturnValue({
+      data: [
+        makeSong({ songId: 'song0000000001aa', title: 'Autumn Leaves' }),
+        makeSong({ songId: 'song0000000002bb', title: 'Black Orpheus' }),
+        makeSong({ songId: 'song0000000003cc', title: 'Take Five' }),
+        // Library-only song — NOT present in `makeSetlist()` sections.
+        makeSong({ songId: 'song0000000099zz', title: 'Sunny' }),
+      ],
+    });
+    renderRoute('setlistid0000001', '0');
+    await user.click(screen.getByRole('button', { name: PERFORMANCE_CARD.ariaOpenJumpOverlay }));
+    const dialog = screen.getByRole('dialog', { name: 'Jump to a song' });
+    // Search for the library-only song so its row appears under `In library`.
+    await user.type(
+      within(dialog).getByRole('searchbox', { name: 'Search this setlist or library' }),
+      'sunny',
+    );
+    const navigateCallsBefore = navigateMock.mock.calls.length;
+    await user.click(within(dialog).getByRole('button', { name: /Sunny/ }));
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { level: 1, name: 'Sunny' })).toBeInTheDocument(),
+    );
+    expect(navigateMock.mock.calls.length).toBe(navigateCallsBefore);
+  });
+
+  it('after a detour selection, tapping NEXT › still navigates to plan-cursor + 1 (existing behaviour, unaffected by the detour override)', async () => {
+    const user = userEvent.setup();
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    useSongMock.mockImplementation((songId: string | null) => {
+      if (songId === 'song0000000003cc') {
+        return { data: makeSong({ songId, title: 'Take Five' }), isLoading: false };
+      }
+      return { data: makeSong(), isLoading: false };
+    });
+    useSongsMock.mockReturnValue({
+      data: [
+        makeSong({ songId: 'song0000000001aa', title: 'Autumn Leaves' }),
+        makeSong({ songId: 'song0000000002bb', title: 'Black Orpheus' }),
+        makeSong({ songId: 'song0000000003cc', title: 'Take Five' }),
+      ],
+    });
+    renderRoute('setlistid0000001', '0');
+    // Jump to Take Five (not plan-cursor + 1 — the detour case).
+    await user.click(screen.getByRole('button', { name: PERFORMANCE_CARD.ariaOpenJumpOverlay }));
+    const dialog = screen.getByRole('dialog', { name: 'Jump to a song' });
+    await user.click(within(dialog).getByRole('button', { name: /Take Five/ }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull(), { timeout: 1000 });
+    navigateMock.mockClear();
+    await user.click(screen.getByRole('button', { name: PERFORMANCE_CARD.ariaNextSong }));
+    // NEXT › still computes from parsedSongIndex (0) + 1 = 1 — the
+    // detour override does NOT redirect the button's URL math. Full
+    // "returns to plan cursor + 1" detour semantics are Story 6.5's
+    // scope; this story only guarantees the button still works.
+    expect(navigateMock).toHaveBeenCalledWith('/performance/setlistid0000001/1');
   });
 
   it('tapping `≡ jump` does NOT release wake lock, mutate performanceActive, or navigate', async () => {
