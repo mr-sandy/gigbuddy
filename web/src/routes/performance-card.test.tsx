@@ -1,5 +1,5 @@
 import { ACTIVE_BAND_ID, type Setlist, type Song } from '@gigbuddy/shared';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -369,23 +369,18 @@ describe('PerformanceCard — single-tap navigation', () => {
   });
 });
 
-describe('PerformanceCard — next-song preview', () => {
-  it('shows the next Song titleSnapshot in the bottom toolbar', () => {
+describe('PerformanceCard — next-song preview removed (Story 6.3)', () => {
+  // Story 6.3 deleted the Story 4.1 next-song preview span in favour of
+  // the `≡ jump` control between ‹ and NEXT ›. The preview shouldn't
+  // appear anywhere in the toolbar.
+  it('does NOT render the next Song titleSnapshot in the bottom toolbar', () => {
     useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
     useSongMock.mockReturnValue({ data: makeSong(), isLoading: false });
     renderRoute('setlistid0000001', '0');
-    // Set 1 song 0 is Autumn Leaves → next is Black Orpheus.
-    expect(screen.getByText('Black Orpheus')).toBeInTheDocument();
-  });
-
-  it('renders an empty preview on the last Song (no "End of setlist" text)', () => {
-    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
-    useSongMock.mockReturnValue({
-      data: makeSong({ songId: 'song0000000003cc', title: 'Take Five' }),
-      isLoading: false,
-    });
-    renderRoute('setlistid0000001', '2');
-    expect(screen.queryByText(/end of setlist/i)).toBeNull();
+    // On songIndex=0 the next Song would have been Black Orpheus. That
+    // title must not appear anywhere on the card — heading shows "Autumn
+    // Leaves", footer shows only ‹ + ≡ jump + NEXT › (no preview span).
+    expect(screen.queryByText('Black Orpheus')).toBeNull();
   });
 });
 
@@ -554,16 +549,16 @@ describe('PerformanceCard — last-song inert NEXT › (Story 4.4)', () => {
     expect(nextButton.className).toContain('disabled:opacity-40');
   });
 
-  it('next-song preview is empty on the last Song (no "End of setlist" or any other copy)', () => {
+  it('no "End of setlist" or preview-shaped copy anywhere on the last Song (Story 6.3 rollback)', () => {
     useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
     useSongMock.mockReturnValue({
       data: makeSong({ songId: 'song0000000003cc', title: 'Take Five' }),
       isLoading: false,
     });
     renderRoute('setlistid0000001', '2');
-    // The preview span is aria-hidden but it sits between the ‹ and NEXT ›
-    // buttons in the footer. We assert by ensuring no end-of-setlist copy
-    // is anywhere in the document.
+    // Story 6.3 deleted the preview span entirely. Confirm neither
+    // end-of-setlist copy nor any residual preview text is anywhere in
+    // the document.
     expect(screen.queryByText(/end of setlist/i)).toBeNull();
     // And confirm the title of the current Song (Take Five) renders as the
     // <h1> heading — not as a preview repeat.
@@ -592,5 +587,80 @@ describe('PerformanceCard — last-song inert NEXT › (Story 4.4)', () => {
       name: PERFORMANCE_CARD.ariaNextSong,
     }) as HTMLButtonElement;
     expect(nextButton.disabled).toBe(false);
+  });
+});
+
+describe('PerformanceCard — jump overlay (Story 6.3)', () => {
+  it('renders the `≡ jump` button with aria-label "Open setlist and library jump overlay"', () => {
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    useSongMock.mockReturnValue({ data: makeSong(), isLoading: false });
+    renderRoute();
+    expect(
+      screen.getByRole('button', { name: PERFORMANCE_CARD.ariaOpenJumpOverlay }),
+    ).toBeInTheDocument();
+  });
+
+  it('`≡ jump` renders between ‹ and NEXT › in DOM order (four-corners / A2 placement)', () => {
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    useSongMock.mockReturnValue({ data: makeSong(), isLoading: false });
+    const { container } = renderRoute();
+    const footer = container.querySelector('footer');
+    if (footer === null) throw new Error('footer missing');
+    const footerButtons = within(footer).getAllByRole('button');
+    // Exactly three controls in the toolbar: ‹, ≡ jump, NEXT › — no
+    // preview span, no fourth control.
+    expect(footerButtons).toHaveLength(3);
+    expect(footerButtons[0]?.getAttribute('aria-label')).toBe(PERFORMANCE_CARD.ariaPreviousSong);
+    expect(footerButtons[1]?.getAttribute('aria-label')).toBe(PERFORMANCE_CARD.ariaOpenJumpOverlay);
+    expect(footerButtons[2]?.getAttribute('aria-label')).toBe(PERFORMANCE_CARD.ariaNextSong);
+  });
+
+  it('tapping `≡ jump` mounts the overlay (role=dialog, aria-label "Jump to a song")', async () => {
+    const user = userEvent.setup();
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    useSongMock.mockReturnValue({ data: makeSong(), isLoading: false });
+    renderRoute();
+    expect(screen.queryByRole('dialog', { name: 'Jump to a song' })).toBeNull();
+    await user.click(screen.getByRole('button', { name: PERFORMANCE_CARD.ariaOpenJumpOverlay }));
+    expect(screen.getByRole('dialog', { name: 'Jump to a song' })).toBeInTheDocument();
+  });
+
+  it('tapping the overlay dismiss control unmounts the overlay; Performance Card chrome remains', async () => {
+    const user = userEvent.setup();
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    useSongMock.mockReturnValue({ data: makeSong(), isLoading: false });
+    renderRoute();
+    await user.click(screen.getByRole('button', { name: PERFORMANCE_CARD.ariaOpenJumpOverlay }));
+    expect(screen.getByRole('dialog', { name: 'Jump to a song' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Dismiss jump overlay' }));
+    // Fade-out timer resolves after ~150ms then React unmounts the dialog.
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull(), { timeout: 1000 });
+    // The Performance Card's own chrome is still present — the card was
+    // never unmounted while the overlay was open.
+    expect(screen.getByRole('heading', { level: 1, name: 'Autumn Leaves' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: PERFORMANCE_CARD.ariaExitPerformance }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: PERFORMANCE_CARD.ariaNextSong })).toBeInTheDocument();
+  });
+
+  it('tapping `≡ jump` does NOT release wake lock, mutate performanceActive, or navigate', async () => {
+    const user = userEvent.setup();
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    useSongMock.mockReturnValue({ data: makeSong(), isLoading: false });
+    // Enter with performanceActive=true so the mount effect doesn't call
+    // setPerformanceActive(true) — otherwise the assertion below has to
+    // account for that mount-time call.
+    performanceActiveMock.mockReturnValue(true);
+    renderRoute();
+    const setActiveCallsBefore = setPerformanceActiveMock.mock.calls.length;
+    const setIndexCallsBefore = setActiveSongIndexMock.mock.calls.length;
+    const navigateCallsBefore = navigateMock.mock.calls.length;
+    await user.click(screen.getByRole('button', { name: PERFORMANCE_CARD.ariaOpenJumpOverlay }));
+    // Tapping ≡ jump is inert to Performance Mode state — only local
+    // component state (isJumpOverlayOpen) flips. AR-28 invariants hold.
+    expect(setPerformanceActiveMock.mock.calls.length).toBe(setActiveCallsBefore);
+    expect(setActiveSongIndexMock.mock.calls.length).toBe(setIndexCallsBefore);
+    expect(navigateMock.mock.calls.length).toBe(navigateCallsBefore);
   });
 });

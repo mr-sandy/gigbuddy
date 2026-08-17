@@ -106,6 +106,14 @@ export const PERFORMANCE_CARD = {
   // The on-screen glyph is `×`; the aria-label is the spoken name.
   exitButton: '×',
   ariaExitPerformance: 'Exit performance mode',
+  // Story 6.3 — third control in the Performance Card bottom toolbar
+  // (locked A2 placement). Rendered between `‹` and `NEXT ›`, opens a
+  // dismissable overlay above the card without releasing wake lock or
+  // unmounting the card. The `≡` glyph is visual only; the spoken label
+  // deliberately avoids "menu" framing (per the mockup brief — no
+  // hamburger connotations).
+  jumpButton: '≡ jump',
+  ariaOpenJumpOverlay: 'Open setlist and library jump overlay',
 } as const;
 
 /*

@@ -1,6 +1,7 @@
-import { type JSX, useEffect, useMemo, useRef } from 'react';
+import { type JSX, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { ChordChart } from '../components/chord-chart.js';
+import { JumpOverlay } from '../components/jump-overlay.js';
 import { useSetlist } from '../hooks/use-setlist.js';
 import { useSong } from '../hooks/use-song.js';
 import { EMPTY_STATES, PERFORMANCE_CARD } from '../lib/microcopy.js';
@@ -29,9 +30,12 @@ import { useWakeLockIndicator } from '../performance/use-wake-lock-indicator.js'
  *   │  per-gig annotation          │   overflow-y annotation. Default
  *   │                              │              touch scroll only —
  *   ├──────────────────────────────┤              no tap-anywhere or
- *   │  ‹  | next  | NEXT ›         │   shrink-0   swipe nav (AC-9/10).
+ *   │  ‹   ≡ jump   NEXT ›         │   shrink-0   swipe nav (AC-9/10).
  *   └──────────────────────────────┘              fixed bottom toolbar:
- *                                                  ‹ + preview + NEXT ›
+ *                                                  three controls, no
+ *                                                  next-song preview span
+ *                                                  (Story 6.3 removed the
+ *                                                  Story 4.1 preview).
  *
  * Atmosphere: on mount the route flips `data-atmosphere` on <html> to
  * `'performance'` (Club Warm palette) and restores the previous value on
@@ -91,6 +95,12 @@ export function PerformanceCard(): JSX.Element {
   // safe when entered via the normal `Start performance ›` path.
   const performanceActive = usePerformanceActive();
   const setPerformanceActive = useSetPerformanceActive();
+
+  // Story 6.3 — local UI state gating the jump overlay's mount. Deliberately
+  // component-local (NOT PerformanceModeContext), matching the sheetOpen
+  // pattern in setlist-song-row.tsx: the overlay's open/closed-ness is
+  // transient single-route UI state that dies with this component instance.
+  const [isJumpOverlayOpen, setIsJumpOverlayOpen] = useState(false);
 
   const parsedSongIndex = useMemo(() => {
     const parsed = Number.parseInt(songIndex ?? '', 10);
@@ -203,11 +213,6 @@ export function PerformanceCard(): JSX.Element {
   // `currentSongRef` is the matching SongRef from the Setlist.
   const totalSongs = flatSongs.length;
   const currentPosition = parsedSongIndex + 1; // 1-based for the indicator
-  // On the last Song, `nextSongRef` is `null` (out-of-bounds index) so the
-  // preview `<span>` below renders an empty string — silent per Voice &
-  // Tone (no "End of setlist" copy). Story 4.4 also disables `NEXT ›` so
-  // the button can't navigate past the end.
-  const nextSongRef = flatSongs[parsedSongIndex + 1] ?? null;
   const isFirst = parsedSongIndex === 0;
   // Story 4.4 — last-Song detection. When true, `NEXT ›` is rendered
   // inert (disabled visual + no-op onClick) per FR-21 and the locked
@@ -313,8 +318,10 @@ export function PerformanceCard(): JSX.Element {
       </main>
 
       {/* Fixed bottom toolbar — does not scroll. Spatial separation per
-          UX-DR9: ‹ on the left, NEXT › on the right, preview between
-          them. */}
+          UX-DR9: ‹ on the left, NEXT › on the right, `≡ jump` between
+          them (interior, no preview span — removed in Story 6.3). Three
+          controls, four-corners rule intact (‹ bottom-left, NEXT ›
+          bottom-right; `≡ jump` never occupies a corner). */}
       <footer
         className="shrink-0 flex items-center gap-[calc(var(--spacing-unit)*3)] bg-[color:var(--color-surface)] px-[var(--spacing-gutter)] py-[calc(var(--spacing-unit)*3)]"
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 12px)' }}
@@ -332,12 +339,21 @@ export function PerformanceCard(): JSX.Element {
         >
           {PERFORMANCE_CARD.previousSong}
         </button>
-        <span
-          aria-hidden="true"
-          className="flex-1 truncate text-[length:var(--text-perf-meta)] leading-[var(--text-perf-meta--line-height)] font-[family-name:var(--font-mono-slab)] text-[color:var(--color-text-secondary)]"
+        {/* Story 6.3 — `≡ jump` control, A2 placement. Low-emphasis to
+            match ‹ (same type-scale, same text-secondary colour); no
+            accent fill (that treatment is reserved for NEXT ›). `flex-1`
+            + centred contents keeps the glyph visually centred in the
+            toolbar interior regardless of the width of the flanking
+            controls. Opens the JumpOverlay by setting local UI state —
+            no context mutation, no navigate call. */}
+        <button
+          type="button"
+          aria-label={PERFORMANCE_CARD.ariaOpenJumpOverlay}
+          onClick={() => setIsJumpOverlayOpen(true)}
+          className="flex-1 min-h-tap min-w-tap text-[length:var(--text-perf-meta)] leading-[var(--text-perf-meta--line-height)] text-[color:var(--color-text-secondary)]"
         >
-          {nextSongRef?.titleSnapshot ?? ''}
-        </span>
+          {PERFORMANCE_CARD.jumpButton}
+        </button>
         {/* Story 4.4 — last-Song NEXT › is inert (disabled visual + no-op
             onClick). Mirrors the existing `‹`/`isFirst` pattern above for
             defence-in-depth. NEXT › must NEVER transform into a
@@ -359,6 +375,11 @@ export function PerformanceCard(): JSX.Element {
           {PERFORMANCE_CARD.nextSong}
         </button>
       </footer>
+      {/* Story 6.3 — jump overlay renders on top of the card (fixed
+          inset-0 z-50 inside the component). The card itself stays
+          mounted underneath — wake lock, performanceActive, and the plan
+          cursor are all unaffected by the overlay lifecycle. */}
+      {isJumpOverlayOpen ? <JumpOverlay onDismiss={() => setIsJumpOverlayOpen(false)} /> : null}
     </div>
   );
 }

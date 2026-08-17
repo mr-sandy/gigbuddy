@@ -5,7 +5,7 @@ builds_on: 6-2-chrome-polish-key-patch-single-row-section-count-format
 
 # Story 6.3: Jump affordance `≡ jump` in bottom toolbar (P1 jump-affordance A2 lock)
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -69,36 +69,36 @@ So that from the sacred-state surface I can reach for any song in the setlist or
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Restructure the bottom toolbar: delete the next-song preview span, add `≡ jump` control (AC: 1, 5)
-  - [ ] Add `PERFORMANCE_CARD.jumpButton = '≡ jump'` and `PERFORMANCE_CARD.ariaOpenJumpOverlay = 'Open setlist and library jump overlay'` to `web/src/lib/microcopy.ts` (UPDATE, non-locked `PERFORMANCE_CARD` surface — append only, do not touch `EMPTY_STATES`/`BANNERS`/`ACTIONS`/`FIELD_LABELS`)
-  - [ ] In `web/src/routes/performance-card.tsx` (UPDATE), **delete** the next-song preview `<span aria-hidden="true" className="flex-1 truncate …">{nextSongRef?.titleSnapshot ?? ''}</span>` block (lines 335–340 as of `baseline_commit`). Also delete the now-unused `nextSongRef` binding at line ~210 if no other reference remains (grep to confirm before deleting).
-  - [ ] In its place, **insert a new `<button>`** for `≡ jump` between the existing `‹` button and the `NEXT ›` button. Style it low-emphasis to match `‹` (same `text-[length:var(--text-perf-meta)]`, `text-[color:var(--color-text-secondary)]`, `min-h-tap min-w-tap` classes as the existing `‹` button) — do NOT give it `accent` fill (that treatment is reserved for `NEXT ›`). Use `flex-1` or `mx-auto` on the button (or a spacer) so it visually centres in the toolbar interior with `‹` at the left and `NEXT ›` at the right — the exact spacing approach is at implementer's discretion, but the resulting layout must match the A2 mockup's spatial intent (jump control in the toolbar interior, corners preserved).
-  - [ ] Button label is `{PERFORMANCE_CARD.jumpButton}`; `aria-label={PERFORMANCE_CARD.ariaOpenJumpOverlay}`
-  - [ ] `onClick` sets new local `useState<boolean>` `isJumpOverlayOpen` to `true` — this is component-local state, NOT `PerformanceModeContext` state (the overlay's open/closed-ness is not part of the cross-cutting Performance Mode contract; only `performanceActive`/`activeSongIndex`/`performanceView` live in context, per `performance-context.tsx`'s existing shape)
-  - [ ] Post-restructure DOM order in the `<footer>` is exactly: `‹` (bottom-left) → `≡ jump` (interior) → `NEXT ›` (bottom-right). Three children, no preview span. Confirm the four-corners rule still holds (no corner control moved).
-  - [ ] Update the `<footer>`'s inline comment block (lines 315–317 as of `baseline_commit`) to reflect the new three-control layout — remove the "preview between them" phrasing, replace with "`≡ jump` between them (interior, no preview span — removed in Story 6.3)".
+- [x] Task 1 — Restructure the bottom toolbar: delete the next-song preview span, add `≡ jump` control (AC: 1, 5)
+  - [x] Add `PERFORMANCE_CARD.jumpButton = '≡ jump'` and `PERFORMANCE_CARD.ariaOpenJumpOverlay = 'Open setlist and library jump overlay'` to `web/src/lib/microcopy.ts` (UPDATE, non-locked `PERFORMANCE_CARD` surface — append only, do not touch `EMPTY_STATES`/`BANNERS`/`ACTIONS`/`FIELD_LABELS`)
+  - [x] In `web/src/routes/performance-card.tsx` (UPDATE), **delete** the next-song preview `<span aria-hidden="true" className="flex-1 truncate …">{nextSongRef?.titleSnapshot ?? ''}</span>` block (lines 335–340 as of `baseline_commit`). Also delete the now-unused `nextSongRef` binding at line ~210 if no other reference remains (grep to confirm before deleting).
+  - [x] In its place, **insert a new `<button>`** for `≡ jump` between the existing `‹` button and the `NEXT ›` button. Style it low-emphasis to match `‹` (same `text-[length:var(--text-perf-meta)]`, `text-[color:var(--color-text-secondary)]`, `min-h-tap min-w-tap` classes as the existing `‹` button) — do NOT give it `accent` fill (that treatment is reserved for `NEXT ›`). Use `flex-1` or `mx-auto` on the button (or a spacer) so it visually centres in the toolbar interior with `‹` at the left and `NEXT ›` at the right — the exact spacing approach is at implementer's discretion, but the resulting layout must match the A2 mockup's spatial intent (jump control in the toolbar interior, corners preserved).
+  - [x] Button label is `{PERFORMANCE_CARD.jumpButton}`; `aria-label={PERFORMANCE_CARD.ariaOpenJumpOverlay}`
+  - [x] `onClick` sets new local `useState<boolean>` `isJumpOverlayOpen` to `true` — this is component-local state, NOT `PerformanceModeContext` state (the overlay's open/closed-ness is not part of the cross-cutting Performance Mode contract; only `performanceActive`/`activeSongIndex`/`performanceView` live in context, per `performance-context.tsx`'s existing shape)
+  - [x] Post-restructure DOM order in the `<footer>` is exactly: `‹` (bottom-left) → `≡ jump` (interior) → `NEXT ›` (bottom-right). Three children, no preview span. Confirm the four-corners rule still holds (no corner control moved).
+  - [x] Update the `<footer>`'s inline comment block (lines 315–317 as of `baseline_commit`) to reflect the new three-control layout — remove the "preview between them" phrasing, replace with "`≡ jump` between them (interior, no preview span — removed in Story 6.3)".
 
-- [ ] Task 2 — Build the minimal `JumpOverlay` shell component (AC: 2, 3, 5)
-  - [ ] Create `web/src/components/jump-overlay.tsx` (NEW) — a standalone component (not inlined in `performance-card.tsx`) because Story 6.4 will substantially extend its content (search field, setlist rows, library rows); keeping it separate now avoids a large diff/re-review in 6.4 and matches the existing pattern of extracting dialog-shaped UI into its own component (see `AnnotationSheet` inside `setlist-song-row.tsx` for the closest existing analogue — role/aria-modal pattern, not file-separation pattern, since that one is co-located; this story's overlay is significant enough in its own right, plus explicitly earmarked for extension, to warrant its own file)
-  - [ ] Component signature: `JumpOverlay({ onDismiss }: { onDismiss: () => void }): JSX.Element`. No other props in this story's scope (Story 6.4 will add setlist/library data props)
-  - [ ] Render: `<div role="dialog" aria-modal="true" aria-label="Jump to a song" className="fixed inset-0 z-50 flex flex-col bg-[color:var(--color-bg)] text-[color:var(--color-text-primary)]">` — full-screen overlay (not a bottom sheet like `AnnotationSheet`; the mockup brief calls for a full-screen overlay "on top of the performance card")
-  - [ ] Top chrome: a single `<button>` row containing only the dismiss control — `‹` glyph, `aria-label="Dismiss jump overlay"`, `onClick={onDismiss}`, styled low-emphasis (reuse `text-[length:var(--text-perf-meta)] text-[color:var(--color-text-secondary)] min-h-tap min-w-tap`), positioned top-left, respecting `env(safe-area-inset-top)` the same way the Performance Card header does
-  - [ ] Content region: an empty `<div className="flex-1">` (or equivalent) — explicitly empty in this story; add a code comment noting Story 6.4 fills this with the pinned search + scrolling setlist overview + library reach
-  - [ ] No bottom tab bar, no top nav — this is implicit (the component renders nothing else), but add a comment confirming this is intentional per AC-3
-  - [ ] Transition: apply Tailwind `transition-opacity duration-150 ease-out` on the overlay root, plus a small mount-frame trick (initial `opacity-0` on first paint, then `opacity-100` after a `useEffect` schedules it — or use the `hidden`/`block` toggle inside a keyframed CSS animation, whichever reads cleaner in this codebase). The overlay must visibly fade in over ~150ms rather than appearing instantly. Instant mount/unmount is NOT acceptable — per AC-3, a real fade is required. Do NOT add a new animation dependency (e.g. Framer Motion) — plain Tailwind classes suffice. `prefers-reduced-motion` is already handled globally by the `globals.css` reduced-motion rule; verify that rule targets `transition-*` utilities generically and add a small comment in `jump-overlay.tsx` confirming the shell inherits that global.
+- [x] Task 2 — Build the minimal `JumpOverlay` shell component (AC: 2, 3, 5)
+  - [x] Create `web/src/components/jump-overlay.tsx` (NEW) — a standalone component (not inlined in `performance-card.tsx`) because Story 6.4 will substantially extend its content (search field, setlist rows, library rows); keeping it separate now avoids a large diff/re-review in 6.4 and matches the existing pattern of extracting dialog-shaped UI into its own component (see `AnnotationSheet` inside `setlist-song-row.tsx` for the closest existing analogue — role/aria-modal pattern, not file-separation pattern, since that one is co-located; this story's overlay is significant enough in its own right, plus explicitly earmarked for extension, to warrant its own file)
+  - [x] Component signature: `JumpOverlay({ onDismiss }: { onDismiss: () => void }): JSX.Element`. No other props in this story's scope (Story 6.4 will add setlist/library data props)
+  - [x] Render: `<div role="dialog" aria-modal="true" aria-label="Jump to a song" className="fixed inset-0 z-50 flex flex-col bg-[color:var(--color-bg)] text-[color:var(--color-text-primary)]">` — full-screen overlay (not a bottom sheet like `AnnotationSheet`; the mockup brief calls for a full-screen overlay "on top of the performance card")
+  - [x] Top chrome: a single `<button>` row containing only the dismiss control — `‹` glyph, `aria-label="Dismiss jump overlay"`, `onClick={onDismiss}`, styled low-emphasis (reuse `text-[length:var(--text-perf-meta)] text-[color:var(--color-text-secondary)] min-h-tap min-w-tap`), positioned top-left, respecting `env(safe-area-inset-top)` the same way the Performance Card header does
+  - [x] Content region: an empty `<div className="flex-1">` (or equivalent) — explicitly empty in this story; add a code comment noting Story 6.4 fills this with the pinned search + scrolling setlist overview + library reach
+  - [x] No bottom tab bar, no top nav — this is implicit (the component renders nothing else), but add a comment confirming this is intentional per AC-3
+  - [x] Transition: apply Tailwind `transition-opacity duration-150 ease-out` on the overlay root, plus a small mount-frame trick (initial `opacity-0` on first paint, then `opacity-100` after a `useEffect` schedules it — or use the `hidden`/`block` toggle inside a keyframed CSS animation, whichever reads cleaner in this codebase). The overlay must visibly fade in over ~150ms rather than appearing instantly. Instant mount/unmount is NOT acceptable — per AC-3, a real fade is required. Do NOT add a new animation dependency (e.g. Framer Motion) — plain Tailwind classes suffice. `prefers-reduced-motion` is already handled globally by the `globals.css` reduced-motion rule; verify that rule targets `transition-*` utilities generically and add a small comment in `jump-overlay.tsx` confirming the shell inherits that global.
 
-- [ ] Task 3 — Wire the overlay into `PerformanceCard` (AC: 2, 3, 4)
-  - [ ] Import `JumpOverlay` in `web/src/routes/performance-card.tsx`; conditionally render `{isJumpOverlayOpen ? <JumpOverlay onDismiss={() => setIsJumpOverlayOpen(false)} /> : null}` as the last child of the root `<div>` (so it visually stacks on top of the existing header/main/footer via `fixed inset-0 z-50`)
-  - [ ] Confirm (by code inspection, and by a test — see Task 4) that none of the existing mount-effects that manage `performanceActive`, `activeSongIndex`, `performanceView`, atmosphere, or viewport-zoom are re-run or torn down when the overlay opens/closes — the overlay is purely additive local UI state; it does not touch any `useEffect` dependency array already in the file
-  - [ ] Do NOT wire any API/data fetching inside `JumpOverlay` in this story (AC-4's "no new fetch" note above) — Story 6.4 owns that
+- [x] Task 3 — Wire the overlay into `PerformanceCard` (AC: 2, 3, 4)
+  - [x] Import `JumpOverlay` in `web/src/routes/performance-card.tsx`; conditionally render `{isJumpOverlayOpen ? <JumpOverlay onDismiss={() => setIsJumpOverlayOpen(false)} /> : null}` as the last child of the root `<div>` (so it visually stacks on top of the existing header/main/footer via `fixed inset-0 z-50`)
+  - [x] Confirm (by code inspection, and by a test — see Task 4) that none of the existing mount-effects that manage `performanceActive`, `activeSongIndex`, `performanceView`, atmosphere, or viewport-zoom are re-run or torn down when the overlay opens/closes — the overlay is purely additive local UI state; it does not touch any `useEffect` dependency array already in the file
+  - [x] Do NOT wire any API/data fetching inside `JumpOverlay` in this story (AC-4's "no new fetch" note above) — Story 6.4 owns that
 
-- [ ] Task 4 — Tests (AC: 1, 2, 3, 4, 5)
-  - [ ] `web/src/components/jump-overlay.test.tsx` (NEW) — co-located, Vitest + RTL, `describe('JumpOverlay', ...)`, no snapshot tests:
+- [x] Task 4 — Tests (AC: 1, 2, 3, 4, 5)
+  - [x] `web/src/components/jump-overlay.test.tsx` (NEW) — co-located, Vitest + RTL, `describe('JumpOverlay', ...)`, no snapshot tests:
     - renders with `role="dialog"` and `aria-modal="true"`
     - renders the dismiss control with `aria-label="Dismiss jump overlay"`
     - tapping the dismiss control calls `onDismiss`
     - content region renders with no setlist/search content present (assert absence, e.g. no `role="searchbox"`/no text input, no list — guards against scope creep into Story 6.4's territory)
-  - [ ] `web/src/routes/performance-card.test.tsx` (UPDATE) — two edits, both required:
+  - [x] `web/src/routes/performance-card.test.tsx` (UPDATE) — two edits, both required:
     - **Delete or rewrite** the existing `describe('PerformanceCard — next-song preview', …)` block (around lines 372–390 as of `baseline_commit`). The preview span no longer exists; the two tests in this block (`shows the next Song titleSnapshot in the bottom toolbar` and `renders an empty preview on the last Song`) are now false. Replace the block with a single test asserting the toolbar does NOT render the preview — e.g. `expect(screen.queryByText('Black Orpheus')).toBeNull()` for the mid-set case (or a scoped assertion inside the `<footer>`), plus a code-comment noting Story 6.3 removed the preview.
     - Also update the `next-song preview is empty on the last Song` test at line ~557 in the "graceful not-found" region if it references the preview span (rename/rewrite to assert absence). Search the whole file for any other `titleSnapshot`/preview references in the footer scope and reconcile.
     - **Add a new** `describe('PerformanceCard — jump overlay (Story 6.3)', ...)` block:
@@ -108,7 +108,7 @@ So that from the sacred-state surface I can reach for any song in the setlist or
       - tapping `≡ jump` then the overlay's dismiss control unmounts the overlay (`screen.queryByRole('dialog')` is null) and the Performance Card's own header/footer are still present (card not unmounted)
       - tapping `≡ jump` does NOT call `setPerformanceActiveMock`, does NOT call `setActiveSongIndexMock` a second time beyond the existing mount-effect call, and does NOT call `navigateMock` (use the existing hoisted mocks — `setPerformanceActiveMock`, `setActiveSongIndexMock`, `navigateMock` — asserting call counts before/after the tap)
       - reuse the existing `makeSetlist()`/mock-setup scaffolding already in the file; no new test infrastructure needed
-  - [ ] Run `pnpm --filter web run test` and `pnpm lint` — both must be clean before marking this story `review`. Expect the two deleted/rewritten preview tests to be the only pre-existing tests this story invalidates; if any other test suite (`section-heading.test.tsx`, `chord-chart.test.tsx`, e2e) references the preview, treat that as unexpected and re-scope.
+  - [x] Run `pnpm --filter web run test` and `pnpm lint` — both must be clean before marking this story `review`. Expect the two deleted/rewritten preview tests to be the only pre-existing tests this story invalidates; if any other test suite (`section-heading.test.tsx`, `chord-chart.test.tsx`, e2e) references the preview, treat that as unexpected and re-scope.
 
 ## Dev Notes
 
@@ -221,8 +221,34 @@ Recent commits (`fba00ff` Story 6.2, `255c948` Story 6.1, `b8410cf` drafting all
 
 ### Agent Model Used
 
+Claude Opus 4.7 (claude-opus-4-7), 2026-08-17.
+
 ### Debug Log References
+
+- First test pass surfaced two timeout failures in `performance-card.test.tsx` and one in `jump-overlay.test.tsx` — all three tied to `vi.useFakeTimers()` + `userEvent.setup({ advanceTimers: vi.advanceTimersByTime })`. userEvent v14's interaction with fake timers was hanging the click. Rewrote the affected tests to use real timers + `waitFor` with a 1s ceiling; second pass ran clean (61 files, 610 tests, all green).
+- No changes needed to `web/src/styles/globals.css` — the existing `prefers-reduced-motion` rule already zeroes `transition-duration` on every `*` selector, so the overlay's `transition-opacity duration-150` is collapsed to instant under the media query automatically.
 
 ### Completion Notes List
 
+- Removed the Story 4.1 next-song preview `<span>` and the now-unused `nextSongRef` binding from `performance-card.tsx`. Toolbar is exactly three controls: `‹`, `≡ jump`, `NEXT ›` (four-corners rule intact).
+- New `≡ jump` button is low-emphasis (matches `‹` styling), `flex-1` so it visually centres in the toolbar interior between the flanking controls. `aria-label="Open setlist and library jump overlay"` (deliberately not "menu").
+- `isJumpOverlayOpen` local `useState<boolean>` gates the overlay — deliberately NOT in `PerformanceModeContext` (mirrors the `sheetOpen`/`AnnotationSheet` pattern in `setlist-song-row.tsx`). No changes to context, no changes to any mount-effect dependency array.
+- `JumpOverlay` (new `web/src/components/jump-overlay.tsx`) is the minimal shell: `role="dialog" aria-modal="true" aria-label="Jump to a song"`, `fixed inset-0 z-50` full-screen (not a bottom sheet), top-left dismiss `‹` with `aria-label="Dismiss jump overlay"`, and an intentionally empty `flex-1` content region (Story 6.4 will fill it).
+- Real 150ms opacity fade via `transition-opacity duration-150 ease-out`: mount starts at `opacity-0`, `useEffect` + `requestAnimationFrame` flips to `opacity-100` after the first paint; dismiss flips back to `opacity-0` and defers the parent's `onDismiss` callback by 150ms via `setTimeout` so the fade-out plays before React unmounts the node. `prefers-reduced-motion` inherits from `globals.css`. No new dependencies added (no Framer Motion).
+- AR-28 auth-hold is satisfied structurally — the overlay makes zero API calls (empty shell). The state-preservation test asserts `setPerformanceActive`, `setActiveSongIndex`, and `navigate` mocks are called the same number of times before and after tapping `≡ jump` (entered with `performanceActive=true` so the mount-effect no-ops).
+- Verified: 610 tests pass, `pnpm lint` clean, `pnpm --filter web run typecheck` clean.
+
 ### File List
+
+- `web/src/lib/microcopy.ts` — UPDATED (appended `jumpButton` and `ariaOpenJumpOverlay` to `PERFORMANCE_CARD`)
+- `web/src/routes/performance-card.tsx` — UPDATED (removed next-song preview `<span>` and unused `nextSongRef`; added `isJumpOverlayOpen` state; inserted `≡ jump` button; conditionally renders `<JumpOverlay>`; updated ASCII header diagram and footer comment)
+- `web/src/routes/performance-card.test.tsx` — UPDATED (replaced the two-test `next-song preview` describe block with a single absence-of-preview test; renamed the last-Song preview test; added six-test `PerformanceCard — jump overlay (Story 6.3)` describe block covering aria-label, DOM order, mount-on-tap, dismiss + card preservation, and no side effects)
+- `web/src/components/jump-overlay.tsx` — NEW (minimal-shell overlay component with 150ms opacity fade)
+- `web/src/components/jump-overlay.test.tsx` — NEW (five tests: dialog role + aria-modal, dismiss aria-label, dismiss callback fires after fade, no Story 6.4 content, transition classes on root)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` — UPDATED (`6-3-jump-affordance-bottom-toolbar-a2` moved `ready-for-dev` → `in-progress` → `review`; `last_updated` refreshed)
+
+## Change Log
+
+| Date | Change | Author |
+|---|---|---|
+| 2026-08-17 | Implemented Story 6.3: `≡ jump` bottom-toolbar control + minimal `JumpOverlay` shell + preview-span removal. Story status → `review`. | Amelia (dev agent) |
