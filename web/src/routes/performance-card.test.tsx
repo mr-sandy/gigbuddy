@@ -417,6 +417,24 @@ describe('PerformanceCard — graceful not-found', () => {
     renderRoute('setlistid0000001', '3');
     expect(screen.getByText(/Setlist not found/i)).toBeInTheDocument();
   });
+
+  it('a failed detour-target fetch does NOT tear down the card (Story 6.4 fix — clears detour, keeps wake-lock/plan-cursor alive)', async () => {
+    // Sandy jumps to a library-only song. `useSong(displaySongId)` for
+    // the detour target resolves to `null` (cold cache + no signal).
+    // The card must NOT fall through to the not-found route — it must
+    // clear the detour so the plan-cursor song can re-render.
+    useActiveDetourSongIdMock.mockReturnValue('song-library-only');
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    useSongMock.mockReturnValue({ data: null, isLoading: false });
+    useSetActiveDetourSongIdMock.mockClear();
+    renderRoute('setlistid0000001', '0');
+    // Not-found copy MUST NOT appear.
+    expect(screen.queryByText(/Setlist not found/i)).toBeNull();
+    // The detour-clearing effect must have fired with null.
+    await waitFor(() => {
+      expect(useSetActiveDetourSongIdMock).toHaveBeenCalledWith(null);
+    });
+  });
 });
 
 describe('PerformanceCard — wake-lock indicator (Story 4.2)', () => {

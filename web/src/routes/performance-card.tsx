@@ -249,9 +249,28 @@ export function PerformanceCard(): JSX.Element {
     }
   }, [parsedSongIndex, setActiveSongIndex]);
 
-  const isLoading = setlist === undefined || (displaySongId !== null && song === undefined);
+  // Story 6.4 fix — a failed detour-target fetch (library-only song, cold
+  // cache, no signal) must NOT tear down the Performance Card. The effect
+  // below clears the detour when its target resolves to null; while that
+  // clear is in flight we render the quiet loading skeleton (not the
+  // not-found page) so wake lock, plan cursor, and atmosphere are all
+  // preserved. Only a plan-cursor `song === null` (no detour active) is a
+  // genuine not-found.
+  useEffect(() => {
+    if (song === null && activeDetourSongId !== null) {
+      setActiveDetourSongId(null);
+    }
+  }, [song, activeDetourSongId, setActiveDetourSongId]);
+
+  const isLoading =
+    setlist === undefined ||
+    (displaySongId !== null && song === undefined) ||
+    (song === null && activeDetourSongId !== null);
   const notFound =
-    setlist === null || parsedSongIndex < 0 || currentSongRef === undefined || song === null;
+    setlist === null ||
+    parsedSongIndex < 0 ||
+    currentSongRef === undefined ||
+    (song === null && activeDetourSongId === null);
 
   if (isLoading) {
     // Quiet skeleton — no spinner, no copy. Cache should be warm after
