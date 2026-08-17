@@ -1943,7 +1943,7 @@ So that from the sacred-state surface I can reach for any song in the setlist or
 **When** the bottom toolbar renders
 **Then** the toolbar contains three controls left-to-right: `‹` (back, low-emphasis), `≡ jump` (new, low-emphasis mid-toolbar), `NEXT ›` (right-biased, `accent` fill, `bg` text)
 **And** the four-corners spatial-safety rule holds: `×` top-left, position indicator top-right, `‹` bottom-left, `NEXT ›` bottom-right; `≡ jump` occupies the toolbar interior between `‹` and `NEXT ›` (never a corner)
-**And** the next-song preview text (`next: <title>`) compresses to `next: <trunc…>` when the label of the jump control would otherwise collide (per the mockup lock — compression is the accepted trade-off, not a wrap or reflow)
+**And** the previously-shipped next-song preview text is **removed** from the toolbar as part of this story — it took thumb space without earning it, and `NEXT ›` on its own communicates the next-tap advance. The toolbar renders exactly three controls, no preview span between them. (This supersedes the `next: <trunc…>` preview-compression trade-off shown in `mockups/rendered/p1-performance/iteration-1/state-A2-jump-bottom-toolbar.png` and described elsewhere in `mockups/p1-performance.md`.)
 
 **Given** Sandy taps the `≡ jump` control
 **When** the tap is registered
@@ -1964,7 +1964,7 @@ So that from the sacred-state surface I can reach for any song in the setlist or
 
 **Given** the `≡ jump` control
 **When** an accessibility audit runs
-**Then** the control has `aria-label="Open setlist and library jump overlay"` (or equivalent — final wording owned by implementation Dev Notes, verified via `bmad-editorial-review-prose`)
+**Then** the control has `aria-label="Open setlist and library jump overlay"` (locked wording — plain English, avoids "menu"; no editorial-review pass required)
 **And** the label does not read as "menu" (avoid hamburger connotations per the mockup brief)
 
 ---
