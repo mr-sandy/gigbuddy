@@ -4,7 +4,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   getPerformanceActiveSnapshot,
   PerformanceModeProvider,
+  useActiveDetourSongId,
   usePerformanceActive,
+  useSetActiveDetourSongId,
+  useSetActivePerformanceSession,
   useSetPerformanceActive,
 } from './performance-context.js';
 
@@ -102,5 +105,93 @@ describe('PerformanceModeContext', () => {
       </PerformanceModeProvider>,
     );
     expect(seen.size).toBe(1);
+  });
+
+  /*
+   * Story 6.5 — `activeDetourSongId` + session-boundary reset.
+   */
+  describe('activeDetourSongId (Story 6.5)', () => {
+    function DetourReader({ label }: { label: string }) {
+      const value = useActiveDetourSongId();
+      return <span data-testid={label}>{value ?? 'null'}</span>;
+    }
+
+    function SetDetour({ songId }: { songId: string | null }) {
+      const setDetour = useSetActiveDetourSongId();
+      return (
+        <button type="button" onClick={() => setDetour(songId)}>
+          set-detour
+        </button>
+      );
+    }
+
+    function StartSession() {
+      const setSession = useSetActivePerformanceSession();
+      return (
+        <button type="button" onClick={() => setSession('setlistid0000001', 0)}>
+          start-session
+        </button>
+      );
+    }
+
+    it('defaults to null', () => {
+      render(
+        <PerformanceModeProvider>
+          <DetourReader label="a" />
+        </PerformanceModeProvider>,
+      );
+      expect(screen.getByTestId('a')).toHaveTextContent('null');
+    });
+
+    it('the setter updates the value for all consumers', async () => {
+      const user = userEvent.setup();
+      render(
+        <PerformanceModeProvider>
+          <DetourReader label="a" />
+          <SetDetour songId="song0000000099zz" />
+          <DetourReader label="b" />
+        </PerformanceModeProvider>,
+      );
+      expect(screen.getByTestId('a')).toHaveTextContent('null');
+      expect(screen.getByTestId('b')).toHaveTextContent('null');
+      await user.click(screen.getByRole('button', { name: 'set-detour' }));
+      expect(screen.getByTestId('a')).toHaveTextContent('song0000000099zz');
+      expect(screen.getByTestId('b')).toHaveTextContent('song0000000099zz');
+    });
+
+    it('setPerformanceSession resets activeDetourSongId back to null after it was set', async () => {
+      const user = userEvent.setup();
+      render(
+        <PerformanceModeProvider>
+          <DetourReader label="a" />
+          <SetDetour songId="song0000000099zz" />
+          <StartSession />
+        </PerformanceModeProvider>,
+      );
+      await user.click(screen.getByRole('button', { name: 'set-detour' }));
+      expect(screen.getByTestId('a')).toHaveTextContent('song0000000099zz');
+      await user.click(screen.getByRole('button', { name: 'start-session' }));
+      expect(screen.getByTestId('a')).toHaveTextContent('null');
+    });
+
+    it('keeps the setter identity stable across renders', () => {
+      const seen = new Set<unknown>();
+      function SetterProbe() {
+        const setDetour = useSetActiveDetourSongId();
+        seen.add(setDetour);
+        return null;
+      }
+      const { rerender } = render(
+        <PerformanceModeProvider>
+          <SetterProbe />
+        </PerformanceModeProvider>,
+      );
+      rerender(
+        <PerformanceModeProvider>
+          <SetterProbe />
+        </PerformanceModeProvider>,
+      );
+      expect(seen.size).toBe(1);
+    });
   });
 });

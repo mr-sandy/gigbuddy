@@ -114,6 +114,14 @@ export const PERFORMANCE_CARD = {
   // hamburger connotations).
   jumpButton: '≡ jump',
   ariaOpenJumpOverlay: 'Open setlist and library jump overlay',
+  // Story 6.5 — top-right position slot swaps from the numeric `<n> / <total>`
+  // to the visible word `DETOUR` while the card is displaying a jumped-to
+  // song (D3 lock — dropped-numeric, no hairline). `detourLabel` is
+  // epics-locked verbatim; `ariaOnDetour` is the spoken form (implementation-
+  // chosen per epics' "or equivalent" latitude on the accessibility surface;
+  // see Story 6.5 Dev Notes "Copy this story invents").
+  detourLabel: 'DETOUR',
+  ariaOnDetour: 'On a detour',
 } as const;
 
 /*
@@ -159,4 +167,13 @@ export const CURRENTLY_PERFORMING = {
   ariaRegion: 'Currently performing',
   resumeButton: 'Resume ›',
   ariaResumeButton: 'Resume performance',
+  // Story 6.5 — detour signal on the strip. When Sandy taps `×` mid-
+  // detour, the strip renders the title in italic serif with a `↩`
+  // prefix (U+21A9 — do NOT swap for `↵`). The region's `aria-label`
+  // switches to the detour form so assistive tech announces the
+  // signal (colour/style/glyph is never the only cue — architecture
+  // color-never-alone rule). `ariaRegionDetour` wording is
+  // implementation-chosen per epics AC-8's "or equivalent".
+  detourPrefix: '↩',
+  ariaRegionDetour: (title: string) => `Currently performing on a detour: ${title}`,
 } as const;

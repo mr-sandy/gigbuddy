@@ -48,6 +48,14 @@ interface PerformanceModeContextValue {
   setActiveSongIndex: (songIndex: number) => void;
   performanceView: PerformanceView;
   setPerformanceView: (view: PerformanceView) => void;
+  // Story 6.5 — detour override promoted out of PerformanceCard's local
+  // state so `Resume ›` from the Currently-performing strip can preserve
+  // the detour across the × exit / route remount (AC-6). `null` means "on
+  // plan cursor"; a non-null songId means the card is displaying that
+  // song instead of the plan-cursor song. Reset to `null` by
+  // `setPerformanceSession()` (session boundary).
+  activeDetourSongId: string | null;
+  setActiveDetourSongId: (songId: string | null) => void;
 }
 
 const PerformanceModeContext = createContext<PerformanceModeContextValue | null>(null);
@@ -63,6 +71,7 @@ export function PerformanceModeProvider({ children }: { children: ReactNode }) {
   const [activeSetlistId, setActiveSetlistIdState] = useState<string | null>(null);
   const [activeSongIndex, setActiveSongIndexState] = useState<number>(0);
   const [performanceView, setPerformanceViewState] = useState<PerformanceView>(null);
+  const [activeDetourSongId, setActiveDetourSongIdState] = useState<string | null>(null);
 
   const setActive = useCallback((active: boolean) => {
     setPerformanceActive(active);
@@ -70,12 +79,22 @@ export function PerformanceModeProvider({ children }: { children: ReactNode }) {
   const setPerformanceSession = useCallback((setlistId: string | null, songIndex: number) => {
     setActiveSetlistIdState(setlistId);
     setActiveSongIndexState(songIndex);
+    // Story 6.5 — a session boundary (fresh `Start performance ›` or an
+    // ended session) must never inherit a leftover detour override from
+    // a prior session. Reset here — this is deliberately NOT in
+    // `setActiveSongIndex()` because that setter mirrors the URL on
+    // every within-mount plan-cursor change, and clearing detour there
+    // would defeat the "Resume › preserves detour" requirement (AC-6).
+    setActiveDetourSongIdState(null);
   }, []);
   const setActiveSongIndex = useCallback((songIndex: number) => {
     setActiveSongIndexState(songIndex);
   }, []);
   const setPerformanceView = useCallback((view: PerformanceView) => {
     setPerformanceViewState(view);
+  }, []);
+  const setActiveDetourSongId = useCallback((songId: string | null) => {
+    setActiveDetourSongIdState(songId);
   }, []);
 
   useEffect(() => {
@@ -91,6 +110,8 @@ export function PerformanceModeProvider({ children }: { children: ReactNode }) {
       setActiveSongIndex,
       performanceView,
       setPerformanceView,
+      activeDetourSongId,
+      setActiveDetourSongId,
     }),
     [
       performanceActive,
@@ -101,6 +122,8 @@ export function PerformanceModeProvider({ children }: { children: ReactNode }) {
       setActiveSongIndex,
       performanceView,
       setPerformanceView,
+      activeDetourSongId,
+      setActiveDetourSongId,
     ],
   );
   return (
@@ -176,4 +199,26 @@ export function usePerformanceView(): PerformanceView {
 
 export function useSetPerformanceView(): (view: PerformanceView) => void {
   return useCtx().setPerformanceView;
+}
+
+/*
+ * Story 6.5 — detour override hooks. `useActiveDetourSongId()` returns
+ * the id of the song the Performance Card is currently displaying as a
+ * detour (or `null` when Sandy is on the plan cursor). Read on the
+ * Performance Card (to swap the position slot to `DETOUR` and to change
+ * the `‹` button's behaviour) and on the Setlist overview (to render the
+ * italic + `↩` detour signal on the Currently-performing strip). Written
+ * by `PerformanceCard`'s jump-overlay callback + within-mount clearing
+ * effect. Session-boundary reset lives inside `setPerformanceSession()`
+ * (see the Provider). Reasoning for the promotion: `Resume ›` from the
+ * strip remounts `PerformanceCard`, and the override must survive that
+ * remount — component-local state is gone. See Story 6.5 spec Dev Notes
+ * "Why this story is 'plan-cursor persistence'" for the full rationale.
+ */
+export function useActiveDetourSongId(): string | null {
+  return useCtx().activeDetourSongId;
+}
+
+export function useSetActiveDetourSongId(): (songId: string | null) => void {
+  return useCtx().setActiveDetourSongId;
 }

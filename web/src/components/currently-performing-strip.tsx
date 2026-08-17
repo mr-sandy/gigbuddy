@@ -33,17 +33,27 @@ import { CURRENTLY_PERFORMING } from '../lib/microcopy.js';
 interface CurrentlyPerformingStripProps {
   currentSongTitle: string;
   onResume: () => void;
+  // Story 6.5 — required prop. When `true`, the strip signals that Sandy
+  // is currently on a detour (mid-jump, exited via ×): the song-title
+  // text renders italic with a `↩` prefix and the region's aria-label
+  // switches to the detour form. When `false`, the strip renders
+  // unchanged from the shipped Story 4.3 behaviour.
+  isDetour: boolean;
 }
 
 function CurrentlyPerformingStripImpl(
-  { currentSongTitle, onResume }: CurrentlyPerformingStripProps,
+  { currentSongTitle, onResume, isDetour }: CurrentlyPerformingStripProps,
   ref: Ref<HTMLButtonElement>,
 ) {
   // A `<section>` with `aria-label` automatically carries the `region`
   // role and satisfies Biome's `useSemanticElements` rule.
   return (
     <section
-      aria-label={CURRENTLY_PERFORMING.ariaRegion}
+      aria-label={
+        isDetour
+          ? CURRENTLY_PERFORMING.ariaRegionDetour(currentSongTitle)
+          : CURRENTLY_PERFORMING.ariaRegion
+      }
       className="flex items-center justify-between gap-[calc(var(--spacing-unit)*3)] bg-[color:var(--color-accent)] px-[var(--spacing-gutter)] text-[color:var(--color-bg)]"
       style={{ minHeight: '48pt' }}
     >
@@ -51,7 +61,13 @@ function CurrentlyPerformingStripImpl(
         <span className="font-[family-name:var(--font-mono-slab)]">
           {CURRENTLY_PERFORMING.label}
         </span>{' '}
-        {currentSongTitle}
+        {isDetour ? (
+          <span className="italic">
+            {CURRENTLY_PERFORMING.detourPrefix} {currentSongTitle}
+          </span>
+        ) : (
+          currentSongTitle
+        )}
       </p>
       <button
         ref={ref}

@@ -6,7 +6,9 @@ import { useSetlist } from '../hooks/use-setlist.js';
 import { useSong } from '../hooks/use-song.js';
 import { EMPTY_STATES, PERFORMANCE_CARD } from '../lib/microcopy.js';
 import {
+  useActiveDetourSongId,
   usePerformanceActive,
+  useSetActiveDetourSongId,
   useSetActiveSongIndex,
   useSetPerformanceActive,
   useSetPerformanceView,
@@ -68,6 +70,25 @@ import { useWakeLockIndicator } from '../performance/use-wake-lock-indicator.js'
  * sync as Sandy navigates between songs so the `CurrentlyPerformingStrip`
  * on the overview renders the correct Song title and `Resume ›` returns
  * to the preserved index.
+ *
+ * Story 6.3 additions: `≡ jump` control in the bottom toolbar A2
+ * placement; the toolbar's next-song preview span was removed.
+ *
+ * Story 6.4 additions: jump overlay wired to `onSelectSong` sets a
+ * component-local detour override; `displaySongId`/`displaySongRef`
+ * fetch and render the jumped-to song WITHOUT changing the URL /
+ * plan cursor.
+ *
+ * Story 6.5 additions: the detour override was promoted out of
+ * component-local state into `PerformanceModeContext` (survives `×` →
+ * `Resume ›` remount, AC-6). The top-right position slot swaps from
+ * `<n> / <total>` to the word `DETOUR` while detoured (D3 lock —
+ * dropped-numeric, no hairline). The `‹` button becomes contextual:
+ * while detoured, it undoes the jump (clears the override, no
+ * navigation) rather than decrementing the plan cursor (AC-4). The
+ * within-mount clearing effect is mount-preserving — it skips the
+ * first render so `Resume ›`'s remount does not immediately wipe a
+ * persisted detour.
  */
 export function PerformanceCard(): JSX.Element {
   const { setlistId, songIndex } = useParams<{ setlistId: string; songIndex: string }>();
@@ -102,34 +123,45 @@ export function PerformanceCard(): JSX.Element {
   // transient single-route UI state that dies with this component instance.
   const [isJumpOverlayOpen, setIsJumpOverlayOpen] = useState(false);
 
-  // Story 6.4 — display-override plumbing. When set, the card renders
-  // this song (fetched via `useSong(displaySongId)`) INSTEAD of the
-  // plan-cursor's song, WITHOUT touching the URL (`:songIndex`).
-  // Deliberately component-local (NOT PerformanceModeContext) — mirrors
-  // the Story 6.3 `isJumpOverlayOpen` precedent. Story 6.5 may promote
-  // this concept into context (so the CurrentlyPerformingStrip on the
-  // overview route can render the `↩` detour signal); that migration is
-  // 6.5's job, not this story's. The full detour semantics (`DETOUR`
-  // position label, `NEXT ›` returns to plan cursor + 1, `‹` undoes the
-  // jump) are also owned by Story 6.5 — this story only ships the
-  // display-override plumbing.
-  const [detourSongId, setDetourSongId] = useState<string | null>(null);
+  // Story 6.5 — detour override promoted into `PerformanceModeContext`
+  // (was component-local `useState` in Story 6.4). The override must
+  // survive the × exit → Resume › remount so the strip can signal the
+  // detour on the overview and the card resumes with `DETOUR` in the
+  // position slot (AC-6). See `performance-context.tsx` for the full
+  // rationale.
+  const activeDetourSongId = useActiveDetourSongId();
+  const setActiveDetourSongId = useSetActiveDetourSongId();
 
   const parsedSongIndex = useMemo(() => {
     const parsed = Number.parseInt(songIndex ?? '', 10);
     return Number.isNaN(parsed) ? -1 : parsed;
   }, [songIndex]);
 
-  // Clear any detour override whenever the URL-encoded plan cursor
-  // changes (i.e. `NEXT ›` / `‹` navigation, or a fresh route load).
-  // Without this, tapping `NEXT ›` while displaying a jumped-to song
-  // would advance the URL but the card would keep rendering the old
-  // detour song because `displaySongId` would still resolve to the
-  // leftover `detourSongId`.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `parsedSongIndex` is the trigger — the effect body doesn't read it, but its identity change is exactly what should re-run this clearing.
+  // Story 6.5 — mount-preserving clearing effect. Compares against the
+  // values captured at mount so a fresh mount (Start performance ›, cold
+  // relaunch, or Resume › after × mid-detour) does NOT wipe a persisted
+  // `activeDetourSongId` that Sandy explicitly wants preserved. Only
+  // within-mount `parsedSongIndex` / `setlistId` changes (Sandy tapping
+  // `NEXT ›` / `‹` while the card stays mounted) trigger the clear.
+  // Value-based (not ref-flag-based) detection is deliberate: an
+  // `isInitialRenderRef` boolean that flips on first setup gets
+  // corrupted by React StrictMode's dev-only double-invoke (setup →
+  // cleanup → setup preserves the fiber's ref state, so the second
+  // setup mis-classifies as a re-render and clears the override on the
+  // very first mount). `setlistId` is included defensively — no current
+  // navigation path can reach a within-mount `setlistId` change without
+  // going through `setPerformanceSession()` first (which resets the
+  // override).
+  const initialSongIndexRef = useRef(parsedSongIndex);
+  const initialSetlistIdRef = useRef(setlistId);
   useEffect(() => {
-    setDetourSongId(null);
-  }, [parsedSongIndex]);
+    if (
+      parsedSongIndex !== initialSongIndexRef.current ||
+      setlistId !== initialSetlistIdRef.current
+    ) {
+      setActiveDetourSongId(null);
+    }
+  }, [parsedSongIndex, setlistId, setActiveDetourSongId]);
 
   const { data: setlist } = useSetlist(setlistId ?? null);
 
@@ -143,9 +175,11 @@ export function PerformanceCard(): JSX.Element {
   // DISPLAY only. `displaySongRef` is used ONLY for the per-gig
   // annotation lookup (a library-only detour target may have no
   // matching SongRef, in which case no annotation renders).
-  const displaySongId = detourSongId ?? currentSongRef?.songId ?? null;
+  const displaySongId = activeDetourSongId ?? currentSongRef?.songId ?? null;
   const displaySongRef =
-    detourSongId !== null ? flatSongs.find((s) => s.songId === detourSongId) : currentSongRef;
+    activeDetourSongId !== null
+      ? flatSongs.find((s) => s.songId === activeDetourSongId)
+      : currentSongRef;
   const { data: song } = useSong(displaySongId);
 
   // Atmosphere flip — runs once on mount, restores on unmount. The boot
@@ -252,6 +286,12 @@ export function PerformanceCard(): JSX.Element {
   // Performance state only by navigating away from the active Setlist
   // chain (the navigate-away guard, Story 4.4, owns that path).
   const isLast = parsedSongIndex === flatSongs.length - 1;
+  // Story 6.5 — `isDetour` gates the D3 position-slot swap and the
+  // contextual `‹` semantics. `NEXT ›` deliberately does NOT branch on
+  // this — it already keys off `parsedSongIndex` (the plan cursor), so
+  // AC-3 / AC-5 already fall out for free once the clearing effect fires
+  // on the resulting URL change.
+  const isDetour = activeDetourSongId !== null;
   const chordChartText = song?.chordChart ?? '';
 
   return (
@@ -300,10 +340,20 @@ export function PerformanceCard(): JSX.Element {
                 live announcement of the current position. */}
             <span
               role="status"
-              aria-label={PERFORMANCE_CARD.ariaSongPosition(currentPosition, totalSongs)}
+              aria-label={
+                isDetour
+                  ? PERFORMANCE_CARD.ariaOnDetour
+                  : PERFORMANCE_CARD.ariaSongPosition(currentPosition, totalSongs)
+              }
               className="text-[length:var(--text-perf-meta)] leading-[var(--text-perf-meta--line-height)] font-[family-name:var(--font-mono-slab)] text-[color:var(--color-text-secondary)]"
             >
-              {currentPosition} / {totalSongs}
+              {isDetour ? (
+                PERFORMANCE_CARD.detourLabel
+              ) : (
+                <>
+                  {currentPosition} / {totalSongs}
+                </>
+              )}
             </span>
           </div>
         </div>
@@ -358,12 +408,24 @@ export function PerformanceCard(): JSX.Element {
         className="shrink-0 flex items-center gap-[calc(var(--spacing-unit)*3)] bg-[color:var(--color-surface)] px-[var(--spacing-gutter)] py-[calc(var(--spacing-unit)*3)]"
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 12px)' }}
       >
+        {/* Story 6.5 — `‹` is contextual. On the plan cursor it behaves
+            as shipped (navigates to `parsedSongIndex - 1`, disabled on
+            first song). While detoured it "undoes the jump" — clears the
+            override with NO `navigate()` call, so the return-anchor at
+            `parsedSongIndex` reappears with its plan-cursor position
+            slot restored (AC-4). Undo is always available while
+            detoured, regardless of the return anchor's position, so the
+            `disabled` gate is skipped when `isDetour` is true (AC-5). */}
         <button
           type="button"
           aria-label={PERFORMANCE_CARD.ariaPreviousSong}
-          disabled={isFirst}
-          aria-disabled={isFirst}
+          disabled={!isDetour && isFirst}
+          aria-disabled={!isDetour && isFirst}
           onClick={() => {
+            if (isDetour) {
+              setActiveDetourSongId(null);
+              return;
+            }
             if (isFirst) return;
             navigate(`/performance/${setlistId}/${parsedSongIndex - 1}`);
           }}
@@ -420,7 +482,9 @@ export function PerformanceCard(): JSX.Element {
             // Story 6.4 — selecting the plan-cursor's own row clears any
             // override (returns to plan); selecting anything else sets
             // the override. The URL / plan cursor is never touched here.
-            setDetourSongId(songId === currentSongRef?.songId ? null : songId);
+            // Story 6.5 — the setter is now the context-backed
+            // `setActiveDetourSongId`; the logic is identical.
+            setActiveDetourSongId(songId === currentSongRef?.songId ? null : songId);
           }}
         />
       ) : null}

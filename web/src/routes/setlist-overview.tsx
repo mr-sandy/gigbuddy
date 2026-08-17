@@ -6,10 +6,12 @@ import { SectionHeading } from '../components/section-heading.js';
 import { SetlistSongRow } from '../components/setlist-song-row.js';
 import { useSetlist } from '../hooks/use-setlist.js';
 import { useSetlistMutation } from '../hooks/use-setlist-mutation.js';
+import { useSong } from '../hooks/use-song.js';
 import { formatGigDate } from '../lib/gig-date.js';
 import { ACTIONS, EMPTY_STATES } from '../lib/microcopy.js';
 import { isIPhone } from '../lib/platform.js';
 import {
+  useActiveDetourSongId,
   useActivePerformanceSession,
   usePerformanceActive,
   useSetPerformanceView,
@@ -75,10 +77,20 @@ export function SetlistOverview(): JSX.Element {
   // strip + chrome-visible override flow from this state.
   const performanceActive = usePerformanceActive();
   const { activeSetlistId, activeSongIndex } = useActivePerformanceSession();
+  const activeDetourSongId = useActiveDetourSongId();
   const setPerformanceView = useSetPerformanceView();
   const resumeButtonRef = useRef<HTMLButtonElement>(null);
   const isActiveSetlist =
     performanceActive && setlistId !== undefined && activeSetlistId === setlistId;
+  // Story 6.5 — detour state is only meaningful when this overview is
+  // the active session's overview. Fetch the detour song's LIVE title
+  // via `useSong` because a library-only detour target may have no
+  // matching `SongRef` in this setlist (Story 6.4's unified jump scope).
+  // See Story 6.5 Dev Notes "useSong() for the detour title is a
+  // deliberate departure from the titleSnapshot pattern" for why this is
+  // OK even though every other title on this route reads titleSnapshot.
+  const isDetourActive = isActiveSetlist && activeDetourSongId !== null;
+  const { data: detourSong } = useSong(isDetourActive ? activeDetourSongId : null);
 
   // Tell the chrome system this is the "overview" view of the active
   // performance so `useChromeVisible()` reveals the tabs even while
@@ -296,7 +308,12 @@ export function SetlistOverview(): JSX.Element {
   // Setlist (AR-11 snapshot-at-author-time) — the strip is bound to the
   // gig context, not the latest Song record.
   const flatActiveSongs = isActiveSetlist ? setlist.sections.flatMap((s) => s.songs) : [];
-  const currentPerformanceSongTitle = flatActiveSongs[activeSongIndex]?.titleSnapshot ?? '';
+  // Story 6.5 — detour branch reads the live `Song.title` (see Dev Notes
+  // "useSong() for the detour title..."); the non-detour branch is the
+  // shipped Story 4.3 expression.
+  const currentPerformanceSongTitle = isDetourActive
+    ? (detourSong?.title ?? '')
+    : (flatActiveSongs[activeSongIndex]?.titleSnapshot ?? '');
 
   return (
     <section
@@ -313,6 +330,7 @@ export function SetlistOverview(): JSX.Element {
           ref={resumeButtonRef}
           currentSongTitle={currentPerformanceSongTitle}
           onResume={() => navigate(`/performance/${setlist.setlistId}/${activeSongIndex}`)}
+          isDetour={isDetourActive}
         />
       ) : null}
       <header className="flex flex-col gap-[calc(var(--spacing-unit)*1)]">

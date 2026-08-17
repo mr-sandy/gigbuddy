@@ -1,4 +1,4 @@
-import { ACTIVE_BAND_ID, type Setlist } from '@gigbuddy/shared';
+import { ACTIVE_BAND_ID, type Setlist, type Song } from '@gigbuddy/shared';
 import { createEvent, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
@@ -21,6 +21,8 @@ const {
   performanceActiveMock,
   activePerformanceSessionMock,
   setPerformanceViewMock,
+  useSongMock,
+  useActiveDetourSongIdMock,
 } = vi.hoisted(() => ({
   useSetlistMock: vi.fn(),
   saveSetlistMock: vi.fn().mockResolvedValue(undefined),
@@ -34,6 +36,14 @@ const {
     () => { activeSetlistId: string | null; activeSongIndex: number }
   >(() => ({ activeSetlistId: null, activeSongIndex: 0 })),
   setPerformanceViewMock: vi.fn(),
+  // Story 6.5 — `useSong()` powers the detour-title live lookup on the
+  // strip; `useActiveDetourSongId()` powers the isDetour gating. Both
+  // default to their "no detour" case so pre-existing tests keep their
+  // pre-Story-6.5 DOM verbatim.
+  useSongMock: vi.fn<
+    (songId: string | null) => { data: Song | null | undefined; isLoading?: boolean }
+  >(() => ({ data: undefined })),
+  useActiveDetourSongIdMock: vi.fn<() => string | null>(() => null),
 }));
 
 vi.mock('../hooks/use-setlist.js', () => ({ useSetlist: useSetlistMock }));
@@ -51,6 +61,10 @@ vi.mock('../performance/performance-context.js', () => ({
   usePerformanceActive: () => performanceActiveMock(),
   useActivePerformanceSession: () => activePerformanceSessionMock(),
   useSetPerformanceView: () => setPerformanceViewMock,
+  useActiveDetourSongId: () => useActiveDetourSongIdMock(),
+}));
+vi.mock('../hooks/use-song.js', () => ({
+  useSong: (songId: string | null) => useSongMock(songId),
 }));
 vi.mock('react-router', async () => {
   const actual = await vi.importActual<typeof import('react-router')>('react-router');
@@ -110,6 +124,8 @@ beforeEach(() => {
     .mockReset()
     .mockReturnValue({ activeSetlistId: null, activeSongIndex: 0 });
   setPerformanceViewMock.mockReset();
+  useSongMock.mockReset().mockReturnValue({ data: undefined });
+  useActiveDetourSongIdMock.mockReset().mockReturnValue(null);
   document.documentElement.dataset.atmosphere = 'practice';
 });
 
@@ -651,5 +667,87 @@ describe('SetlistOverview — CurrentlyPerformingStrip (Story 4.3)', () => {
     renderRoute('setlistid0000001');
     const resume = screen.getByRole('button', { name: 'Resume performance' });
     expect(document.activeElement).toBe(resume);
+  });
+
+  /*
+   * Story 6.5 — detour signal on the strip.
+   */
+  describe('detour signal (Story 6.5)', () => {
+    function makeSong(overrides: Partial<Song> = {}): Song {
+      return {
+        bandId: ACTIVE_BAND_ID,
+        songId: 'song0000000099zz',
+        title: 'Sunny',
+        chordChart: '',
+        clientWrittenAt: '2026-06-19T10:00:00.000Z',
+        serverReceivedAt: '2026-06-19T10:00:01.000Z',
+        version: 1 as const,
+        ...overrides,
+      };
+    }
+
+    it('renders the shipped titleSnapshot-based strip when useActiveDetourSongId returns null (regression guard)', () => {
+      performanceActiveMock.mockReturnValue(true);
+      activePerformanceSessionMock.mockReturnValue({
+        activeSetlistId: 'setlistid0000001',
+        activeSongIndex: 1,
+      });
+      useActiveDetourSongIdMock.mockReturnValue(null);
+      useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+      renderRoute('setlistid0000001');
+      const region = screen.getByRole('region', { name: 'Currently performing' });
+      // Non-detour title comes from titleSnapshot at activeSongIndex.
+      expect(region).toHaveTextContent('Black Orpheus');
+      // No detour signal.
+      expect(screen.queryByText(/↩/)).toBeNull();
+    });
+
+    it('renders the live Song.title (NOT titleSnapshot) and the detour signal when useActiveDetourSongId returns a songId (AC-6)', () => {
+      performanceActiveMock.mockReturnValue(true);
+      activePerformanceSessionMock.mockReturnValue({
+        activeSetlistId: 'setlistid0000001',
+        // activeSongIndex would surface 'Black Orpheus' via titleSnapshot,
+        // but the detour override wins and the strip shows the live title.
+        activeSongIndex: 1,
+      });
+      useActiveDetourSongIdMock.mockReturnValue('song0000000099zz');
+      useSongMock.mockImplementation((songId) => {
+        if (songId === 'song0000000099zz') {
+          return { data: makeSong({ title: 'Sunny' }) };
+        }
+        return { data: undefined };
+      });
+      useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+      renderRoute('setlistid0000001');
+      // The italic span wraps `↩ Sunny`; the detour aria-label carries
+      // the same title.
+      expect(screen.getByText('↩ Sunny')).toBeInTheDocument();
+      expect(
+        screen.getByRole('region', { name: 'Currently performing on a detour: Sunny' }),
+      ).toBeInTheDocument();
+    });
+
+    it('Resume › still targets /performance/<setlistId>/<activeSongIndex> even when a detour is active (URL unchanged)', async () => {
+      const user = userEvent.setup();
+      performanceActiveMock.mockReturnValue(true);
+      activePerformanceSessionMock.mockReturnValue({
+        activeSetlistId: 'setlistid0000001',
+        activeSongIndex: 2,
+      });
+      useActiveDetourSongIdMock.mockReturnValue('song0000000099zz');
+      useSongMock.mockImplementation((songId) => {
+        if (songId === 'song0000000099zz') {
+          return { data: makeSong({ title: 'Sunny' }) };
+        }
+        return { data: undefined };
+      });
+      useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+      renderRoute('setlistid0000001');
+      await user.click(screen.getByRole('button', { name: 'Resume performance' }));
+      // No detour param appended — Resume › always targets the plan
+      // cursor URL. The detour override lives in context, so remounting
+      // `PerformanceCard` at that URL picks it back up.
+      expect(navigateMock).toHaveBeenCalledWith('/performance/setlistid0000001/2');
+    });
   });
 });

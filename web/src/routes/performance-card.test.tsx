@@ -1,7 +1,8 @@
 import { ACTIVE_BAND_ID, type Setlist, type Song } from '@gigbuddy/shared';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes } from 'react-router';
+import { StrictMode } from 'react';
+import { createMemoryRouter, MemoryRouter, Route, RouterProvider, Routes } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PERFORMANCE_CARD } from '../lib/microcopy.js';
 import { PerformanceCard } from './performance-card.js';
@@ -22,6 +23,8 @@ const {
   setActiveSongIndexMock,
   setPerformanceActiveMock,
   performanceActiveMock,
+  useActiveDetourSongIdMock,
+  useSetActiveDetourSongIdMock,
 } = vi.hoisted(() => ({
   useSetlistMock: vi.fn(),
   useSongMock: vi.fn(),
@@ -41,6 +44,10 @@ const {
   setActiveSongIndexMock: vi.fn(),
   setPerformanceActiveMock: vi.fn(),
   performanceActiveMock: vi.fn(() => false),
+  // Story 6.5 — detour override hooks. Default plan-cursor state
+  // (`null`) so pre-existing tests keep passing verbatim.
+  useActiveDetourSongIdMock: vi.fn<() => string | null>(() => null),
+  useSetActiveDetourSongIdMock: vi.fn<(songId: string | null) => void>(),
 }));
 
 vi.mock('../hooks/use-setlist.js', () => ({ useSetlist: useSetlistMock }));
@@ -54,6 +61,8 @@ vi.mock('../performance/performance-context.js', () => ({
   useSetActiveSongIndex: () => setActiveSongIndexMock,
   useSetPerformanceActive: () => setPerformanceActiveMock,
   usePerformanceActive: () => performanceActiveMock(),
+  useActiveDetourSongId: () => useActiveDetourSongIdMock(),
+  useSetActiveDetourSongId: () => useSetActiveDetourSongIdMock,
 }));
 vi.mock('react-router', async () => {
   const actual = await vi.importActual<typeof import('react-router')>('react-router');
@@ -122,6 +131,8 @@ beforeEach(() => {
   setActiveSongIndexMock.mockReset();
   setPerformanceActiveMock.mockReset();
   performanceActiveMock.mockReset().mockReturnValue(false);
+  useActiveDetourSongIdMock.mockReset().mockReturnValue(null);
+  useSetActiveDetourSongIdMock.mockReset();
   document.documentElement.dataset.atmosphere = 'practice';
   // Ensure a viewport meta tag exists for the effect to mutate.
   let meta = document.querySelector('meta[name="viewport"]') as HTMLMetaElement | null;
@@ -651,18 +662,10 @@ describe('PerformanceCard — jump overlay (Story 6.3)', () => {
     expect(screen.getByRole('button', { name: PERFORMANCE_CARD.ariaNextSong })).toBeInTheDocument();
   });
 
-  it('tapping a jump-overlay setlist row for another song re-renders the card with that song, WITHOUT navigating (plan cursor untouched)', async () => {
+  it('tapping a jump-overlay setlist row calls setActiveDetourSongId with the target songId, WITHOUT navigating (plan cursor untouched)', async () => {
     const user = userEvent.setup();
     useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
-    // Story 6.4 — the card's `useSong()` fetch key flips to whichever
-    // song the overlay selects. Return a payload that keys off `songId`
-    // so we can verify the card re-renders with the target's title.
-    useSongMock.mockImplementation((songId: string | null) => {
-      if (songId === 'song0000000002bb') {
-        return { data: makeSong({ songId, title: 'Black Orpheus' }), isLoading: false };
-      }
-      return { data: makeSong(), isLoading: false };
-    });
+    useSongMock.mockReturnValue({ data: makeSong(), isLoading: false });
     useSongsMock.mockReturnValue({
       data: [
         makeSong({ songId: 'song0000000001aa', title: 'Autumn Leaves' }),
@@ -671,28 +674,22 @@ describe('PerformanceCard — jump overlay (Story 6.3)', () => {
       ],
     });
     renderRoute('setlistid0000001', '0');
-    expect(screen.getByRole('heading', { level: 1, name: 'Autumn Leaves' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: PERFORMANCE_CARD.ariaOpenJumpOverlay }));
     const dialog = screen.getByRole('dialog', { name: 'Jump to a song' });
     const navigateCallsBefore = navigateMock.mock.calls.length;
+    useSetActiveDetourSongIdMock.mockClear();
     await user.click(within(dialog).getByRole('button', { name: /Black Orpheus/ }));
-    // Card re-renders with the jumped-to song.
-    await waitFor(() =>
-      expect(screen.getByRole('heading', { level: 1, name: 'Black Orpheus' })).toBeInTheDocument(),
-    );
-    // Plan cursor / URL untouched.
+    // Story 6.5 — the detour override lives in `PerformanceModeContext`.
+    // Selecting a non-plan-cursor row calls the context setter with the
+    // target songId; the plan cursor / URL is never touched.
+    expect(useSetActiveDetourSongIdMock).toHaveBeenCalledWith('song0000000002bb');
     expect(navigateMock.mock.calls.length).toBe(navigateCallsBefore);
   });
 
-  it('tapping a jump-overlay library-only row re-renders the card with that song, still WITHOUT navigating', async () => {
+  it('tapping a jump-overlay library-only row calls setActiveDetourSongId with the library songId, still WITHOUT navigating', async () => {
     const user = userEvent.setup();
     useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
-    useSongMock.mockImplementation((songId: string | null) => {
-      if (songId === 'song0000000099zz') {
-        return { data: makeSong({ songId, title: 'Sunny' }), isLoading: false };
-      }
-      return { data: makeSong(), isLoading: false };
-    });
+    useSongMock.mockReturnValue({ data: makeSong(), isLoading: false });
     useSongsMock.mockReturnValue({
       data: [
         makeSong({ songId: 'song0000000001aa', title: 'Autumn Leaves' }),
@@ -705,47 +702,34 @@ describe('PerformanceCard — jump overlay (Story 6.3)', () => {
     renderRoute('setlistid0000001', '0');
     await user.click(screen.getByRole('button', { name: PERFORMANCE_CARD.ariaOpenJumpOverlay }));
     const dialog = screen.getByRole('dialog', { name: 'Jump to a song' });
-    // Search for the library-only song so its row appears under `In library`.
     await user.type(
       within(dialog).getByRole('searchbox', { name: 'Search this setlist or library' }),
       'sunny',
     );
     const navigateCallsBefore = navigateMock.mock.calls.length;
+    useSetActiveDetourSongIdMock.mockClear();
     await user.click(within(dialog).getByRole('button', { name: /Sunny/ }));
-    await waitFor(() =>
-      expect(screen.getByRole('heading', { level: 1, name: 'Sunny' })).toBeInTheDocument(),
-    );
+    expect(useSetActiveDetourSongIdMock).toHaveBeenCalledWith('song0000000099zz');
     expect(navigateMock.mock.calls.length).toBe(navigateCallsBefore);
   });
 
-  it('after a detour selection, tapping NEXT › still navigates to plan-cursor + 1 (existing behaviour, unaffected by the detour override)', async () => {
+  it('with a detour override active, tapping NEXT › still navigates to plan-cursor + 1 (AC-3: the detour override does not redirect NEXT › URL math)', async () => {
+    // Story 6.5 AC-3 — NEXT › keys off `parsedSongIndex` (the plan
+    // cursor), not the detour override. With a detour set, tapping
+    // NEXT › navigates to `parsedSongIndex + 1`; the resulting URL
+    // change is what fires the mount-preserving clearing effect to
+    // exit the detour state (that clearing is exercised separately
+    // via `createMemoryRouter` below).
     const user = userEvent.setup();
+    useActiveDetourSongIdMock.mockReturnValue('song0000000003cc');
     useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
-    useSongMock.mockImplementation((songId: string | null) => {
-      if (songId === 'song0000000003cc') {
-        return { data: makeSong({ songId, title: 'Take Five' }), isLoading: false };
-      }
-      return { data: makeSong(), isLoading: false };
-    });
-    useSongsMock.mockReturnValue({
-      data: [
-        makeSong({ songId: 'song0000000001aa', title: 'Autumn Leaves' }),
-        makeSong({ songId: 'song0000000002bb', title: 'Black Orpheus' }),
-        makeSong({ songId: 'song0000000003cc', title: 'Take Five' }),
-      ],
+    useSongMock.mockReturnValue({
+      data: makeSong({ songId: 'song0000000003cc', title: 'Take Five' }),
+      isLoading: false,
     });
     renderRoute('setlistid0000001', '0');
-    // Jump to Take Five (not plan-cursor + 1 — the detour case).
-    await user.click(screen.getByRole('button', { name: PERFORMANCE_CARD.ariaOpenJumpOverlay }));
-    const dialog = screen.getByRole('dialog', { name: 'Jump to a song' });
-    await user.click(within(dialog).getByRole('button', { name: /Take Five/ }));
-    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull(), { timeout: 1000 });
     navigateMock.mockClear();
     await user.click(screen.getByRole('button', { name: PERFORMANCE_CARD.ariaNextSong }));
-    // NEXT › still computes from parsedSongIndex (0) + 1 = 1 — the
-    // detour override does NOT redirect the button's URL math. Full
-    // "returns to plan cursor + 1" detour semantics are Story 6.5's
-    // scope; this story only guarantees the button still works.
     expect(navigateMock).toHaveBeenCalledWith('/performance/setlistid0000001/1');
   });
 
@@ -767,5 +751,179 @@ describe('PerformanceCard — jump overlay (Story 6.3)', () => {
     expect(setPerformanceActiveMock.mock.calls.length).toBe(setActiveCallsBefore);
     expect(setActiveSongIndexMock.mock.calls.length).toBe(setIndexCallsBefore);
     expect(navigateMock.mock.calls.length).toBe(navigateCallsBefore);
+  });
+});
+
+describe('PerformanceCard — detour state (Story 6.5)', () => {
+  it('plan-cursor state: renders numeric <n> / <total>, no DETOUR text, ‹ disabled on first song', () => {
+    useActiveDetourSongIdMock.mockReturnValue(null);
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    useSongMock.mockReturnValue({ data: makeSong(), isLoading: false });
+    renderRoute('setlistid0000001', '0');
+    expect(screen.getByLabelText('Song 1 of 3')).toBeInTheDocument();
+    expect(screen.queryByText('DETOUR')).toBeNull();
+    const backButton = screen.getByRole('button', {
+      name: PERFORMANCE_CARD.ariaPreviousSong,
+    }) as HTMLButtonElement;
+    // Regression guard against Task 2's `disabled` formula change:
+    // `disabled={!isDetour && isFirst}` must still be `true` when not
+    // detoured on the first song.
+    expect(backButton.disabled).toBe(true);
+  });
+
+  it('detour active: position slot shows DETOUR (no numeric), aria-label is "On a detour"', () => {
+    useActiveDetourSongIdMock.mockReturnValue('song0000000003cc');
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    useSongMock.mockReturnValue({
+      data: makeSong({ songId: 'song0000000003cc', title: 'Take Five' }),
+      isLoading: false,
+    });
+    renderRoute('setlistid0000001', '0');
+    expect(screen.getByText(PERFORMANCE_CARD.detourLabel)).toBeInTheDocument();
+    expect(screen.getByLabelText(PERFORMANCE_CARD.ariaOnDetour)).toBeInTheDocument();
+    // Numeric indicator must not be present.
+    expect(screen.queryByLabelText('Song 1 of 3')).toBeNull();
+  });
+
+  it('detour active: ‹ is NOT disabled even on the first plan-cursor song, and tapping it clears the detour without navigating (AC-4)', async () => {
+    const user = userEvent.setup();
+    useActiveDetourSongIdMock.mockReturnValue('song0000000003cc');
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    useSongMock.mockReturnValue({
+      data: makeSong({ songId: 'song0000000003cc', title: 'Take Five' }),
+      isLoading: false,
+    });
+    renderRoute('setlistid0000001', '0');
+    const backButton = screen.getByRole('button', {
+      name: PERFORMANCE_CARD.ariaPreviousSong,
+    }) as HTMLButtonElement;
+    expect(backButton.disabled).toBe(false);
+    expect(backButton.getAttribute('aria-disabled')).toBe('false');
+    navigateMock.mockClear();
+    useSetActiveDetourSongIdMock.mockClear();
+    await user.click(backButton);
+    expect(useSetActiveDetourSongIdMock).toHaveBeenCalledWith(null);
+    expect(navigateMock).not.toHaveBeenCalled();
+  });
+
+  it('detour active AND plan cursor is the LAST song: NEXT › stays disabled; ‹ is enabled and clears the detour without navigating (AC-5)', async () => {
+    const user = userEvent.setup();
+    useActiveDetourSongIdMock.mockReturnValue('song0000000002bb');
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    useSongMock.mockReturnValue({
+      data: makeSong({ songId: 'song0000000002bb', title: 'Black Orpheus' }),
+      isLoading: false,
+    });
+    renderRoute('setlistid0000001', '2');
+    const nextButton = screen.getByRole('button', {
+      name: PERFORMANCE_CARD.ariaNextSong,
+    }) as HTMLButtonElement;
+    expect(nextButton.disabled).toBe(true);
+    const backButton = screen.getByRole('button', {
+      name: PERFORMANCE_CARD.ariaPreviousSong,
+    }) as HTMLButtonElement;
+    expect(backButton.disabled).toBe(false);
+    navigateMock.mockClear();
+    useSetActiveDetourSongIdMock.mockClear();
+    await user.click(backButton);
+    expect(useSetActiveDetourSongIdMock).toHaveBeenCalledWith(null);
+    expect(navigateMock).not.toHaveBeenCalled();
+  });
+
+  it('a fresh mount with a persisted detour does NOT call the setter with null (mount-preserving guard for Resume ›, AC-6)', () => {
+    // The mount-preserving guard compares against initial-mount values,
+    // so a fresh mount with `useActiveDetourSongIdMock` returning a
+    // non-null value must NOT fire the clearing effect on first render.
+    useActiveDetourSongIdMock.mockReturnValue('song0000000003cc');
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    useSongMock.mockReturnValue({
+      data: makeSong({ songId: 'song0000000003cc', title: 'Take Five' }),
+      isLoading: false,
+    });
+    useSetActiveDetourSongIdMock.mockClear();
+    renderRoute('setlistid0000001', '0');
+    expect(useSetActiveDetourSongIdMock).not.toHaveBeenCalledWith(null);
+  });
+
+  it("the mount-preserving guard survives React StrictMode's dev double-invoke (AC-6, no null-clear on first mount)", () => {
+    // React StrictMode double-invokes every effect on mount in dev
+    // (setup → cleanup → setup) while preserving the underlying fiber's
+    // ref state. A boolean `isInitialRenderRef` flag would flip to
+    // `false` on the first setup, then the simulated remount's second
+    // setup would mis-classify the mount as a re-render and clear
+    // Sandy's persisted detour on the very first render — invisibly
+    // (StrictMode is dev-only, so prod builds hid the bug and the
+    // non-StrictMode tests passed). Value-based detection against
+    // initial-mount refs is stable under this double-invoke.
+    useActiveDetourSongIdMock.mockReturnValue('song0000000003cc');
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    useSongMock.mockReturnValue({
+      data: makeSong({ songId: 'song0000000003cc', title: 'Take Five' }),
+      isLoading: false,
+    });
+    useSetActiveDetourSongIdMock.mockClear();
+    render(
+      <StrictMode>
+        <MemoryRouter initialEntries={['/performance/setlistid0000001/0']}>
+          <Routes>
+            <Route path="/performance/:setlistId/:songIndex" element={<PerformanceCard />} />
+          </Routes>
+        </MemoryRouter>
+      </StrictMode>,
+    );
+    expect(useSetActiveDetourSongIdMock).not.toHaveBeenCalledWith(null);
+  });
+
+  it('a genuine within-mount parsedSongIndex change clears the detour override (AC-3, via createMemoryRouter)', async () => {
+    // The default `useNavigate` mock records calls but does NOT change
+    // the URL — so button clicks alone cannot exercise the within-mount
+    // clearing. `createMemoryRouter` + a direct `router.navigate(...)`
+    // drives a real in-place route transition: the same
+    // `PerformanceCard` instance stays mounted (initial-mount refs
+    // unchanged), `useParams` picks up the new songIndex, the effect's
+    // dep changes, and the clearing effect fires because
+    // `parsedSongIndex !== initialSongIndexRef.current`.
+    useActiveDetourSongIdMock.mockReturnValue('song0000000003cc');
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    useSongMock.mockReturnValue({
+      data: makeSong({ songId: 'song0000000003cc', title: 'Take Five' }),
+      isLoading: false,
+    });
+    const router = createMemoryRouter(
+      [{ path: '/performance/:setlistId/:songIndex', element: <PerformanceCard /> }],
+      { initialEntries: ['/performance/setlistid0000001/0'] },
+    );
+    render(<RouterProvider router={router} />);
+    useSetActiveDetourSongIdMock.mockClear();
+    await act(async () => {
+      await router.navigate('/performance/setlistid0000001/1');
+    });
+    expect(useSetActiveDetourSongIdMock).toHaveBeenCalledWith(null);
+  });
+
+  it('detour chaining: selecting a SECOND jump-overlay row while already detoured re-sets the override without navigating', async () => {
+    const user = userEvent.setup();
+    // Simulate already being detoured on Take Five, plan cursor at 0.
+    useActiveDetourSongIdMock.mockReturnValue('song0000000003cc');
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    useSongMock.mockReturnValue({
+      data: makeSong({ songId: 'song0000000003cc', title: 'Take Five' }),
+      isLoading: false,
+    });
+    useSongsMock.mockReturnValue({
+      data: [
+        makeSong({ songId: 'song0000000001aa', title: 'Autumn Leaves' }),
+        makeSong({ songId: 'song0000000002bb', title: 'Black Orpheus' }),
+        makeSong({ songId: 'song0000000003cc', title: 'Take Five' }),
+      ],
+    });
+    renderRoute('setlistid0000001', '0');
+    await user.click(screen.getByRole('button', { name: PERFORMANCE_CARD.ariaOpenJumpOverlay }));
+    const dialog = screen.getByRole('dialog', { name: 'Jump to a song' });
+    useSetActiveDetourSongIdMock.mockClear();
+    navigateMock.mockClear();
+    await user.click(within(dialog).getByRole('button', { name: /Black Orpheus/ }));
+    expect(useSetActiveDetourSongIdMock).toHaveBeenCalledWith('song0000000002bb');
+    expect(navigateMock).not.toHaveBeenCalled();
   });
 });
