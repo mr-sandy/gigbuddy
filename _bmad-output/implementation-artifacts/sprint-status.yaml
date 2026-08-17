@@ -36,7 +36,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-06-09
-last_updated: 2026-08-17 (Story 6.5 → review)
+last_updated: 2026-08-17 (Story 6.4 → review)
 project: gigbuddy
 project_key: NOKEY
 tracking_system: file-system
@@ -93,7 +93,7 @@ development_status:
   6-1-compact-chord-glyph-notation-in-chord-chart: review
   6-2-chrome-polish-key-patch-single-row-section-count-format: review
   6-3-jump-affordance-bottom-toolbar-a2: review
-  6-4-jump-overlay-5a-pinned-search-setlist-library-reach: ready-for-dev
+  6-4-jump-overlay-5a-pinned-search-setlist-library-reach: review
   6-5-detour-state-d3-currently-performing-strip-detour-signal: review
   6-6-section-break-orientation-view-s2-cta: backlog
   epic-6-retrospective: optional
