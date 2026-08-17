@@ -133,6 +133,11 @@ beforeEach(() => {
   performanceActiveMock.mockReset().mockReturnValue(false);
   useActiveDetourSongIdMock.mockReset().mockReturnValue(null);
   useSetActiveDetourSongIdMock.mockReset();
+  // Story 6.6 — JSDOM does not implement `scrollIntoView`; the
+  // section-break auto-scroll effect (`jump-overlay.tsx`) invokes it on
+  // mount, so every test that opens the overlay in section-break mode
+  // would otherwise throw. Stub it as a no-op vi.fn().
+  Element.prototype.scrollIntoView = vi.fn();
   document.documentElement.dataset.atmosphere = 'practice';
   // Ensure a viewport meta tag exists for the effect to mutate.
   let meta = document.querySelector('meta[name="viewport"]') as HTMLMetaElement | null;
@@ -372,18 +377,22 @@ describe('PerformanceCard — single-tap navigation', () => {
     expect(navigateMock).not.toHaveBeenCalled();
   });
 
-  it('NEXT › traverses Section boundaries transparently (Set 1 last → Set 2 first)', async () => {
+  it('NEXT › at a Section boundary opens the section-break overlay instead of navigating (Story 6.6 supersedes Story 4.1 transparent traversal)', async () => {
     const user = userEvent.setup();
     useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
     useSongMock.mockReturnValue({
       data: makeSong({ songId: 'song0000000002bb', title: 'Black Orpheus' }),
       isLoading: false,
     });
-    // songIndex=1 is the last Song in Set 1; NEXT › should go to flat
-    // index 2 (Take Five, the first Song of Set 2).
+    // songIndex=1 is the last Song in Set 1. Story 6.6 makes this
+    // transition non-transparent by design — tapping NEXT › no longer
+    // calls navigate() directly; it opens the jump overlay in
+    // section-break mode. The CTA / target-row inside the overlay
+    // fires the eventual navigate() call.
     renderRoute('setlistid0000001', '1');
     await user.click(screen.getByRole('button', { name: PERFORMANCE_CARD.ariaNextSong }));
-    expect(navigateMock).toHaveBeenCalledWith('/performance/setlistid0000001/2');
+    expect(navigateMock).not.toHaveBeenCalled();
+    expect(screen.getByRole('dialog', { name: 'Jump to a song' })).toBeInTheDocument();
   });
 });
 
@@ -943,5 +952,188 @@ describe('PerformanceCard — detour state (Story 6.5)', () => {
     await user.click(within(dialog).getByRole('button', { name: /Black Orpheus/ }));
     expect(useSetActiveDetourSongIdMock).toHaveBeenCalledWith('song0000000002bb');
     expect(navigateMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('PerformanceCard — section-break orientation view (Story 6.6)', () => {
+  // The default `makeSetlist()` fixture has Set 1 (Autumn Leaves, Black
+  // Orpheus) then Set 2 (Take Five). songIndex=1 (Black Orpheus) is the
+  // last song of Set 1 — a non-final section boundary. songIndex=2
+  // (Take Five) is the final song of the FINAL section.
+
+  it('at songIndex=1 (last of Set 1), tapping NEXT › opens the overlay WITHOUT navigating (AC-1)', async () => {
+    const user = userEvent.setup();
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    useSongMock.mockReturnValue({
+      data: makeSong({ songId: 'song0000000002bb', title: 'Black Orpheus' }),
+      isLoading: false,
+    });
+    useSongsMock.mockReturnValue({
+      data: [
+        makeSong({ songId: 'song0000000001aa', title: 'Autumn Leaves' }),
+        makeSong({ songId: 'song0000000002bb', title: 'Black Orpheus' }),
+        makeSong({ songId: 'song0000000003cc', title: 'Take Five' }),
+      ],
+    });
+    renderRoute('setlistid0000001', '1');
+    navigateMock.mockClear();
+    await user.click(screen.getByRole('button', { name: PERFORMANCE_CARD.ariaNextSong }));
+    expect(navigateMock).not.toHaveBeenCalled();
+    expect(screen.getByRole('dialog', { name: 'Jump to a song' })).toBeInTheDocument();
+  });
+
+  it('the section-break CTA renders with text `Start Set 2 ›` and aria-label "Start Set 2" (AC-2, AC-8)', async () => {
+    const user = userEvent.setup();
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    useSongMock.mockReturnValue({
+      data: makeSong({ songId: 'song0000000002bb', title: 'Black Orpheus' }),
+      isLoading: false,
+    });
+    useSongsMock.mockReturnValue({
+      data: [
+        makeSong({ songId: 'song0000000001aa', title: 'Autumn Leaves' }),
+        makeSong({ songId: 'song0000000002bb', title: 'Black Orpheus' }),
+        makeSong({ songId: 'song0000000003cc', title: 'Take Five' }),
+      ],
+    });
+    renderRoute('setlistid0000001', '1');
+    await user.click(screen.getByRole('button', { name: PERFORMANCE_CARD.ariaNextSong }));
+    const cta = screen.getByRole('button', { name: 'Start Set 2' });
+    expect(cta).toBeInTheDocument();
+    expect(cta.textContent).toBe('Start Set 2 ›');
+    // Deliberately NOT the "Start Set 2 ›" form — epics locks the
+    // trailing-glyph exception for this CTA's aria-label.
+    expect(screen.queryByRole('button', { name: 'Start Set 2 ›' })).toBeNull();
+  });
+
+  it('the highlighted first-row of Set 2 (Take Five) carries aria-current="true"; the plan-cursor row does NOT (AC-1)', async () => {
+    const user = userEvent.setup();
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    useSongMock.mockReturnValue({
+      data: makeSong({ songId: 'song0000000002bb', title: 'Black Orpheus' }),
+      isLoading: false,
+    });
+    useSongsMock.mockReturnValue({
+      data: [
+        makeSong({ songId: 'song0000000001aa', title: 'Autumn Leaves' }),
+        makeSong({ songId: 'song0000000002bb', title: 'Black Orpheus' }),
+        makeSong({ songId: 'song0000000003cc', title: 'Take Five' }),
+      ],
+    });
+    renderRoute('setlistid0000001', '1');
+    await user.click(screen.getByRole('button', { name: PERFORMANCE_CARD.ariaNextSong }));
+    const highlighted = screen.getAllByRole('button', { current: true });
+    expect(highlighted).toHaveLength(1);
+    expect(highlighted[0]?.textContent).toContain('Take Five');
+  });
+
+  it('tapping the CTA navigates to /performance/<setlistId>/<parsedSongIndex + 1> and dismisses the dialog (AC-3)', async () => {
+    const user = userEvent.setup();
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    useSongMock.mockReturnValue({
+      data: makeSong({ songId: 'song0000000002bb', title: 'Black Orpheus' }),
+      isLoading: false,
+    });
+    useSongsMock.mockReturnValue({
+      data: [
+        makeSong({ songId: 'song0000000001aa', title: 'Autumn Leaves' }),
+        makeSong({ songId: 'song0000000002bb', title: 'Black Orpheus' }),
+        makeSong({ songId: 'song0000000003cc', title: 'Take Five' }),
+      ],
+    });
+    renderRoute('setlistid0000001', '1');
+    await user.click(screen.getByRole('button', { name: PERFORMANCE_CARD.ariaNextSong }));
+    navigateMock.mockClear();
+    useSetActiveDetourSongIdMock.mockClear();
+    await user.click(screen.getByRole('button', { name: 'Start Set 2' }));
+    expect(navigateMock).toHaveBeenCalledWith('/performance/setlistid0000001/2');
+    expect(useSetActiveDetourSongIdMock).not.toHaveBeenCalled();
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull(), { timeout: 1000 });
+  });
+
+  it('tapping the highlighted Take Five row produces the same navigate as the CTA and does NOT set a detour override (AC-3)', async () => {
+    const user = userEvent.setup();
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    useSongMock.mockReturnValue({
+      data: makeSong({ songId: 'song0000000002bb', title: 'Black Orpheus' }),
+      isLoading: false,
+    });
+    useSongsMock.mockReturnValue({
+      data: [
+        makeSong({ songId: 'song0000000001aa', title: 'Autumn Leaves' }),
+        makeSong({ songId: 'song0000000002bb', title: 'Black Orpheus' }),
+        makeSong({ songId: 'song0000000003cc', title: 'Take Five' }),
+      ],
+    });
+    renderRoute('setlistid0000001', '1');
+    await user.click(screen.getByRole('button', { name: PERFORMANCE_CARD.ariaNextSong }));
+    const dialog = screen.getByRole('dialog', { name: 'Jump to a song' });
+    navigateMock.mockClear();
+    useSetActiveDetourSongIdMock.mockClear();
+    await user.click(within(dialog).getByRole('button', { name: /Take Five/ }));
+    expect(navigateMock).toHaveBeenCalledWith('/performance/setlistid0000001/2');
+    expect(useSetActiveDetourSongIdMock).not.toHaveBeenCalled();
+  });
+
+  it('tapping a Set 1 (non-target) row calls setActiveDetourSongId and does NOT navigate (AC-4)', async () => {
+    const user = userEvent.setup();
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    useSongMock.mockReturnValue({
+      data: makeSong({ songId: 'song0000000002bb', title: 'Black Orpheus' }),
+      isLoading: false,
+    });
+    useSongsMock.mockReturnValue({
+      data: [
+        makeSong({ songId: 'song0000000001aa', title: 'Autumn Leaves' }),
+        makeSong({ songId: 'song0000000002bb', title: 'Black Orpheus' }),
+        makeSong({ songId: 'song0000000003cc', title: 'Take Five' }),
+      ],
+    });
+    renderRoute('setlistid0000001', '1');
+    await user.click(screen.getByRole('button', { name: PERFORMANCE_CARD.ariaNextSong }));
+    const dialog = screen.getByRole('dialog', { name: 'Jump to a song' });
+    navigateMock.mockClear();
+    useSetActiveDetourSongIdMock.mockClear();
+    await user.click(within(dialog).getByRole('button', { name: /Autumn Leaves/ }));
+    expect(useSetActiveDetourSongIdMock).toHaveBeenCalledWith('song0000000001aa');
+    expect(navigateMock).not.toHaveBeenCalled();
+  });
+
+  it('typing a query hides the CTA; clearing it restores the CTA (AC-7)', async () => {
+    const user = userEvent.setup();
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    useSongMock.mockReturnValue({
+      data: makeSong({ songId: 'song0000000002bb', title: 'Black Orpheus' }),
+      isLoading: false,
+    });
+    useSongsMock.mockReturnValue({
+      data: [
+        makeSong({ songId: 'song0000000001aa', title: 'Autumn Leaves' }),
+        makeSong({ songId: 'song0000000002bb', title: 'Black Orpheus' }),
+        makeSong({ songId: 'song0000000003cc', title: 'Take Five' }),
+      ],
+    });
+    renderRoute('setlistid0000001', '1');
+    await user.click(screen.getByRole('button', { name: PERFORMANCE_CARD.ariaNextSong }));
+    expect(screen.getByRole('button', { name: 'Start Set 2' })).toBeInTheDocument();
+    const searchbox = screen.getByRole('searchbox', { name: 'Search this setlist or library' });
+    await user.type(searchbox, 'take');
+    expect(screen.queryByRole('button', { name: /Start Set 2/ })).toBeNull();
+    await user.clear(searchbox);
+    expect(screen.getByRole('button', { name: 'Start Set 2' })).toBeInTheDocument();
+  });
+
+  it('at songIndex=2 (last of the FINAL section), tapping NEXT › is inert — no dialog, no navigate (AC-6)', async () => {
+    const user = userEvent.setup();
+    useSetlistMock.mockReturnValue({ data: makeSetlist(), isLoading: false });
+    useSongMock.mockReturnValue({
+      data: makeSong({ songId: 'song0000000003cc', title: 'Take Five' }),
+      isLoading: false,
+    });
+    renderRoute('setlistid0000001', '2');
+    navigateMock.mockClear();
+    await user.click(screen.getByRole('button', { name: PERFORMANCE_CARD.ariaNextSong }));
+    expect(navigateMock).not.toHaveBeenCalled();
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 });

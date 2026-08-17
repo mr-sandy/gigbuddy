@@ -1,7 +1,7 @@
 import type { Section, Song, SongRef } from '@gigbuddy/shared';
-import { type JSX, useEffect, useMemo, useState } from 'react';
+import { type JSX, useEffect, useMemo, useRef, useState } from 'react';
 import { useSongs } from '../hooks/use-songs.js';
-import { JUMP_OVERLAY, SECTION_HEADING } from '../lib/microcopy.js';
+import { JUMP_OVERLAY, SECTION_BREAK, SECTION_HEADING } from '../lib/microcopy.js';
 
 /*
  * JumpOverlay — Story 6.3 shell + Story 6.4 content fill (P1 5-a lock,
@@ -60,6 +60,31 @@ import { JUMP_OVERLAY, SECTION_HEADING } from '../lib/microcopy.js';
  *     `aria-current="true"` — the non-color signal required by
  *     architecture.md's color-never-alone rule (line 831).
  *
+ * Story 6.6 additions ("one overview, three contexts" — the section-break
+ * orientation context):
+ *   - New optional `sectionBreak` prop switches the overlay from the
+ *     mid-performance jump context into the section-break orientation
+ *     context WITHOUT introducing a second component. The prop supplies
+ *     the next section's name (for the CTA copy) and the songId of the
+ *     first song of that next section (`targetSongId`).
+ *   - Highlight is overridden: when `sectionBreak` is present AND no
+ *     query is active, `effectiveHighlightSongId` is `targetSongId` (not
+ *     `currentSongId`), so the first row of the next section is
+ *     `aria-current="true"` and accent-filled.
+ *   - A bottom-fixed `Start <sectionName> ›` CTA renders — same class
+ *     list as the shipped `Start performance ›` CTA in
+ *     `setlist-overview.tsx` (visual direction locked). Both the CTA
+ *     and the highlighted target row route through `onEnterSection`
+ *     (plan advance); every other row still goes through
+ *     `onSelectSong` (detour).
+ *   - On mount, the target row auto-scrolls into view and focus moves
+ *     to the CTA (via a ref + `useEffect`, matching the `noAutofocus`
+ *     precedent in `performance-card.tsx`).
+ *   - `hasQuery` is the sole gate for collapsing section-break mode: any
+ *     typed query hides the CTA, hides the highlight override, and
+ *     routes every row through the normal `onSelectSong` detour path,
+ *     even if that row happens to match `targetSongId`.
+ *
  * Reuse discipline:
  *   - `SECTION_HEADING.songCount` (Story 6.2) supplies `<n> song(s)` —
  *     no local pluralisation.
@@ -75,6 +100,20 @@ type JumpOverlayProps = {
   currentSongId: string;
   onDismiss: () => void;
   onSelectSong: (songId: string) => void;
+  // Story 6.6 — when present, the overlay renders in "section-break"
+  // orientation mode: the target row (`targetSongId`, the first song of
+  // the next non-empty section) is highlighted (overriding
+  // `currentSongId` for highlight purposes ONLY), a bottom-fixed
+  // `Start <sectionName> ›` CTA renders, and both the CTA and the
+  // highlighted row route through `onEnterSection` (a genuine plan
+  // advance) rather than the normal `onSelectSong` detour path. A
+  // non-empty query collapses this mode entirely — the overlay reverts
+  // to the standard filtered jump behaviour while any query is typed.
+  sectionBreak?: {
+    targetSongId: string;
+    sectionName: string;
+    onEnterSection: () => void;
+  };
 };
 
 // Section-heading tokens — mirror `section-heading.tsx`'s NAME_CLASS /
@@ -122,6 +161,7 @@ export function JumpOverlay({
   currentSongId,
   onDismiss,
   onSelectSong,
+  sectionBreak,
 }: JumpOverlayProps): JSX.Element {
   // Mount fade: start at opacity-0, then flip to opacity-100 after the
   // first paint. A requestAnimationFrame + microtask defer gives the
@@ -129,6 +169,10 @@ export function JumpOverlay({
   const [mounted, setMounted] = useState(false);
   const [closing, setClosing] = useState(false);
   const [query, setQuery] = useState('');
+  // Story 6.6 — CTA ref, focused on mount when section-break mode is
+  // active (matches the `nextButtonRef` pattern in `performance-card.tsx`;
+  // Biome `noAutofocus` prohibits React's `autoFocus` prop).
+  const ctaRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const rafId = requestAnimationFrame(() => {
@@ -137,6 +181,24 @@ export function JumpOverlay({
     return () => {
       cancelAnimationFrame(rafId);
     };
+  }, []);
+
+  // Story 6.6 — auto-scroll the target row into view and focus the CTA
+  // on mount. Empty dep array is deliberate: the overlay opens once per
+  // NEXT-tap; there is no "re-open with a different target while
+  // already mounted" case in this story's scope. Reduced-motion is
+  // handled at the CSS layer (`web/src/styles/globals.css` zeroes
+  // transition/animation durations); `scrollIntoView`'s JS-driven
+  // smooth scroll is intentionally NOT branched here (no AC requires
+  // a distinct reduced-motion contingency for this transition — see
+  // story Dev Notes).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: mount-only effect; opening a new overlay always mounts a fresh instance
+  useEffect(() => {
+    if (sectionBreak === undefined) return;
+    document
+      .getElementById(`jump-overlay-row-${sectionBreak.targetSongId}`)
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    ctaRef.current?.focus();
   }, []);
 
   function handleDismiss(): void {
@@ -175,6 +237,26 @@ export function JumpOverlay({
   const trimmedQuery = query.trim();
   const queryLower = trimmedQuery.toLowerCase();
   const hasQuery = trimmedQuery.length > 0;
+
+  // Story 6.6 — section-break mode collapses to a normal jump overlay
+  // the moment a query is typed (AC-7). `isSectionBreak` gates the
+  // highlight override, the CTA render, and the target-row routing.
+  const isSectionBreak = sectionBreak !== undefined && !hasQuery;
+  const effectiveHighlightSongId = isSectionBreak ? sectionBreak.targetSongId : currentSongId;
+
+  // Story 6.6 — row-select wrapper used only in the `!hasQuery` branch.
+  // If section-break mode is active AND the tapped row matches the
+  // target songId, route through `onEnterSection` (plan advance) and
+  // dismiss. Every other row (including all Set 1 rows) goes through
+  // `handleSelectRow` unchanged — normal `onSelectSong` detour path.
+  function handleFullViewRowSelect(songId: string): void {
+    if (isSectionBreak && sectionBreak !== undefined && songId === sectionBreak.targetSongId) {
+      sectionBreak.onEnterSection();
+      handleDismiss();
+      return;
+    }
+    handleSelectRow(songId);
+  }
 
   // Flatten setlist SongRefs once for filtering. Order preserved:
   // sections in order, songs within each section in order.
@@ -228,16 +310,20 @@ export function JumpOverlay({
           `In this setlist` / `In library` filtered groups (with query).
           Silent when a query matches neither (no invented "no matches"
           copy — see story Dev Notes). */}
-      <div className="flex-1 overflow-y-auto py-[calc(var(--spacing-unit)*2)]">
+      <div
+        className={`flex-1 overflow-y-auto py-[calc(var(--spacing-unit)*2)] ${
+          isSectionBreak ? 'pb-[96px]' : ''
+        }`}
+      >
         {!hasQuery ? (
           <div className="flex flex-col gap-[calc(var(--spacing-unit)*4)]">
             {sections.map((section) => (
               <SetlistSection
                 key={`section-${section.name}`}
                 section={section}
-                currentSongId={currentSongId}
+                currentSongId={effectiveHighlightSongId}
                 songsById={songsById}
-                onSelectRow={handleSelectRow}
+                onSelectRow={handleFullViewRowSelect}
               />
             ))}
           </div>
@@ -286,6 +372,26 @@ export function JumpOverlay({
           </div>
         )}
       </div>
+      {/* Story 6.6 — bottom-fixed section-break CTA. Class list is the
+          EXACT shipped `Start performance ›` treatment from
+          `setlist-overview.tsx` (visual direction locked). `aria-label`
+          drops the trailing `›` per epics AC's locked wording; the
+          on-screen glyph copy keeps it. */}
+      {isSectionBreak && sectionBreak !== undefined ? (
+        <button
+          type="button"
+          ref={ctaRef}
+          aria-label={SECTION_BREAK.ctaAriaLabel(sectionBreak.sectionName)}
+          onClick={() => {
+            sectionBreak.onEnterSection();
+            handleDismiss();
+          }}
+          className="fixed inset-x-0 bottom-0 z-40 flex min-h-[64px] items-start justify-center bg-[color:var(--color-accent)] pt-[calc(var(--spacing-unit)*3)] text-[length:var(--text-section-heading)] leading-[var(--text-section-heading--line-height)] font-[family-name:var(--font-serif-editorial)] text-[color:var(--color-bg)]"
+          style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 50px)' }}
+        >
+          {SECTION_BREAK.ctaLabel(sectionBreak.sectionName)}
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -340,6 +446,10 @@ function SongRow({ songId, title, songKey, isCurrent, onSelect }: SongRowProps):
   return (
     <button
       type="button"
+      // Story 6.6 — stable DOM handle for the section-break auto-scroll
+      // effect. Unconditional (harmless when unused); avoids forwardRef
+      // plumbing through `SetlistSection`.
+      id={`jump-overlay-row-${songId}`}
       onClick={() => onSelect(songId)}
       aria-current={isCurrent ? 'true' : undefined}
       className={isCurrent ? ROW_BUTTON_HIGHLIGHT_CLASS : ROW_BUTTON_CLASS}

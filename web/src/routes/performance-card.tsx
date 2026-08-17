@@ -89,6 +89,20 @@ import { useWakeLockIndicator } from '../performance/use-wake-lock-indicator.js'
  * within-mount clearing effect is mount-preserving — it skips the
  * first render so `Resume ›`'s remount does not immediately wipe a
  * persisted detour.
+ *
+ * Story 6.6 additions: `NEXT ›` no longer unconditionally navigates
+ * on tap. When the plan cursor sits on the last song of a non-final
+ * section, tapping `NEXT ›` opens the jump overlay in "section-break"
+ * orientation mode — no `navigate()`, no plan-cursor change. The
+ * overlay carries a bottom-fixed `Start <sectionName> ›` CTA which,
+ * when tapped (or when the auto-highlighted first-row of the next
+ * section is tapped), fires the SAME `navigate()` call the shipped
+ * `NEXT ›` used to fire directly. `overlayMode` replaces the boolean
+ * `isJumpOverlayOpen` so the same JumpOverlay instance can be opened
+ * in either `'jump'` (the toolbar's `≡ jump` control) or
+ * `'section-break'` (auto-opened `NEXT ›` at a section boundary)
+ * modes — one component, three contexts (mid-perf jump, section-break,
+ * setlist-overview).
  */
 export function PerformanceCard(): JSX.Element {
   const { setlistId, songIndex } = useParams<{ setlistId: string; songIndex: string }>();
@@ -117,11 +131,15 @@ export function PerformanceCard(): JSX.Element {
   const performanceActive = usePerformanceActive();
   const setPerformanceActive = useSetPerformanceActive();
 
-  // Story 6.3 — local UI state gating the jump overlay's mount. Deliberately
-  // component-local (NOT PerformanceModeContext), matching the sheetOpen
-  // pattern in setlist-song-row.tsx: the overlay's open/closed-ness is
-  // transient single-route UI state that dies with this component instance.
-  const [isJumpOverlayOpen, setIsJumpOverlayOpen] = useState(false);
+  // Story 6.3 / 6.6 — local UI state gating the jump overlay's mount.
+  // Deliberately component-local (NOT PerformanceModeContext), matching
+  // the sheetOpen pattern in setlist-song-row.tsx: the overlay's
+  // open/closed-ness is transient single-route UI state that dies with
+  // this component instance. Three-state mode replaces the Story 6.3
+  // boolean so the same JumpOverlay can be opened in either 'jump'
+  // (toolbar `≡ jump`) or 'section-break' (auto-opened `NEXT ›` at a
+  // section boundary) modes.
+  const [overlayMode, setOverlayMode] = useState<'closed' | 'jump' | 'section-break'>('closed');
 
   // Story 6.5 — detour override promoted into `PerformanceModeContext`
   // (was component-local `useState` in Story 6.4). The override must
@@ -169,6 +187,40 @@ export function PerformanceCard(): JSX.Element {
     if (setlist === undefined || setlist === null) return [];
     return setlist.sections.flatMap((s) => s.songs);
   }, [setlist]);
+
+  // Story 6.6 — `sectionBreakInfo` derives whether `parsedSongIndex` is
+  // the LAST flat index of some section AND a next non-empty section
+  // exists. Guard the setlist-loading branch even though the isLoading
+  // return above already short-circuits render — hooks must run
+  // unconditionally on every render, including loading-state renders.
+  // The scan skips empty sections defensively so a `Set 1` → empty
+  // interlude → `Set 2` layout still resolves the next non-empty
+  // section as the target.
+  const sectionBreakInfo = useMemo<{
+    nextSectionName: string;
+    nextSectionFirstSongId: string;
+  } | null>(() => {
+    if (setlist === undefined || setlist === null) return null;
+    let cursor = -1;
+    for (let i = 0; i < setlist.sections.length; i++) {
+      const section = setlist.sections[i];
+      if (section === undefined || section.songs.length === 0) continue;
+      cursor += section.songs.length;
+      if (cursor !== parsedSongIndex) continue;
+      for (let j = i + 1; j < setlist.sections.length; j++) {
+        const nextSection = setlist.sections[j];
+        const firstSong = nextSection?.songs[0];
+        if (nextSection !== undefined && firstSong !== undefined) {
+          return {
+            nextSectionName: nextSection.name,
+            nextSectionFirstSongId: firstSong.songId,
+          };
+        }
+      }
+      return null;
+    }
+    return null;
+  }, [setlist, parsedSongIndex]);
 
   const currentSongRef = flatSongs[parsedSongIndex];
   // Story 6.4 — `displaySongId` overrides the plan cursor for FETCH +
@@ -462,7 +514,7 @@ export function PerformanceCard(): JSX.Element {
         <button
           type="button"
           aria-label={PERFORMANCE_CARD.ariaOpenJumpOverlay}
-          onClick={() => setIsJumpOverlayOpen(true)}
+          onClick={() => setOverlayMode('jump')}
           className="flex-1 min-h-tap min-w-tap text-[length:var(--text-perf-meta)] leading-[var(--text-perf-meta--line-height)] text-[color:var(--color-text-secondary)]"
         >
           {PERFORMANCE_CARD.jumpButton}
@@ -481,6 +533,16 @@ export function PerformanceCard(): JSX.Element {
           aria-disabled={isLast}
           onClick={() => {
             if (isLast) return;
+            // Story 6.6 — at a section boundary (parsedSongIndex is the
+            // last flat index of some section AND a next non-empty
+            // section exists), open the jump overlay in
+            // section-break mode instead of navigating directly. The
+            // overlay's CTA (or the highlighted target row) will then
+            // fire the same `navigate()` call that used to fire here.
+            if (sectionBreakInfo !== null) {
+              setOverlayMode('section-break');
+              return;
+            }
             navigate(`/performance/${setlistId}/${parsedSongIndex + 1}`);
           }}
           className="min-h-tap rounded-[var(--radius-button)] bg-[color:var(--color-accent)] px-[calc(var(--spacing-unit)*4)] text-[length:var(--text-section-heading)] leading-[var(--text-section-heading--line-height)] font-[family-name:var(--font-serif-editorial)] text-[color:var(--color-bg)] disabled:opacity-40"
@@ -492,11 +554,11 @@ export function PerformanceCard(): JSX.Element {
           inset-0 z-50 inside the component). The card itself stays
           mounted underneath — wake lock, performanceActive, and the plan
           cursor are all unaffected by the overlay lifecycle. */}
-      {isJumpOverlayOpen ? (
+      {overlayMode !== 'closed' ? (
         <JumpOverlay
           sections={setlist.sections}
           currentSongId={displaySongId ?? ''}
-          onDismiss={() => setIsJumpOverlayOpen(false)}
+          onDismiss={() => setOverlayMode('closed')}
           onSelectSong={(songId) => {
             // Story 6.4 — selecting the plan-cursor's own row clears any
             // override (returns to plan); selecting anything else sets
@@ -505,6 +567,26 @@ export function PerformanceCard(): JSX.Element {
             // `setActiveDetourSongId`; the logic is identical.
             setActiveDetourSongId(songId === currentSongRef?.songId ? null : songId);
           }}
+          // Story 6.6 — pass `sectionBreak` via a spread so the prop is
+          // OMITTED (not passed as `undefined`) when the overlay is in
+          // `'jump'` mode. This respects `exactOptionalPropertyTypes`
+          // and matches the `dragProps` spread precedent in
+          // `setlist-overview.tsx`. `onEnterSection` reuses the exact
+          // same `navigate()` expression the shipped `NEXT ›` used to
+          // fire directly for this transition — Story 4.1's math is
+          // unchanged; only the trigger moved from "immediate tap" to
+          // "CTA / target-row tap in the auto-opened overlay."
+          {...(overlayMode === 'section-break' && sectionBreakInfo !== null
+            ? {
+                sectionBreak: {
+                  targetSongId: sectionBreakInfo.nextSectionFirstSongId,
+                  sectionName: sectionBreakInfo.nextSectionName,
+                  onEnterSection: () => {
+                    navigate(`/performance/${setlistId}/${parsedSongIndex + 1}`);
+                  },
+                },
+              }
+            : {})}
         />
       ) : null}
     </div>

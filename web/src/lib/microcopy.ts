@@ -157,6 +157,22 @@ export const JUMP_OVERLAY = {
 } as const;
 
 /*
+ * Section-break orientation CTA copy — Story 6.6 (P1 §B8 lock,
+ * one-overview-three-contexts). The bottom-fixed CTA that appears
+ * when the jump overlay auto-opens between sections, parallel in
+ * shape to `ACTIONS.startPerformance`. `ctaLabel` is the on-screen
+ * glyph copy (locked verbatim in epics.md: `Start <section name> ›`);
+ * `ctaAriaLabel` is the spoken form, DELIBERATELY dropping the
+ * trailing `›` per epics AC's exact locked wording (a documented
+ * exception to the `Start performance ›` CTA's aria-label pattern,
+ * which does include the glyph — see Story 6.6 Dev Notes).
+ */
+export const SECTION_BREAK = {
+  ctaLabel: (sectionName: string) => `Start ${sectionName} ›`,
+  ctaAriaLabel: (sectionName: string) => `Start ${sectionName}`,
+} as const;
+
+/*
  * Currently-performing strip copy — Story 4.3 (FR-19, FR-20). Top-anchored
  * strip on the active Setlist overview while Performance Mode is active.
  * Voice & Tone: short, no exclamation, no marketing voice — the `›`

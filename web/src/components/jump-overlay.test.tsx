@@ -61,6 +61,10 @@ const LIBRARY_SONGS: Song[] = [
 beforeEach(() => {
   useSongsMock.mockReset();
   useSongsMock.mockReturnValue({ data: LIBRARY_SONGS });
+  // Story 6.6 — JSDOM does not implement `scrollIntoView`. The
+  // section-break auto-scroll effect calls it on mount; stub as a
+  // no-op vi.fn() so tests that pass `sectionBreak` don't throw.
+  Element.prototype.scrollIntoView = vi.fn();
 });
 
 function renderOverlay(overrides: Partial<Parameters<typeof JumpOverlay>[0]> = {}): {
@@ -248,5 +252,132 @@ describe('JumpOverlay — row key rendering from useSongs()', () => {
     // "Autumn Leaves" row should show `Em` (from LIBRARY_SONGS lookup).
     const autumnRow = screen.getByRole('button', { name: /Autumn Leaves/ });
     expect(within(autumnRow).getByText('Em')).toBeInTheDocument();
+  });
+});
+
+describe('JumpOverlay — section-break orientation (Story 6.6)', () => {
+  // In the shared 2-section fixture, Set 2's first (and only) song is
+  // Take Five. Section-break mode is exercised by passing
+  // `sectionBreak={{ targetSongId: 'song0000000003cc', ... }}`.
+
+  it('when `sectionBreak` is passed, the target row (Take Five) is the only aria-current="true" row — not the `currentSongId` (Autumn Leaves) row', () => {
+    renderOverlay({
+      currentSongId: 'song0000000001aa',
+      sectionBreak: {
+        targetSongId: 'song0000000003cc',
+        sectionName: 'Set 2',
+        onEnterSection: vi.fn(),
+      },
+    });
+    const highlighted = screen.getAllByRole('button', { current: true });
+    expect(highlighted).toHaveLength(1);
+    expect(highlighted[0]?.textContent).toContain('Take Five');
+  });
+
+  it('renders the bottom-fixed CTA with text `Start Set 2 ›` and aria-label "Start Set 2"', () => {
+    renderOverlay({
+      currentSongId: 'song0000000001aa',
+      sectionBreak: {
+        targetSongId: 'song0000000003cc',
+        sectionName: 'Set 2',
+        onEnterSection: vi.fn(),
+      },
+    });
+    const cta = screen.getByRole('button', { name: 'Start Set 2' });
+    expect(cta.textContent).toBe('Start Set 2 ›');
+  });
+
+  it('invokes scrollIntoView on mount (auto-scroll to target row) and focuses the CTA', () => {
+    const scrollSpy = vi.spyOn(HTMLElement.prototype, 'scrollIntoView');
+    renderOverlay({
+      currentSongId: 'song0000000001aa',
+      sectionBreak: {
+        targetSongId: 'song0000000003cc',
+        sectionName: 'Set 2',
+        onEnterSection: vi.fn(),
+      },
+    });
+    expect(scrollSpy).toHaveBeenCalled();
+    const cta = screen.getByRole('button', { name: 'Start Set 2' });
+    expect(document.activeElement).toBe(cta);
+    scrollSpy.mockRestore();
+  });
+
+  it('tapping the CTA calls onEnterSection and (after the fade) onDismiss; onSelectSong is NOT called', async () => {
+    const user = userEvent.setup();
+    const onEnterSection = vi.fn();
+    const { onDismiss, onSelectSong } = renderOverlay({
+      currentSongId: 'song0000000001aa',
+      sectionBreak: {
+        targetSongId: 'song0000000003cc',
+        sectionName: 'Set 2',
+        onEnterSection,
+      },
+    });
+    await user.click(screen.getByRole('button', { name: 'Start Set 2' }));
+    expect(onEnterSection).toHaveBeenCalledTimes(1);
+    expect(onSelectSong).not.toHaveBeenCalled();
+    await waitFor(() => expect(onDismiss).toHaveBeenCalledTimes(1), { timeout: 1000 });
+  });
+
+  it('tapping the highlighted target row (Take Five) produces the same outcome as the CTA — onEnterSection called, onSelectSong not called', async () => {
+    const user = userEvent.setup();
+    const onEnterSection = vi.fn();
+    const { onSelectSong } = renderOverlay({
+      currentSongId: 'song0000000001aa',
+      sectionBreak: {
+        targetSongId: 'song0000000003cc',
+        sectionName: 'Set 2',
+        onEnterSection,
+      },
+    });
+    await user.click(screen.getByRole('button', { name: /Take Five/ }));
+    expect(onEnterSection).toHaveBeenCalledTimes(1);
+    expect(onSelectSong).not.toHaveBeenCalled();
+  });
+
+  it('tapping a non-target row (Black Orpheus) calls onSelectSong with that row songId, NOT onEnterSection', async () => {
+    const user = userEvent.setup();
+    const onEnterSection = vi.fn();
+    const { onSelectSong } = renderOverlay({
+      currentSongId: 'song0000000001aa',
+      sectionBreak: {
+        targetSongId: 'song0000000003cc',
+        sectionName: 'Set 2',
+        onEnterSection,
+      },
+    });
+    await user.click(screen.getByRole('button', { name: /Black Orpheus/ }));
+    expect(onSelectSong).toHaveBeenCalledWith('song0000000002bb');
+    expect(onEnterSection).not.toHaveBeenCalled();
+  });
+
+  it('typing a query hides the CTA and even a row matching the target songId routes through onSelectSong (AC-7)', async () => {
+    const user = userEvent.setup();
+    const onEnterSection = vi.fn();
+    const { onSelectSong } = renderOverlay({
+      currentSongId: 'song0000000001aa',
+      sectionBreak: {
+        targetSongId: 'song0000000003cc',
+        sectionName: 'Set 2',
+        onEnterSection,
+      },
+    });
+    await user.type(
+      screen.getByRole('searchbox', { name: 'Search this setlist or library' }),
+      'take',
+    );
+    expect(screen.queryByRole('button', { name: /Start Set 2/ })).toBeNull();
+    await user.click(screen.getByRole('button', { name: /Take Five/ }));
+    expect(onSelectSong).toHaveBeenCalledWith('song0000000003cc');
+    expect(onEnterSection).not.toHaveBeenCalled();
+  });
+
+  it('WITHOUT the sectionBreak prop, the CTA never renders and the highlighted row is the `currentSongId` (regression guard)', () => {
+    renderOverlay({ currentSongId: 'song0000000002bb' });
+    expect(screen.queryByRole('button', { name: /Start / })).toBeNull();
+    const highlighted = screen.getAllByRole('button', { current: true });
+    expect(highlighted).toHaveLength(1);
+    expect(highlighted[0]?.textContent).toContain('Black Orpheus');
   });
 });
