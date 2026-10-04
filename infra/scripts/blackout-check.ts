@@ -156,21 +156,42 @@ async function buildRealDeps(): Promise<Deps> {
   };
 }
 
+// Report-only mode (used by deploy-force.yml) must distinguish three
+// outcomes from `decideBlackout`:
+//   1. OK / specific gigs blocking → emit gigs, exit 0 so the workflow can
+//      validate venueConfirmation against them.
+//   2. Static weekend-evening fallback → no concrete gigs; still exit 0 so
+//      force-deploy can proceed with an empty venueConfirmation (the whole
+//      point of force-deploy is to override time-based blackouts).
+//   3. DDB unreachable → fail-closed; the workflow must NOT proceed blind.
+// The discriminator is the stderr string: only FAIL_CLOSED_MESSAGE means
+// "we could not evaluate" — static fallback has its own distinctive stderr.
+export function reportOnlyOutcome(decision: BlackoutDecision): {
+  exit: 0 | 1;
+  stdoutLines: string[];
+  stderr?: string;
+} {
+  if (decision.exit === 1 && decision.stderr === FAIL_CLOSED_MESSAGE) {
+    return { exit: 1, stdoutLines: [], stderr: decision.stderr };
+  }
+  const gigs = decision.exit === 1 ? decision.blockingGigs : [];
+  return { exit: 0, stdoutLines: gigs.map((g) => JSON.stringify(g.gigMeta)) };
+}
+
 async function main(args: string[]): Promise<never> {
   const reportOnly = args.includes('--report-only');
   const deps = await buildRealDeps();
   const decision = await decideBlackout(deps);
 
   if (reportOnly) {
-    if (decision.exit === 1 && decision.blockingGigs.length === 0) {
-      // Fail-closed: DDB unreachable — propagate the error so force-deploy does not proceed blind
-      process.stderr.write(`${decision.stderr}\n`);
-      process.exit(1);
+    const outcome = reportOnlyOutcome(decision);
+    for (const line of outcome.stdoutLines) {
+      process.stdout.write(`${line}\n`);
     }
-    for (const gig of decision.blockingGigs) {
-      process.stdout.write(`${JSON.stringify(gig.gigMeta)}\n`);
+    if (outcome.stderr !== undefined) {
+      process.stderr.write(`${outcome.stderr}\n`);
     }
-    process.exit(0);
+    process.exit(outcome.exit);
   }
 
   if (decision.exit === 0) {

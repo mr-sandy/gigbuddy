@@ -6,6 +6,7 @@ import {
   londonHour,
   londonIsoDate,
   londonWeekday,
+  reportOnlyOutcome,
 } from './blackout-check.js';
 
 const ok = async () => undefined;
@@ -193,9 +194,15 @@ describe('decideBlackout', () => {
   });
 
   it('sorts multiple blocking gigs nearest-first by date then time', async () => {
-    const later: Gig = { gigMeta: { venue: 'Late Bar', date: '2026-06-15', time: '22:00' } };
-    const earlier: Gig = { gigMeta: { venue: 'Early Cafe', date: '2026-06-15', time: '18:00' } };
-    const nextDay: Gig = { gigMeta: { venue: 'Next Day', date: '2026-06-16', time: '10:00' } };
+    const later: Gig = {
+      gigMeta: { venue: 'Late Bar', date: '2026-06-15', time: '22:00' },
+    };
+    const earlier: Gig = {
+      gigMeta: { venue: 'Early Cafe', date: '2026-06-15', time: '18:00' },
+    };
+    const nextDay: Gig = {
+      gigMeta: { venue: 'Next Day', date: '2026-06-16', time: '10:00' },
+    };
     // Pass in non-sorted order to prove the function sorts.
     const decision = await decideBlackout({
       now: new Date('2026-06-14T10:00:00Z'),
@@ -216,7 +223,9 @@ describe('decideBlackout', () => {
   });
 
   it('formats a blocking gig without a trailing time when gigMeta.time is undefined', async () => {
-    const gig: Gig = { gigMeta: { venue: 'No Time Venue', date: '2026-06-15' } };
+    const gig: Gig = {
+      gigMeta: { venue: 'No Time Venue', date: '2026-06-15' },
+    };
     const decision = await decideBlackout({
       now: new Date('2026-06-14T10:00:00Z'),
       describeTable: ok,
@@ -226,5 +235,58 @@ describe('decideBlackout', () => {
     if (decision.exit === 1) {
       expect(decision.stderr).toBe('BLOCKED: No Time Venue @ 2026-06-15');
     }
+  });
+});
+
+describe('reportOnlyOutcome', () => {
+  it('OK decision → exit 0 with no stdout and no stderr', () => {
+    const outcome = reportOnlyOutcome({
+      exit: 0,
+      stdout: 'blackout check passed',
+      blockingGigs: [],
+    });
+    expect(outcome).toEqual({ exit: 0, stdoutLines: [] });
+  });
+
+  it('specific gigs blocking → exit 0, emits each gigMeta as JSON line (so force-deploy can validate venueConfirmation against them)', () => {
+    const gigs: Gig[] = [
+      {
+        gigMeta: { venue: 'The Jazz Cafe', date: '2026-10-05', time: '20:00' },
+      },
+      { gigMeta: { venue: 'Fram HQ', date: '2026-10-06' } },
+    ];
+    const outcome = reportOnlyOutcome({
+      exit: 1,
+      stderr: 'BLOCKED: ...',
+      blockingGigs: gigs,
+    });
+    expect(outcome.exit).toBe(0);
+    expect(outcome.stderr).toBeUndefined();
+    expect(outcome.stdoutLines).toEqual([
+      JSON.stringify(gigs[0]?.gigMeta),
+      JSON.stringify(gigs[1]?.gigMeta),
+    ]);
+  });
+
+  it('static weekend-evening fallback → exit 0 with no gigs (force-deploy must be able to override time-based blackouts with an empty venueConfirmation)', () => {
+    const outcome = reportOnlyOutcome({
+      exit: 1,
+      stderr: 'BLOCKED: weekend evening static fallback (Sun 22:38 Europe/London)',
+      blockingGigs: [],
+    });
+    expect(outcome).toEqual({ exit: 0, stdoutLines: [] });
+  });
+
+  it('DDB-unreachable fail-closed → exit 1 with the fail-closed message on stderr (force-deploy must NOT proceed blind)', () => {
+    const outcome = reportOnlyOutcome({
+      exit: 1,
+      stderr: FAIL_CLOSED_MESSAGE,
+      blockingGigs: [],
+    });
+    expect(outcome).toEqual({
+      exit: 1,
+      stdoutLines: [],
+      stderr: FAIL_CLOSED_MESSAGE,
+    });
   });
 });
