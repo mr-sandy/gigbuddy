@@ -69,8 +69,10 @@ function parseTokens(css: string): Record<Variant, Record<string, string>> {
     dark: {},
   };
 
-  const lightBody = extractBlock(css, '@theme');
-  const mediaBody = extractBlock(css, '@media (prefers-color-scheme: dark)');
+  // Strip comments first so prose in the header comment can't match a selector.
+  const code = css.replace(/\/\*[\s\S]*?\*\//g, '');
+  const lightBody = extractBlock(code, '@theme');
+  const mediaBody = extractBlock(code, '@media (prefers-color-scheme: dark)');
   const darkBody = extractBlock(mediaBody, ':root');
 
   const bodies: Record<Variant, string> = { light: lightBody, dark: darkBody };

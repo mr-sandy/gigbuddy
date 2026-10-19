@@ -143,6 +143,7 @@ so that before V1 ships I have proof — not theory — that PITR + AWS Backup a
   - [ ] Confirm `pnpm test:e2e` (smoke) still passes unaffected, and `pnpm --filter e2e exec tsc -p tsconfig.json --noEmit` typechecks the new spec + config
 
 - [ ] **Task 4 — Execute the drill against live `gigbuddy-data` and record sign-off** (AC: 11, 12) — **MANUAL. Not part of automated `dev-story`. Sandy executes this himself, using Tasks 1–3's runbook and spec, after they've landed and been reviewed.**
+  - [ ] **Before running (added 2026-10-19, Story 7.1 code review):** rewrite `e2e/restore/verified-restore.spec.ts` against whatever UI exists at the time — Story 7.1 deleted the screens it drives (`Setlists` heading, `/library` song links, setlist-card buttons), so it will fail as written. Old UI recoverable from the `pre-reset` tag.
   - [ ] Follow `infra/runbooks/restore-pitr.md` phases 1–10 end-to-end against the real `gigbuddy-data` table
   - [ ] On a clean pass: add one row to the Sign-off log table with real date, executor, elapsed time, RPO/RTO observed, notes; commit
   - [ ] On any failure: follow Rollback, log the failure in the Sign-off log with cause, retry until a clean pass exists before treating this story as ship-gate-satisfied

@@ -121,6 +121,22 @@ so that we have a clean, working base to grow from.
   - [x] Watch the deploy run (`gh run watch`). **Blackout check:** the test setlists carry made-up dates. If one falls within 24h, the blackout step blocks the deploy, as designed. Report it to Sandy rather than using `deploy-force.yml` on your own. (Run 39243363013 — no blackout block; all steps green: lint, typecheck, test, blackout check, cdk diff/deploy, build SPA, S3 upload, CloudFront invalidation, API + SPA smoke tests. Completed in 2m41s.)
   - [x] After deploy, `curl -fsS https://gig.cormie.com/index.html` should succeed and the response should not contain `data-atmosphere`. (Confirmed: 200 OK, zero `data-atmosphere` occurrences, two `theme-color` metas present.)
 
+### Review Findings
+
+Code review 2026-10-19 (Blind Hunter + Edge Case Hunter + Acceptance Auditor, 26ffc4d..e8562a8).
+
+- [x] [Review][Patch] iPhone PWA: content under status bar / Dynamic Island, and white status-bar text in light mode — resolved (Sandy, decision 1): switch `apple-mobile-web-app-status-bar-style` to `default` so iOS draws an opaque bar matching the page and keeps content below it [web/index.html:9]
+- [x] [Review][Defer] `e2e/restore/verified-restore.spec.ts` drives UI deleted in 7.1 (`Setlists` heading, `/library` song links, setlist-card buttons) [e2e/restore/verified-restore.spec.ts:42] — deferred (Sandy, decision 2): rewrite when the Story 5.2 drill is next due, against whatever screens exist then; noted on 5.2 Task 4
+- [x] [Review][Patch] Smoke scroll test measures before the page renders, and test 1's title claims a scroll check it doesn't make [e2e/smoke/shell.spec.ts:9,28]
+- [x] [Review][Patch] Stale "on iPhone" in SyncWiring doc comment [web/src/sync/sync-wiring.tsx:10]
+- [x] [Review][Patch] Stale comment pointing at deleted `cache/prefetch.ts` [web/src/api/gigs.ts:8]
+- [x] [Review][Patch] `contrast-report.ts` `extractBlock` uses `indexOf` on raw CSS, so the `@theme` / `@media (prefers-color-scheme: dark)` lookups can match text in the tokens.css header comment — strip comments first [web/scripts/contrast-report.ts:48]
+- [x] [Review][Defer] Home shows "Loading…" indefinitely on a first launch offline with no persisted cache (TanStack `networkMode: 'online'` pauses with `status: 'pending'`) [web/src/routes/home.tsx:19] — deferred, spec-mandated state order; Sandy's devices have a cache
+- [x] [Review][Defer] One failed query (no cache) hides the other's count — whole line becomes the error [web/src/routes/home.tsx:16] — deferred, spec-mandated ("both have data")
+- [x] [Review][Defer] `/login` shows the form when already signed in; post-login `navigate('/')` has no `replace` so Back returns to the form [web/src/routes/login.tsx:29] — deferred, pre-existing
+- [x] [Review][Defer] Manifest `theme_color`/`background_color` still `#1a1209` (dark) — installed-app splash is dark in light mode [web/vite.config.ts:80] — deferred, spec out-of-scope (build-output.test.ts asserts it)
+- [x] [Review][Defer] Persisted query cache keeps keys for removed screens indefinitely (`gcTime: Infinity`, unchanged buster `v1`) [web/src/sync/query-client.tsx:22] — deferred, harmless; revisit on next buster bump
+
 ## Dev Notes
 
 ### What this story is

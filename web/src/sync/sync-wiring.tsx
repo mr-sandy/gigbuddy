@@ -8,8 +8,8 @@ import { queryClient } from './query-client.js';
 /*
  * Side-effect-only component (returns null). Mounted INSIDE <AuthProvider>
  * so its useEffect can close over `setAuth`. Installs the 401 handler on
- * the fetch wrapper, requests persistent storage on iPhone, and starts
- * the outbox flusher.
+ * the fetch wrapper, requests persistent storage, and starts the outbox
+ * flusher.
  *
  * The unsubscribe path runs on unmount — under Vite HMR the cleanup avoids
  * a stale handler firing after a re-mount.

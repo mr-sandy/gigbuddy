@@ -7,9 +7,7 @@ import { expect, test } from '@playwright/test';
  * web/src/routes/home.test.tsx and by the Story 7.2 review snapshots.
  */
 
-test('shows the login on /, with no horizontal scroll at phone or MacBook width', async ({
-  page,
-}) => {
+test('shows the login on /', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'GigBuddy' })).toBeVisible();
   await expect(page.getByLabel('Password')).toBeVisible();
@@ -27,6 +25,8 @@ test('has no horizontal scroll at 360px and 1680px viewport widths', async ({ pa
   for (const width of [360, 1680]) {
     await page.setViewportSize({ width, height: 800 });
     await page.goto('/');
+    // Wait for the login form, not the pre-/me boot shell, before measuring.
+    await expect(page.getByRole('button', { name: 'Sign in' })).toBeVisible();
     const [scrollWidth, innerWidth] = await page.evaluate(() => [
       document.documentElement.scrollWidth,
       window.innerWidth,
