@@ -4,7 +4,7 @@ baseline_commit: 56ca4d40fed735036d66a9d07a660a3fb9de5d02
 
 # Story 7.3: Song list at /songs
 
-Status: in-progress
+Status: review
 
 <!-- Source: epics.md "Epic 7 / Story 7.3"; agreed with Sandy 2026-10-19 -->
 
@@ -133,15 +133,15 @@ so that I can find a song by hand without going through a gig or setlist.
     Sandy before running. If AWS credentials aren't available, record that honestly and leave
     this subtask unticked.
 
-- [ ] **Task 7: Verify, commit, deploy** (AC: 7, 8, 9, 10)
-  - [ ] `git diff --stat HEAD -- api shared infra` is empty.
-  - [ ] From the repo root, `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass. All
+- [x] **Task 7: Verify, commit, deploy** (AC: 7, 8, 9, 10)
+  - [x] `git diff --stat HEAD -- api shared infra` is empty.
+  - [x] From the repo root, `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass. All
     text uses `--color-text-primary`/`-secondary`, which already have AA pairs, so no change
     to `contrast-report.ts` is expected.
-  - [ ] One commit: `Implement story 7.3: Song list at /songs`. Push to `main` with Sandy's
+  - [x] One commit: `Implement story 7.3: Song list at /songs`. Push to `main` with Sandy's
     go-ahead; `deploy.yml` runs on push. Watch it with `gh run watch`. If the blackout check
     blocks the deploy, report it to Sandy; don't use `deploy-force.yml`.
-  - [ ] Then set the story to `review` and hand over for Sandy's quick look on phone and laptop.
+  - [x] Then set the story to `review` and hand over for Sandy's quick look on phone and laptop.
     No screenshots and no manual checklist for Sandy.
 
 ## Dev Notes
@@ -245,7 +245,7 @@ Claude Sonnet 5.5
 
 - Ultimate context engine analysis completed - comprehensive developer guide created (2026-10-19).
 
-- Tasks 1–5 done; the signed-out e2e test is written (Task 6) and `pnpm test:e2e` passes (4/4). Task 7 (verify/commit/deploy) pending.
+- Tasks 1–5 done; the signed-out e2e test is written (Task 6) and `pnpm test:e2e` passes (4/4). Task 7 done: commit f7e0de7 pushed to main; ci and deploy runs succeeded.
 - `pnpm lint`, `pnpm typecheck`, `pnpm test` (shared 30, infra 55, api 121, web 164) and `pnpm build` pass. `git diff --stat HEAD -- api shared infra` is empty.
 - The signed-in journey test stubs full song records, because `listSongs` validates with the shared Zod schema.
 
