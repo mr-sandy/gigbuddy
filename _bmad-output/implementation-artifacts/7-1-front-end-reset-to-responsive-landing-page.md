@@ -4,7 +4,7 @@ baseline_commit: 26ffc4df5b4a355fffc00beeb22577ced4d79085
 
 # Story 7.1: Front-end reset to a responsive landing page
 
-Status: in-progress
+Status: review
 
 <!-- Source: epics.md "Epic 7 / Story 7.1"; sprint-change-proposal-2026-10-19.md §2.4, §3.2, §4.2, §4.5.b -->
 
@@ -117,9 +117,9 @@ so that we have a clean, working base to grow from.
 - [x] **Task 9: Verify, commit, deploy** (AC: 7, 8, 9)
   - [x] `git diff --stat pre-reset -- api shared infra` must be empty. (Confirmed empty.)
   - [x] From the repo root, `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` all pass. `build-output.test.ts` must still pass unchanged: the manifest and SW config are untouched. (121 api tests + 148 web tests pass; `pnpm build` succeeds; `build-output.test.ts` re-verified green against a clean `dist/`; built `index.html` has zero `data-atmosphere` occurrences.)
-  - [ ] Commit as one commit: `Implement story 7.1: Front-end reset to a responsive landing page`. Push to `main`; `deploy.yml` runs on push.
-  - [ ] Watch the deploy run (`gh run watch`). **Blackout check:** the test setlists carry made-up dates. If one falls within 24h, the blackout step blocks the deploy, as designed. Report it to Sandy rather than using `deploy-force.yml` on your own.
-  - [ ] After deploy, `curl -fsS https://gig.cormie.com/index.html` should succeed and the response should not contain `data-atmosphere`.
+  - [x] Commit as one commit: `Implement story 7.1: Front-end reset to a responsive landing page`. Push to `main`; `deploy.yml` runs on push. (Commit `a5d46f9`, pushed with Sandy's go-ahead.)
+  - [x] Watch the deploy run (`gh run watch`). **Blackout check:** the test setlists carry made-up dates. If one falls within 24h, the blackout step blocks the deploy, as designed. Report it to Sandy rather than using `deploy-force.yml` on your own. (Run 39243363013 — no blackout block; all steps green: lint, typecheck, test, blackout check, cdk diff/deploy, build SPA, S3 upload, CloudFront invalidation, API + SPA smoke tests. Completed in 2m41s.)
+  - [x] After deploy, `curl -fsS https://gig.cormie.com/index.html` should succeed and the response should not contain `data-atmosphere`. (Confirmed: 200 OK, zero `data-atmosphere` occurrences, two `theme-color` metas present.)
 
 ## Dev Notes
 
