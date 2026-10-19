@@ -1,5 +1,5 @@
 # generated: 2026-06-09
-# last_updated: 2026-10-19 (7-1 → review)
+# last_updated: 2026-10-19 (7-2 dropped)
 # last_status_change: 2026-06-19
 # project: gigbuddy
 # project_key: NOKEY
@@ -36,7 +36,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-06-09
-last_updated: 2026-10-19 (7-1 → review)
+last_updated: 2026-10-19 (7-2 dropped)
 project: gigbuddy
 project_key: NOKEY
 tracking_system: file-system
@@ -97,5 +97,5 @@ development_status:
   # Epic 7: Iterative rebuild — one responsive app
   epic-7: in-progress
   7-1-front-end-reset-to-responsive-landing-page: review
-  7-2-review-snapshots-of-deployed-app: backlog
+  # 7-2-review-snapshots-of-deployed-app: dropped 2026-10-19 — Sandy checks the live app directly (saves tokens)
   epic-7-retrospective: optional

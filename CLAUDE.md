@@ -33,7 +33,7 @@ Read these before making non-trivial changes:
 2. Tasks/subtasks are the contract. Don't scaffold things owned by later stories.
 3. Mark checkboxes only when tests pass and acceptance criteria are met.
 4. Update the story's File List and Dev Agent Record as you go.
-5. Since 2026-10-19 (`_bmad-output/planning-artifacts/sprint-change-proposal-2026-10-19.md`): work one story at a time — create-story → dev-story → code-review → commit → deploy → review snapshots → Sandy's quick look → `done`. Do not use `epic-run`. One responsive app: no device detection or device-specific behaviour.
+5. Since 2026-10-19 (`_bmad-output/planning-artifacts/sprint-change-proposal-2026-10-19.md`): work one story at a time — create-story → dev-story → code-review → commit → deploy → Sandy's quick look at the live app (gig.cormie.com, phone and laptop) → `done`. No screenshot capture by agents (Story 7.2 dropped to save tokens). Do not use `epic-run`. One responsive app: no device detection or device-specific behaviour.
 
 ## Canonical status
 

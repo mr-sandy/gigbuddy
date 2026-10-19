@@ -4,7 +4,7 @@ import { expect, test } from '@playwright/test';
  * The smoke run has no session-cookie fixture (see the comment in
  * e2e/playwright.config.ts), so the only state it can reach reliably is
  * signed-out. The signed-in landing page is covered by the unit tests in
- * web/src/routes/home.test.tsx and by the Story 7.2 review snapshots.
+ * web/src/routes/home.test.tsx and by Sandy's quick look at the live app.
  */
 
 test('shows the login on /', async ({ page }) => {

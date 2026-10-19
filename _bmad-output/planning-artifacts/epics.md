@@ -2170,7 +2170,9 @@ So that between sets I can orient myself without hunting for a control, put the 
 
 Grow GigBuddy in thin, deployable slices on top of the Epic 1–2 foundation, judged against the
 real Jack Ruby 5 repertoire. One story at a time; only the next one or two stories are
-specified. Source: `sprint-change-proposal-2026-10-19.md`. Each story ends with review snapshots and Sandy's quick look — no device checklists.
+specified. Source: `sprint-change-proposal-2026-10-19.md`. Each story ends with Sandy's quick look at the live app on phone and laptop — no device checklists.
+(Story 7.2, review snapshots, was dropped on 2026-10-19: Sandy checks the live app directly, which
+saves tokens.)
 
 ### Story 7.1: Front-end reset to a responsive landing page
 
@@ -2199,18 +2201,3 @@ so that we have a clean, working base to grow from.
 8. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass; `e2e/smoke` is updated
    to the landing page and passes.
 9. Deployed to gig.cormie.com via the normal pipeline.
-
-### Story 7.2: Review snapshots of the deployed app
-
-As Sandy, I want each change shown to me as phone- and laptop-sized screenshots of the live
-app, so that reviewing a story is a quick look rather than a test session.
-
-**Acceptance criteria**
-1. One command (e.g. `pnpm review:snap`) signs in to gig.cormie.com using a password read
-   from the environment or macOS Keychain (never committed, never printed), and captures every
-   current screen at 390×844 (dark) and 1440×900 (light).
-2. Screenshots are written to a git-ignored folder, named by screen and size, and the command
-   prints the folder path.
-3. The command is documented in README.md and referenced from CLAUDE.md as the last step of
-   every story ("review snapshots").
-4. Running it after Story 7.1 produces the landing page in both sizes.
