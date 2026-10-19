@@ -1,5 +1,5 @@
 # generated: 2026-06-09
-# last_updated: 2026-10-19 (7-4 → review)
+# last_updated: 2026-10-19 (7-4 → done)
 # last_status_change: 2026-06-19
 # project: gigbuddy
 # project_key: NOKEY
@@ -36,7 +36,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-06-09
-last_updated: 2026-10-19 (7-4 → review)
+last_updated: 2026-10-19 (7-4 → done)
 project: gigbuddy
 project_key: NOKEY
 tracking_system: file-system
@@ -99,5 +99,5 @@ development_status:
   7-1-front-end-reset-to-responsive-landing-page: done
   # 7-2-review-snapshots-of-deployed-app: dropped 2026-10-19 — Sandy checks the live app directly (saves tokens)
   7-3-song-list-at-songs: review
-  7-4-style-guide-clean-up: review
+  7-4-style-guide-clean-up: done
   epic-7-retrospective: optional

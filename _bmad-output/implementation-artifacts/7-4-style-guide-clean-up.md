@@ -4,7 +4,7 @@ baseline_commit: fe2b144a0159fe8e08bae6def6b94da1001a39d9
 
 # Story 7.4: Style guide clean-up
 
-Status: review
+Status: done
 
 <!-- Source: epics.md "Epic 7 / Story 7.4"; agreed with Sandy 2026-10-19 (28px page titles; song content moved to 7.5) -->
 
