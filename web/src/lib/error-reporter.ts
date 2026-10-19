@@ -1,7 +1,6 @@
 import { type ClientErrorReport, ClientErrorReportSchema } from '@gigbuddy/shared';
 import { z } from 'zod';
 import { apiFetch } from '../api/client.js';
-import { getPerformanceActiveSnapshot } from '../performance/performance-context.js';
 
 /*
  * Client-side error reporter (architecture.md AR-39, "Logging" §, lines
@@ -21,7 +20,9 @@ function send(input: { where: string; message: string; stack?: string }): void {
     where: input.where,
     message: input.message,
     ...(input.stack !== undefined ? { stack: input.stack } : {}),
-    performanceActive: getPerformanceActiveSnapshot(),
+    // Performance Mode was removed in Story 7.1. The field stays because
+    // the shared schema (shared/) requires it and is not changed here.
+    performanceActive: false,
     timestamp: new Date().toISOString(),
   };
   try {

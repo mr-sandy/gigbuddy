@@ -37,7 +37,11 @@ describe('startErrorReporter', () => {
     const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     const body = JSON.parse(init.body as string);
     expect(() => ClientErrorReportSchema.parse(body)).not.toThrow();
-    expect(body).toMatchObject({ where: 'window.onerror', message: 'boom' });
+    expect(body).toMatchObject({
+      where: 'window.onerror',
+      message: 'boom',
+      performanceActive: false,
+    });
     unsub();
   });
 

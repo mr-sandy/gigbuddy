@@ -1,30 +1,26 @@
 /*
  * GigBuddy design tokens.
  *
- * Two atmospheres share one type/spacing/shape scale and differ only in color
- * and elevation. Atmosphere is selected by a `data-atmosphere` attribute on
- * <html> and applied via CSS variable scope (no JS theme provider).
- *
- * Hex values, type scale, spacing unit, and radii are locked to DESIGN.md
- * (2026-06-08). Do not edit without updating that document.
+ * One responsive app (Story 7.1 reset): a single light token set defined in
+ * `@theme`, with a dark variant applied via `@media (prefers-color-scheme:
+ * dark)` — no JS theme provider, no device detection. Type scale, spacing
+ * unit, and radii are shared by both variants.
  */
 
 @theme {
-  /* ---------- Colors — Practice palette (MacBook default) ---------- */
+  /* ---------- Colors — light (default) ---------- */
   --color-bg: #faf9f5;
   --color-surface: #ffffff;
   --color-text-primary: #1a1209;
   --color-text-secondary: #5a4a35;
   --color-accent: #b3892f;
   --color-accent-strong: #8e6a20;
-  --color-attention-fuzzy: #c47a1c;
-  --color-attention-unknown: #a8351a;
   --color-border-hairline: #e8e2d6;
 
   /* ---------- Elevation ---------- */
   --shadow-card: 0 1px 2px rgba(26, 18, 9, 0.06);
 
-  /* ---------- Type scale (invariant across atmospheres) ---------- */
+  /* ---------- Type scale (invariant across variants) ---------- */
   /* 1pt = 1px at default iPhone / MacBook CSS pixel density */
   --text-perf-title: 36px;
   --text-perf-title--line-height: 1.1;
@@ -73,34 +69,15 @@
   --font-mono-slab: "Inconsolata", ui-monospace, SFMono-Regular, monospace;
 }
 
-/*
- * Practice atmosphere — values match the @theme defaults but are restated
- * inside the selector so the contract "two blocks define both atmospheres'
- * tokens" reads cleanly (AC-1). Performance overrides follow.
- */
-[data-atmosphere="practice"] {
-  --color-bg: #faf9f5;
-  --color-surface: #ffffff;
-  --color-text-primary: #1a1209;
-  --color-text-secondary: #5a4a35;
-  --color-accent: #b3892f;
-  --color-accent-strong: #8e6a20;
-  --color-attention-fuzzy: #c47a1c;
-  --color-attention-unknown: #a8351a;
-  --color-border-hairline: #e8e2d6;
-  --shadow-card: 0 1px 2px rgba(26, 18, 9, 0.06);
-}
-
-[data-atmosphere="performance"] {
-  --color-bg: #1a1209;
-  --color-surface: #241910;
-  --color-text-primary: #f1e6cf;
-  --color-text-secondary: #c9b486;
-  --color-accent: #e6b855;
-  --color-accent-strong: #f0c668;
-  --color-border-hairline: transparent;
-  --shadow-card: none;
-  /* attention-fuzzy and attention-unknown are Practice-only (paste-to-parse
-   * is a MacBook surface); if a future Performance surface needs them, this
-   * block is the place to add them. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #1a1209;
+    --color-surface: #241910;
+    --color-text-primary: #f1e6cf;
+    --color-text-secondary: #c9b486;
+    --color-accent: #e6b855;
+    --color-accent-strong: #f0c668;
+    --color-border-hairline: transparent;
+    --shadow-card: none;
+  }
 }

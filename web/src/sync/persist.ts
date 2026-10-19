@@ -1,8 +1,8 @@
 /*
  * Requests persistent storage (architecture.md AR-21). iOS Safari can evict
  * the cache + outbox under storage pressure; persistence makes that less
- * likely once granted. Fire-and-forget on iPhone only — the call is gated
- * at the boot site (app-bootstrap.tsx) by `isIPhone()`.
+ * likely once granted. Fire-and-forget on every device — it no-ops when
+ * `navigator.storage.persist` is missing.
  *
  * Defensive: Safari has been observed to reject this promise in some
  * private-window contexts; we never let that reject propagate.

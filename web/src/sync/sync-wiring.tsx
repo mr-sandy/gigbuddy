@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { setUnauthorizedHandler } from '../api/client.js';
 import { useAuth } from '../auth/auth-context.js';
-import { isIPhone } from '../lib/platform.js';
 import { setFlusherQueryClient, startFlusher } from './flusher.js';
 import { requestPersistentStorage } from './persist.js';
 import { queryClient } from './query-client.js';
@@ -20,9 +19,7 @@ export function SyncWiring(): null {
   useEffect(() => {
     setUnauthorizedHandler(() => setAuth({ status: 'unauthenticated' }));
     setFlusherQueryClient(queryClient);
-    if (isIPhone()) {
-      void requestPersistentStorage();
-    }
+    void requestPersistentStorage();
     const unsubFlusher = startFlusher();
     return () => {
       setUnauthorizedHandler(null);

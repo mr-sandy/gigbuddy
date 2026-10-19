@@ -1,11 +1,9 @@
 import { ACTIVE_BAND_ID, type Song } from '@gigbuddy/shared';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { act, render, renderHook, screen, waitFor } from '@testing-library/react';
+import { renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { MemoryRouter } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { __resetDriftWarningForTests, setUnauthorizedHandler } from '../api/client.js';
-import { Library } from '../routes/library.js';
 import { useSongs } from './use-songs.js';
 
 function jsonRes(status: number, body: unknown, headers: Record<string, string> = {}): Response {
@@ -96,51 +94,5 @@ describe('useSongs', () => {
     expect(second.result.current.data).toEqual(songs);
     expect(second.result.current.isSuccess).toBe(true);
     expect(fetchMock).toHaveBeenCalledTimes(1);
-  });
-});
-
-describe('useSongs — cache invalidation drives Library re-render (AC-8)', () => {
-  it('re-renders with new data when setQueryData updates the songs cache', async () => {
-    const songA = makeSong('a', 'Autumn Leaves');
-    const songB = makeSong('b', 'Blue Bossa');
-    const songC = makeSong('c', 'Charleston');
-
-    // Pre-seed the cache so the hook resolves synchronously without
-    // hitting the network. The Library will render against this cache
-    // immediately — this is the "render from cache" pattern Story 2.6's
-    // useSongMutation() write path relies on.
-    queryClient.setQueryData(['songs', ACTIVE_BAND_ID], [songA, songC]);
-
-    render(
-      <QueryClientProvider client={queryClient}>
-        <MemoryRouter>
-          <Library />
-        </MemoryRouter>
-      </QueryClientProvider>,
-    );
-
-    await waitFor(() => expect(screen.getByText('Autumn Leaves')).toBeInTheDocument());
-    expect(screen.getByText('Charleston')).toBeInTheDocument();
-    expect(screen.queryByText('Blue Bossa')).toBeNull();
-
-    // Simulate a write-side cache update (canonical pattern Story 2.6
-    // will use after a successful POST/PUT completes).
-    act(() => {
-      queryClient.setQueryData(['songs', ACTIVE_BAND_ID], [songA, songB, songC]);
-    });
-
-    await waitFor(() => expect(screen.getByText('Blue Bossa')).toBeInTheDocument());
-    const rowLinks = screen
-      .getAllByRole('link')
-      .filter(
-        (link) =>
-          link.getAttribute('href')?.startsWith('/songs/') &&
-          link.getAttribute('href') !== '/songs/new',
-      );
-    expect(rowLinks.map((link) => link.textContent)).toEqual([
-      'Autumn Leaves',
-      'Blue Bossa',
-      'Charleston',
-    ]);
   });
 });

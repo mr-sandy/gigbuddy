@@ -1,81 +1,15 @@
 {
   "tokensSource": "web/src/styles/tokens.css",
   "summary": {
-    "total": 14,
-    "passing": 14,
+    "total": 12,
+    "passing": 12,
     "failing": 0,
     "waived": 0
   },
   "pairs": [
     {
       "pair": "text-primary on bg",
-      "atmosphere": "performance",
-      "fgToken": "text-primary",
-      "bgToken": "bg",
-      "fg": "#f1e6cf",
-      "bg": "#1a1209",
-      "ratio": 14.95,
-      "target": "AAA",
-      "pass": true
-    },
-    {
-      "pair": "text-primary on surface",
-      "atmosphere": "performance",
-      "fgToken": "text-primary",
-      "bgToken": "surface",
-      "fg": "#f1e6cf",
-      "bg": "#241910",
-      "ratio": 13.88,
-      "target": "AAA",
-      "pass": true
-    },
-    {
-      "pair": "text-secondary on bg",
-      "atmosphere": "performance",
-      "fgToken": "text-secondary",
-      "bgToken": "bg",
-      "fg": "#c9b486",
-      "bg": "#1a1209",
-      "ratio": 9.13,
-      "target": "AAA",
-      "pass": true
-    },
-    {
-      "pair": "text-secondary on surface",
-      "atmosphere": "performance",
-      "fgToken": "text-secondary",
-      "bgToken": "surface",
-      "fg": "#c9b486",
-      "bg": "#241910",
-      "ratio": 8.48,
-      "target": "AAA",
-      "pass": true
-    },
-    {
-      "pair": "accent on bg",
-      "atmosphere": "performance",
-      "fgToken": "accent",
-      "bgToken": "bg",
-      "fg": "#e6b855",
-      "bg": "#1a1209",
-      "ratio": 10.01,
-      "target": "AAA",
-      "pass": true
-    },
-    {
-      "pair": "bg-on-accent (CTA)",
-      "atmosphere": "performance",
-      "fgToken": "bg",
-      "bgToken": "accent",
-      "fg": "#1a1209",
-      "bg": "#e6b855",
-      "ratio": 10.01,
-      "target": "AAA",
-      "pass": true
-    },
-    {
-      "pair": "text-primary on bg",
-      "atmosphere": "practice",
+      "variant": "light",
       "fgToken": "text-primary",
       "bgToken": "bg",
       "fg": "#1a1209",
@@ -86,7 +20,7 @@
     },
     {
       "pair": "text-primary on surface",
-      "atmosphere": "practice",
+      "variant": "light",
       "fgToken": "text-primary",
       "bgToken": "surface",
       "fg": "#1a1209",
@@ -97,7 +31,7 @@
     },
     {
       "pair": "text-secondary on bg",
-      "atmosphere": "practice",
+      "variant": "light",
       "fgToken": "text-secondary",
       "bgToken": "bg",
       "fg": "#5a4a35",
@@ -108,7 +42,7 @@
     },
     {
       "pair": "text-secondary on surface",
-      "atmosphere": "practice",
+      "variant": "light",
       "fgToken": "text-secondary",
       "bgToken": "surface",
       "fg": "#5a4a35",
@@ -118,8 +52,52 @@
       "pass": true
     },
     {
+      "pair": "text-primary on bg",
+      "variant": "dark",
+      "fgToken": "text-primary",
+      "bgToken": "bg",
+      "fg": "#f1e6cf",
+      "bg": "#1a1209",
+      "ratio": 14.95,
+      "target": "AA",
+      "pass": true
+    },
+    {
+      "pair": "text-primary on surface",
+      "variant": "dark",
+      "fgToken": "text-primary",
+      "bgToken": "surface",
+      "fg": "#f1e6cf",
+      "bg": "#241910",
+      "ratio": 13.88,
+      "target": "AA",
+      "pass": true
+    },
+    {
+      "pair": "text-secondary on bg",
+      "variant": "dark",
+      "fgToken": "text-secondary",
+      "bgToken": "bg",
+      "fg": "#c9b486",
+      "bg": "#1a1209",
+      "ratio": 9.13,
+      "target": "AA",
+      "pass": true
+    },
+    {
+      "pair": "text-secondary on surface",
+      "variant": "dark",
+      "fgToken": "text-secondary",
+      "bgToken": "surface",
+      "fg": "#c9b486",
+      "bg": "#241910",
+      "ratio": 8.48,
+      "target": "AA",
+      "pass": true
+    },
+    {
       "pair": "accent on bg",
-      "atmosphere": "practice",
+      "variant": "light",
       "fgToken": "accent",
       "bgToken": "bg",
       "fg": "#b3892f",
@@ -130,7 +108,7 @@
     },
     {
       "pair": "bg-on-accent (CTA)",
-      "atmosphere": "practice",
+      "variant": "light",
       "fgToken": "bg",
       "bgToken": "accent",
       "fg": "#faf9f5",
@@ -140,24 +118,24 @@
       "pass": true
     },
     {
-      "pair": "attention-fuzzy on bg",
-      "atmosphere": "practice",
-      "fgToken": "attention-fuzzy",
+      "pair": "accent on bg",
+      "variant": "dark",
+      "fgToken": "accent",
       "bgToken": "bg",
-      "fg": "#c47a1c",
-      "bg": "#faf9f5",
-      "ratio": 3.24,
-      "target": "AA-large",
+      "fg": "#e6b855",
+      "bg": "#1a1209",
+      "ratio": 10.01,
+      "target": "AA",
       "pass": true
     },
     {
-      "pair": "attention-unknown on bg",
-      "atmosphere": "practice",
-      "fgToken": "attention-unknown",
-      "bgToken": "bg",
-      "fg": "#a8351a",
-      "bg": "#faf9f5",
-      "ratio": 6.25,
+      "pair": "bg-on-accent (CTA)",
+      "variant": "dark",
+      "fgToken": "bg",
+      "bgToken": "accent",
+      "fg": "#1a1209",
+      "bg": "#e6b855",
+      "ratio": 10.01,
       "target": "AA",
       "pass": true
     }

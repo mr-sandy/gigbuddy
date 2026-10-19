@@ -3,13 +3,14 @@
 @import "./fonts.css";
 
 /*
- * Base typography + atmosphere paint.
+ * Base typography + theme paint.
  *
- * `html` picks up the Practice palette by default (from tokens.css `@theme`);
- * the `[data-atmosphere="performance"]` selector flips the palette for iPhone.
- * The boot-time setter in main.tsx writes the attribute before React renders.
+ * `html` picks up the light palette by default (from tokens.css `@theme`);
+ * the `@media (prefers-color-scheme: dark)` block in tokens.css flips the
+ * palette when the OS is in dark mode. No JS theme provider, no attribute.
  */
 html {
+  color-scheme: light dark;
   background-color: var(--color-bg);
   color: var(--color-text-primary);
   font-family: var(--font-serif-editorial);
