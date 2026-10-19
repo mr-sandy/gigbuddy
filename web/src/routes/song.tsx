@@ -4,7 +4,7 @@ import { useSongs } from '../hooks/use-songs.js';
 import { SONGS } from '../lib/microcopy.js';
 
 /*
- * Song page stub (Story 7.3); content arrives in Story 7.4. Falls back to
+ * Song page stub (Story 7.3); content arrives in Story 7.5. Falls back to
  * the list cache so the title shows instantly and works offline.
  */
 export function Song() {

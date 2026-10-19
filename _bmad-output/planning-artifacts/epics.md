@@ -2216,7 +2216,7 @@ so that I can find a song by hand without going through a gig or setlist.
    a plain empty-state line.
 4. `/songs` has a way back to `/`.
 5. Tapping a row goes to `/songs/:songId`, which for now shows the song title and a
-   "Back to songs" link (content arrives in Story 7.4). An unknown `songId` shows a plain
+   "Back to songs" link (content arrives in Story 7.5). An unknown `songId` shows a plain
    "Song not found" line with the same link.
 6. `/songs` and `/songs/:songId` are valid routes (amends 7.1 AC3); any other path still
    redirects to `/`. Signed out, they show the existing login.
@@ -2228,3 +2228,21 @@ so that I can find a song by hand without going through a gig or setlist.
    home → Songs → a song; `e2e/smoke` (signed-out only, no auth fixture) checks `/songs` and
    `/songs/:songId` end on the login, and passes.
 10. Deployed to gig.cormie.com via the normal pipeline.
+
+### Story 7.4: Style guide clean-up
+
+As Sandy, I want one style guide that the code follows, so that pages look consistent and
+old design leftovers stop accumulating.
+
+**Acceptance criteria**
+1. `STYLE.md` (repo root) is the style source of truth. Page titles are 28px Lora on every page;
+   the song page title drops from 36px to 28px.
+2. Every route's `<h1>` comes from one `PageTitle` component. No route file sets its own title
+   size.
+3. Tokens in `web/src/styles/tokens.css` are renamed by role (page title, row, body) and every
+   token not used by the app is deleted (list in `STYLE.md`).
+4. `web/scripts/contrast-report.ts` no longer references deleted tokens and still passes.
+5. `AGENTS.md` points agents to `STYLE.md`.
+6. No visible change other than the song page title size. `pnpm lint`, `pnpm typecheck`,
+   `pnpm test` and `pnpm build` pass. `api/`, `shared/` and `infra/` unchanged.
+7. Deployed to gig.cormie.com via the normal pipeline.

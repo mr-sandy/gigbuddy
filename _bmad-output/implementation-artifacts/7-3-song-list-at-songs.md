@@ -24,7 +24,7 @@ so that I can find a song by hand without going through a gig or setlist.
    a plain empty-state line.
 4. `/songs` has a way back to `/`.
 5. Tapping a row goes to `/songs/:songId`, which for now shows the song title and a
-   "Back to songs" link (content arrives in Story 7.4). An unknown `songId` shows a plain
+   "Back to songs" link (content arrives in Story 7.5). An unknown `songId` shows a plain
    "Song not found" line with the same link.
 6. `/songs` and `/songs/:songId` are valid routes (amends 7.1 AC3); any other path still
    redirects to `/`. Signed out, they show the existing login.
@@ -109,7 +109,7 @@ so that I can find a song by hand without going through a gig or setlist.
     2. `useSong` returned `null` (server 404) and the list has no match → `SONGS.notFound`.
     3. still pending with nothing to show → `SONGS.loading`.
     4. otherwise → `SONGS.error`.
-  - [x] Nothing else: no key, chart or notes. That's Story 7.4.
+  - [x] Nothing else: no key, chart or notes. That's Story 7.5.
   - [x] Co-located `song.test.tsx`: mock both hooks and render inside a `MemoryRouter` at
     `/songs/abc` with a `<Route path="/songs/:songId">`. Cover: the title from `useSong`; the
     title from the list fallback while `useSong` is pending; not found; loading; the back link
@@ -208,7 +208,7 @@ Everything it needs already exists: the songs API, `listSongs`/`getSong`, the `u
 
 ### Out of scope (don't do)
 
-- Showing the key, patch, chord chart or notes anywhere: Story 7.4 owns the song page content.
+- Showing the key, patch, chord chart or notes anywhere: Story 7.5 owns the song page content.
 - Search, filtering, alphabet jump, editing, creating songs, gigs or setlists.
 - Login returning you to the page you asked for (it still goes to `/` after login, as in 7.1).
 - Nav chrome in the shell, a top bar or tabs.
