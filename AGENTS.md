@@ -18,6 +18,7 @@ Read these before making non-trivial changes:
 - Biome is the sole lint + format tool. No ESLint, no Prettier.
 - Zod schemas in `shared/` are the single source of truth. Never define a parallel TypeScript `type` or `interface` for the same record shape.
 - React Router 7 imports from `react-router` (not `react-router-dom`).
+- UI styling follows `STYLE.md`: use role tokens and `PageTitle`; no one-off sizes in route files.
 - Tailwind v4 uses the Vite plugin and `@import "tailwindcss";` — not the v3 PostCSS pipeline.
 
 ## Boundaries

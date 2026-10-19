@@ -1,24 +1,21 @@
 # GigBuddy style guide
 
-DRAFT for Sandy to edit. It describes what the app does today, with open decisions marked
-**DECIDE** (none left at the moment). Page titles are 28px (decided by Sandy, 2026-10-19), so the song page title (36px today) needs to come down to match. Once agreed, tokens in `web/src/styles/tokens.css` are renamed by role and
-anything not listed here is deleted.
+The source of truth for how GigBuddy looks. Tokens in `web/src/styles/tokens.css` are named by role (`--text-page-title`, `--text-row`, `--text-body`). Page titles are 28px, set by Sandy on 2026-10-19.
 
 ## Principles
 
 - Generous type everywhere. Fit less content rather than shrink it.
 - One responsive app, 360px to 1680px, no horizontal scroll. No device detection.
 - Light for daytime prep, dark for dim gigs, via `prefers-color-scheme` only.
-- Every page uses the roles below. No one-off sizes in a route file.
+- Every page uses the roles below; page titles come from the `PageTitle` component. No one-off sizes in a route file.
 
 ## Type roles
 
 | Role | Size | Font | Used for |
 |---|---|---|---|
-| Page title | 28px | Lora (serif) | The one `<h1>` on each page |
-| List row | 22px | system | Tappable rows (song titles) |
-| Link / meta | 22px | system | Text links, secondary lines |
-| Body | 18px | system | Status lines, plain text |
+| Page title (`--text-page-title`) | 28px | Lora (serif) | The one `<h1>` on each page |
+| Row (`--text-row`) | 22px | system | Tappable rows (song titles), text links |
+| Body (`--text-body`) | 18px | system | Status lines, plain text |
 
 Rules:
 - Exactly one Page title per page, always an `<h1>`, always the same size.
@@ -49,9 +46,3 @@ Rules:
 
 - British English. Short complete sentences, no exclamation marks, no emoji.
 - Strings live in `web/src/lib/microcopy.ts`.
-
-## Not in use (to be deleted from tokens.css)
-
-Card padding and stack gap, card/button/input/chord radii, card shadow, surface colour,
-strong accent, mono font, chord (32px), annotation (20px), practice body (17px) and
-section heading (22px) sizes. Bring any of them back only when a story needs it.

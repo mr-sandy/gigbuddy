@@ -38,11 +38,9 @@ interface Pair {
 
 const COLOR_TOKEN_NAMES = [
   'bg',
-  'surface',
   'text-primary',
   'text-secondary',
   'accent',
-  'accent-strong',
 ] as const;
 
 function extractBlock(css: string, selector: string): string {
@@ -124,13 +122,9 @@ interface PairDef {
 const PAIRS: PairDef[] = [
   // Text pairs — AA target (≥4.5:1) in both variants.
   { variant: 'light', fg: 'text-primary', bg: 'bg', target: 'AA' },
-  { variant: 'light', fg: 'text-primary', bg: 'surface', target: 'AA' },
   { variant: 'light', fg: 'text-secondary', bg: 'bg', target: 'AA' },
-  { variant: 'light', fg: 'text-secondary', bg: 'surface', target: 'AA' },
   { variant: 'dark', fg: 'text-primary', bg: 'bg', target: 'AA' },
-  { variant: 'dark', fg: 'text-primary', bg: 'surface', target: 'AA' },
   { variant: 'dark', fg: 'text-secondary', bg: 'bg', target: 'AA' },
-  { variant: 'dark', fg: 'text-secondary', bg: 'surface', target: 'AA' },
 
   // Accent pairs — reserved for UI component fills (CTA bg, decorative
   // strokes), never body text. Light needs the large-text/non-text-UI
@@ -141,7 +135,7 @@ const PAIRS: PairDef[] = [
     bg: 'bg',
     target: 'AA-large',
     reason:
-      'accent (#b3892f) is reserved for UI component fills (CTA bg, decorative strokes) — never used as body text on bg. WCAG 2.1 §1.4.11 non-text UI ≥3:1 applies and passes (3.05). For text use of brand orange, components use accent-strong (#8e6a20, 4.81:1 on bg).',
+      'accent (#b3892f) is reserved for UI component fills (CTA bg, decorative strokes) — never used as body text on bg. WCAG 2.1 §1.4.11 non-text UI ≥3:1 applies and passes (3.05). Focus outlines are the only current use.',
   },
   {
     variant: 'light',

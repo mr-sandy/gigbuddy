@@ -1,4 +1,5 @@
 import { Link, useParams } from 'react-router';
+import { PageTitle } from '../components/page-title.js';
 import { useSong } from '../hooks/use-song.js';
 import { useSongs } from '../hooks/use-songs.js';
 import { SONGS } from '../lib/microcopy.js';
@@ -25,18 +26,16 @@ export function Song() {
     <>
       <Link
         to="/songs"
-        className="inline-flex min-h-tap items-center text-[length:var(--text-perf-meta)] leading-[var(--text-perf-meta--line-height)] text-[color:var(--color-text-primary)] underline focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]"
+        className="inline-flex min-h-tap items-center text-[length:var(--text-row)] leading-[var(--text-row--line-height)] text-[color:var(--color-text-primary)] underline focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]"
       >
         {SONGS.backToSongs}
       </Link>
       {song ? (
-        <h1 className="mt-[var(--spacing-unit)] text-[length:var(--text-perf-title)] leading-[var(--text-perf-title--line-height)] text-[color:var(--color-text-primary)] [font-family:var(--font-serif-editorial)]">
-          {song.title}
-        </h1>
+        <PageTitle afterBackLink>{song.title}</PageTitle>
       ) : (
         <p
           aria-live="polite"
-          className="mt-[calc(var(--spacing-unit)*3)] text-[length:var(--text-perf-body)] leading-[var(--text-perf-body--line-height)] text-[color:var(--color-text-secondary)]"
+          className="mt-[calc(var(--spacing-unit)*3)] text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-[color:var(--color-text-secondary)]"
         >
           {statusLine}
         </p>
