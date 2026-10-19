@@ -1,8 +1,8 @@
 ---
 title: GigBuddy
-status: final
+status: final — amended 2026-10-19 (Sprint Change Proposal)
 created: 2026-06-09
-updated: 2026-06-09
+updated: 2026-10-19
 ---
 
 # PRD: GigBuddy
@@ -25,6 +25,15 @@ The PRD's job is to:
 
 Vocabulary is Glossary-anchored (§3). `[ASSUMPTION: ...]` tags mark inferred decisions deferred to a downstream stage (typically Architecture); the full set is indexed in §9.
 
+## 0a. Course correction (2026-10-19)
+
+See `_bmad-output/planning-artifacts/sprint-change-proposal-2026-10-19.md`.
+
+- GigBuddy is now **one responsive app**. The MacBook/iPhone surface split (Practice vs Performance as device-bound surfaces, atmospheres by device, iPhone-only Performance Mode, install gate) is withdrawn. Device-specific optimisation is a later, explicit decision.
+- The MVP is rebuilt in **thin vertical slices**, starting from a signed-in landing page. Requirements below that assume the device split are **parked**, not deleted: each is re-derived (or dropped) when a slice touches it.
+- **Unchanged and in force:** FR-1–FR-5 (song record and fields), FR-25 (band scoping), FR-27–FR-28 (access), FR-29–FR-32 (persistence, optimistic writes, offline, LWW), FR-33 export *endpoint*, FR-34 backup, Appendix A NFRs except where they name a device.
+- **Parked (device-split or screen-specific):** FR-6–FR-24, FR-26, and the device clauses of FR-3, FR-33, §5, §6.1 and §B.
+
 ## 1. Vision
 
 GigBuddy is a personal gig-preparation and performance app for a working jazz pianist. It replaces a scattered Apple Notes workflow with a structured tool that knows the difference between **preparing** and **performing** — and serves a different surface for each.
@@ -33,7 +42,9 @@ Preparation happens on a MacBook at home: a daylight-style library of song recor
 
 The product serves one musician — Sandy — across multiple bands. V1 ships with one band populated (The Jack Ruby 5); the data model accommodates the others (Middle Aged Dad Band, Fram) without migration. The product is not a platform, not multi-tenant, not collaborative. It is a tool built for the moment when the band counts in.
 
-Practice and Performance are not view modes the user toggles between. They are different surfaces — one on MacBook, one on iPhone — that share a single data store. The user moves between contexts by picking up a different device, not by hitting a switch. Implementations must honor this: a "view mode toggle" inside one surface would defeat the design.
+~~Practice and Performance are not view modes the user toggles between. They are different surfaces — one on MacBook, one on iPhone — that share a single data store. The user moves between contexts by picking up a different device, not by hitting a switch. Implementations must honor this: a "view mode toggle" inside one surface would defeat the design.~~
+
+**Superseded 2026-10-19:** GigBuddy is one responsive app that works on any screen size. Practice and performance needs are met by the same app; any device-specific optimisation is a later, explicit decision (see §0a).
 
 ## 2. Target User
 
@@ -496,7 +507,7 @@ The data store is backed up automatically on at least a daily cadence with a rea
 V1 does not, and does not aim to:
 
 - Provide bandmate access, sharing, or any collaboration affordance.
-- Import Apple Notes or any other source format beyond plain-text paste.
+- Provide an in-app Apple Notes importer. (A one-off import script was used on 2026-10-05 to load real repertoire for testing; it is not a product feature.) *(Amended 2026-10-19.)*
 - Suggest, recommend, or auto-generate setlists.
 - Surface gig history analytics, repertoire balance reports, or over-reliance alerts (V2 horizon).
 - Integrate with audio, MIDI, or hardware.
@@ -504,7 +515,7 @@ V1 does not, and does not aim to:
 - Support multi-tenant or SaaS architecture.
 - Expose push notifications, streaks, gamification, badges, or any encouragement layer.
 - Use pinch, double-tap, or any multi-finger gesture anywhere in the app. Single-tap is the only required input vocabulary; pinch-zoom is suppressed (per EXPERIENCE.md Interaction Primitives).
-- Surface a user-facing theme toggle in V1 chrome. Light Practice / dark Performance are surface defaults, not user-selectable variants.
+- Surface a user-facing theme toggle. Light/dark follows the device's system setting. *(Amended 2026-10-19.)*
 - Support tablets, desktop-native apps, Android, or iPhone form factors other than iPhone 13. Other modern iPhones should render acceptably but are not test targets.
 - Provide a Band switcher in V1 chrome (one populated Band; switcher with one option is dead weight).
 - Provide a "Ready to perform" gate. Every Setlist is performable; the user decides readiness.
@@ -513,16 +524,12 @@ V1 does not, and does not aim to:
 
 ### 6.1 In Scope
 
-- Song Library for one Band (The Jack Ruby 5), with structured fields per FR-5.
-- Setlist creation via Paste-to-parse and manual entry, with Sections and Per-gig annotations.
-- Setlist overview surface with metadata header, Sections, Songs, annotations.
-- Performance Mode on iPhone with Wake Lock, single-tap navigation, sticky state.
-- Practice Mode (Song Detail with inline edit) on both devices.
-- MacBook web app + iPhone 13 PWA, light/dark defaults per surface.
-- Single-user access gate.
-- Manual JSON export.
-- Automated at-least-daily backup with a verified restore procedure (specific retention deferred to Architecture per FR-34).
-- Data model that supports adding Middle Aged Dad Band and Fram in V2+ without migration.
+*Amended 2026-10-19 (see §0a).*
+
+- The MVP is grown slice by slice; the first slice is a signed-in, responsive landing page showing the band and live song/gig counts (Story 7.1).
+- Already delivered and retained: access gate, canonical persistence + sync + offline cache, song and setlist APIs, JSON export endpoint, automated backup, multi-band data model.
+- Each subsequent slice is chosen after the previous one is live and Sandy has looked at it.
+- Gig-ready performance features are in scope for the product but not for the first slices.
 
 ### 6.2 Out of Scope for MVP
 
@@ -629,10 +636,11 @@ Full accessibility floor is defined in EXPERIENCE.md §Accessibility Floor and D
 
 ## B. Platform
 
-- **MacBook web app.** Current Safari, Chrome, Firefox. Layout assumes ~1280–1680pt-wide displays. Single-column vertical layout dominates. No multi-column dashboards.
-- **iPhone 13 PWA.** 390 × 844pt viewport. 47pt top inset, 34pt bottom inset, 44×44pt minimum tap target. Portrait-locked in Performance Mode. Other iPhones render acceptably; not V1 test targets.
-- **PWA installation** is required for the iPhone surface to grant Wake Lock and full-screen privileges.
-- **No tablet, no desktop-native, no Android, no other phones in V1.**
+*Amended 2026-10-19 (see §0a).*
+
+- **One responsive web app**, installable as a PWA (not required). Must be usable from ~360pt phone width up to ~1680pt laptop width with no horizontal scroll.
+- Primary devices are Sandy's iPhone and MacBook; no device-specific behaviour.
+- Light/dark follows the device's system setting.
 
 ## C. Aesthetic, Tone, and IA (referenced)
 

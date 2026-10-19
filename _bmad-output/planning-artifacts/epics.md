@@ -284,6 +284,8 @@ Deliver inline-edit Song records on both surfaces. Sandy creates, views, edits, 
 
 ### Epic 3: Setlists Home, Paste-to-Parse & Setlist Management
 
+> **Superseded 2026-10-19** by the iterative reset (`sprint-change-proposal-2026-10-19.md`). Retained as history; code at git tag `pre-reset`.
+
 Deliver the Setlists home surface (Tonight slot + Upcoming + Past) and end-to-end Setlist creation and management. Sandy creates a new Setlist with Gig metadata, pastes raw text from any source, watches it parse into Sections with Matched / Fuzzy / Unknown rows (glyph + label + color triple), resolves Fuzzy and Unknown inline, manages Sections (free-text rename on MacBook), attaches per-gig annotations, and reorders Songs on MacBook via drag-and-drop.
 
 **User outcome:** The Apple-Notes pre-gig compile workflow is replaceable. Sandy can land a 19-song Setlist in minutes without leaving the prep flow.
@@ -297,6 +299,8 @@ Deliver the Setlists home surface (Tonight slot + Upcoming + Past) and end-to-en
 ---
 
 ### Epic 4: Performance Mode
+
+> **Superseded 2026-10-19** by the iterative reset (`sprint-change-proposal-2026-10-19.md`). Retained as history; code at git tag `pre-reset`.
 
 Deliver the sacred state on iPhone. Sandy taps `Start performance ›` on Setlist overview; the Performance Card renders the first Song with three-region layout (fixed top chrome + scrollable middle + fixed bottom toolbar); Wake Lock acquires; tabs hide; single-tap `NEXT ›` / `‹` traverse Section boundaries with transitions <150ms; `×` returns to overview preserving state; the `Currently performing` strip + `Resume ›` brings him back; backgrounding survives. Last-song `NEXT ›` is inert. Tonight-Gig pre-fetch on every iPhone foreground keeps the cache warm. Performance Mode renders from cache regardless of auth status.
 
@@ -986,6 +990,8 @@ So that I can capture careful notes on every Song without modal ceremony and wit
 
 ## Epic 3: Setlists Home, Paste-to-Parse & Setlist Management
 
+> **Superseded 2026-10-19** by the iterative reset (`sprint-change-proposal-2026-10-19.md`). Retained as history; code at git tag `pre-reset`.
+
 Deliver the Setlists home surface and end-to-end Setlist creation and management. Sandy creates a Setlist with Gig metadata, pastes raw text from any source, watches it parse into Sections with Matched / Fuzzy / Unknown rows, resolves Fuzzy and Unknown inline, manages Sections (free-text rename on MacBook), attaches per-gig annotations, and reorders Songs on MacBook via drag-and-drop.
 
 ### Story 3.1: Setlist API + DDB persistence
@@ -1350,6 +1356,8 @@ So that re-ordering a Setlist during prep is direct and silent — no modals, no
 ---
 
 ## Epic 4: Performance Mode
+
+> **Superseded 2026-10-19** by the iterative reset (`sprint-change-proposal-2026-10-19.md`). Retained as history; code at git tag `pre-reset`.
 
 Deliver the sacred state. Sandy taps `Start performance ›` on iPhone Setlist overview; the Performance Card renders the first Song with three-region layout; Wake Lock acquires; tabs hide; single-tap `NEXT ›` / `‹` traverse Section boundaries with transitions <150ms; `×` returns to overview preserving state; the `Currently performing` strip + `Resume ›` brings him back; backgrounding survives. Last-song `NEXT ›` is inert. Tonight-Gig pre-fetch on every iPhone foreground keeps the cache warm.
 
@@ -1849,6 +1857,8 @@ So that before V1 ships I have proof — not theory — that PITR + AWS Backup a
 
 ## Epic 6: P1 Performance-Mode Enhancements — Jumps, Detours & Section-Break Orientation
 
+> **Superseded 2026-10-19** by the iterative reset (`sprint-change-proposal-2026-10-19.md`). Retained as history; code at git tag `pre-reset`.
+
 Deliver the non-linear half of the performance journey locked in the P1 mockup brief (2026-07-19). Epic 4 shipped the linear happy-path — Sandy taps `Start performance ›`, `NEXT ›` walks him song by song, `×` exits, `Resume ›` returns. This epic delivers the reality: bands jump mid-set. Sandy needs to reach any song in the setlist (B3) or any song in the library (B4) without abandoning the plan, see at a glance when he's on a detour, orient himself between sets (B8), and have the app respect the "plan is a starting point, not a script" model throughout. Sources: `_bmad-output/planning-artifacts/mockups/p1-performance.md` (locked picks), `_bmad-output/planning-artifacts/journeys/journey-p1-performance.md` (state-machine semantics), `_bmad-output/planning-artifacts/mockups/rendered/p1-performance/iteration-{2,3}/` (approved renderings).
 
 ### Story 6.1: Compact chord-glyph notation in `<ChordChart>` (P1 chord-chart lock)
@@ -2154,3 +2164,53 @@ So that between sets I can orient myself without hunting for a control, put the 
 **When** the story is code-reviewed
 **Then** the shipped rendering matches the approved mockup (auto-scroll position, first-row highlight, CTA placement/copy, `‹` dismiss)
 
+---
+
+## Epic 7: Iterative rebuild — one responsive app
+
+Grow GigBuddy in thin, deployable slices on top of the Epic 1–2 foundation, judged against the
+real Jack Ruby 5 repertoire. One story at a time; only the next one or two stories are
+specified. Source: `sprint-change-proposal-2026-10-19.md`. Each story ends with review snapshots and Sandy's quick look — no device checklists.
+
+### Story 7.1: Front-end reset to a responsive landing page
+
+As Sandy, I want GigBuddy to open on one simple page that works on my phone and my laptop,
+so that we have a clean, working base to grow from.
+
+**Acceptance criteria**
+1. Before any deletion, the current `main` commit is tagged `pre-reset` and the tag is pushed.
+2. Signed in, `/` shows "GigBuddy", the band name "The Jack Ruby 5", and live counts from the
+   API in the form `52 songs · 7 gigs` (values from data, not hard-coded). While loading it
+   shows a plain loading line; on error a plain one-sentence message.
+3. Signed out, any URL shows the existing login; after login the user lands on `/`.
+   Any other path redirects to `/`.
+4. One layout for all screen sizes: readable with no horizontal scroll from 360px to 1680px
+   wide. No device detection anywhere in `web/src` (`lib/platform.ts`, `lib/atmosphere.ts`,
+   install gate and install-instructions removed).
+5. Light/dark follows `prefers-color-scheme`; one token set with two variants; text contrast
+   meets WCAG AA in both.
+6. Removed from `web/src` (with their tests): the library, song, setlist, setlist-creation and
+   performance routes; `performance/`; `paste-parse/`; jump overlay; bottom tabs; top nav;
+   band label; currently-performing strip; MacBook-only banners; components and hooks used
+   only by removed code.
+7. Kept and still passing their tests: `sync/`, `api/`, `auth/`, `cache/`, data hooks
+   (`use-songs`, `use-setlists`, mutations), error boundary, error reporter, service worker
+   and manifest. No change to `api/`, `shared/` or `infra/`.
+8. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass; `e2e/smoke` is updated
+   to the landing page and passes.
+9. Deployed to gig.cormie.com via the normal pipeline.
+
+### Story 7.2: Review snapshots of the deployed app
+
+As Sandy, I want each change shown to me as phone- and laptop-sized screenshots of the live
+app, so that reviewing a story is a quick look rather than a test session.
+
+**Acceptance criteria**
+1. One command (e.g. `pnpm review:snap`) signs in to gig.cormie.com using a password read
+   from the environment or macOS Keychain (never committed, never printed), and captures every
+   current screen at 390×844 (dark) and 1440×900 (light).
+2. Screenshots are written to a git-ignored folder, named by screen and size, and the command
+   prints the folder path.
+3. The command is documented in README.md and referenced from CLAUDE.md as the last step of
+   every story ("review snapshots").
+4. Running it after Story 7.1 produces the landing page in both sizes.

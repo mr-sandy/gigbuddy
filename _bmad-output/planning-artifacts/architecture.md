@@ -23,6 +23,20 @@ date: '2026-06-09'
 
 _This document builds collaboratively through step-by-step discovery. Sections are appended as we work through each architectural decision together._
 
+## Course correction (2026-10-19)
+
+See `sprint-change-proposal-2026-10-19.md`. The back-end, data, sync, auth, infrastructure, deploy, blackout and backup decisions in this document are **unchanged and in force**.
+
+Front-end decisions **superseded** (one responsive app, no device split):
+
+- Theme atmosphere (practice/performance by device) → replaced; see "Theme" below.
+- iPhone install-detection gate (§4 Sync & Offline bullet; `install-detect.ts`, `platform.ts`).
+- Performance Mode invariants and Performance-Mode pre-fetch rules — parked until a slice reintroduces performance reading; the offline cache itself (TanStack persist + outbox) stays.
+- MacBook-only banners (stale-write, reauth) — any banner that returns is device-agnostic.
+- Directory-tree entries for removed screens/components (see Story 7.1 File List).
+
+Front-end code removed by Story 7.1 is preserved at git tag `pre-reset`.
+
 ## Project Context Analysis
 
 ### Requirements Overview
@@ -728,14 +742,12 @@ Single source of truth: `performanceActive` boolean in a `PerformanceModeContext
 
 **No Redux. No Zustand. No Jotai.** If you reach for one, the problem is already solved by the above.
 
-### Theme atmosphere
+### Theme (amended 2026-10-19)
 
-- Tailwind v4 `@theme` block per atmosphere in `web/src/styles/tokens.css`
-- Selector: `<html data-atmosphere="practice">` or `<html data-atmosphere="performance">`
-- Default on MacBook: `practice`. Default on iPhone outside Performance Mode: `performance`. Inside Performance Mode: `performance` (already).
-- **No user toggle** (per PRD §5)
-- Practice tokens lifted from `DESIGN.md` Practice palette; Performance tokens from Club Warm palette
-- Both atmospheres ship in every bundle; switched via CSS variable scope, no JS theme provider
+- One token set in `web/src/styles/tokens.css` with a light and a dark variant.
+- Variant chosen by `@media (prefers-color-scheme: dark)` — the device's system setting.
+- No `data-atmosphere`, no device detection, no JS theme provider, no user toggle.
+- Light values may be lifted from the DESIGN.md Practice palette and dark from Club Warm, as raw material — not as a device-bound contract.
 
 ### Error handling
 

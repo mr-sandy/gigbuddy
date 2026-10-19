@@ -33,6 +33,7 @@ Read these before making non-trivial changes:
 2. Tasks/subtasks are the contract. Don't scaffold things owned by later stories.
 3. Mark checkboxes only when tests pass and acceptance criteria are met.
 4. Update the story's File List and Dev Agent Record as you go.
+5. Since 2026-10-19 (`_bmad-output/planning-artifacts/sprint-change-proposal-2026-10-19.md`): work one story at a time — create-story → dev-story → code-review → commit → deploy → review snapshots → Sandy's quick look → `done`. Do not use `epic-run`. One responsive app: no device detection or device-specific behaviour.
 
 ## Canonical status
 
@@ -40,4 +41,4 @@ Read these before making non-trivial changes:
 
 ## Commit cadence
 
-One commit per story. Subject must be `Implement story X.Y: <title>` (the epic-run workflow enforces this). Never bundle two stories into one commit — it destroys `git log` archaeology for that story (Epic 3 retro action #2). The project-snapshot `epic-run.js` carries a pre-flight clean-tree guard that halts if a story is about to start with uncommitted prior work.
+One commit per story. Subject must be `Implement story X.Y: <title>` (convention; previously enforced by the epic-run workflow, which is no longer used). Never bundle two stories into one commit — it destroys `git log` archaeology for that story (Epic 3 retro action #2). The project-snapshot `epic-run.js` carries a pre-flight clean-tree guard that halts if a story is about to start with uncommitted prior work.

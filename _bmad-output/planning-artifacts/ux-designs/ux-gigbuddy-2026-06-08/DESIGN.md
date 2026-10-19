@@ -62,6 +62,9 @@ updated: 2026-06-09
 
 # GigBuddy — Design Spine
 
+> **Status 2026-10-19: reference, not contract.** Superseded as a specification by `_bmad-output/planning-artifacts/sprint-change-proposal-2026-10-19.md` (one responsive app, iterative slices). Visual tokens, type choices and interaction ideas here remain available as raw material for future slices.
+
+
 > Visual identity locked 2026-06-08 from Claude Design output. This file references the locked artifacts as the source of truth and captures approximate tokens. Precise token extraction is the work of the first implementation story.
 
 ## Brand & Style

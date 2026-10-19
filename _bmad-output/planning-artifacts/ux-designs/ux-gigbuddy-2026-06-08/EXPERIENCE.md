@@ -13,6 +13,9 @@ updated: 2026-06-09
 
 # GigBuddy — Experience Spine
 
+> **Status 2026-10-19: reference, not contract.** Superseded as a specification by `_bmad-output/planning-artifacts/sprint-change-proposal-2026-10-19.md` (one responsive app, iterative slices). Visual tokens, type choices and interaction ideas here remain available as raw material for future slices.
+
+
 > Personal tool for one jazz pianist. Practice on MacBook (light, dense, editable). Performance on iPhone PWA (dark, glanceable, sacred). One database. Two genuinely different products.
 
 → Composition reference: `mockups/key-screens.html` (IA mockups of load-bearing surfaces). Spine wins on conflict.
