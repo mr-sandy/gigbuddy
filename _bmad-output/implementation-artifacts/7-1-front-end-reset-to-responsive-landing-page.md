@@ -4,7 +4,7 @@ baseline_commit: 26ffc4df5b4a355fffc00beeb22577ced4d79085
 
 # Story 7.1: Front-end reset to a responsive landing page
 
-Status: review
+Status: done
 
 <!-- Source: epics.md "Epic 7 / Story 7.1"; sprint-change-proposal-2026-10-19.md §2.4, §3.2, §4.2, §4.5.b -->
 
