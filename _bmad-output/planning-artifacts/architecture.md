@@ -1025,7 +1025,11 @@ gigbuddy/
 ├── .gitignore
 ├── .gitattributes
 ├── README.md                               # one-page setup
-└── CLAUDE.md                               # AI agent context (architecture pointers)
+├── AGENTS.md                               # AI agent context (architecture pointers); read by Copilot CLI
+├── CLAUDE.md                               # one line: @AGENTS.md (Claude Code import)
+├── .claude/skills/                         # BMAD skills for Claude Code (installer-managed) + epic-run
+├── .agents/skills/                         # BMAD skills for GitHub Copilot (installer-managed copy)
+└── .github/agents/                         # BMAD persona agents for Copilot (installer-managed)
 ```
 
 ### Architectural boundaries
