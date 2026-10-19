@@ -5,6 +5,8 @@ import { shouldRedirectOn401 } from './auth/redirect-on-401.js';
 import { AuthenticatedShell } from './routes/authenticated-shell.js';
 import { Home } from './routes/home.js';
 import { Login } from './routes/login.js';
+import { Song } from './routes/song.js';
+import { Songs } from './routes/songs.js';
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { auth } = useAuth();
@@ -24,7 +26,11 @@ export const router = createBrowserRouter([
         <AuthenticatedShell />
       </RequireAuth>
     ),
-    children: [{ index: true, element: <Home /> }],
+    children: [
+      { index: true, element: <Home /> },
+      { path: 'songs', element: <Songs /> },
+      { path: 'songs/:songId', element: <Song /> },
+    ],
   },
   { path: '*', element: <Navigate to="/" replace /> },
 ]);

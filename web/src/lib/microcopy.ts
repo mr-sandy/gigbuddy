@@ -15,3 +15,14 @@ export const HOME = {
   loading: 'Loading…',
   error: "Couldn't load your songs and gigs.",
 } as const;
+
+/* Story 7.3 — song list and song page copy. */
+export const SONGS = {
+  heading: 'Songs',
+  loading: 'Loading…',
+  error: "Couldn't load your songs.",
+  empty: 'No songs yet.',
+  notFound: 'Song not found.',
+  backToHome: 'Home',
+  backToSongs: 'Back to songs',
+} as const;

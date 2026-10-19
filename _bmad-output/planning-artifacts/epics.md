@@ -2201,3 +2201,30 @@ so that we have a clean, working base to grow from.
 8. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass; `e2e/smoke` is updated
    to the landing page and passes.
 9. Deployed to gig.cormie.com via the normal pipeline.
+
+### Story 7.3: Song list at /songs
+
+As Sandy, I want to open a list of every song in the repertoire from the home page,
+so that I can find a song by hand without going through a gig or setlist.
+
+**Acceptance criteria**
+1. Signed in, `/` is unchanged except for one clear "Songs" link to `/songs`. No songs are
+   listed on `/`.
+2. `/songs` lists every song for the band, sorted A–Z by title (case-insensitive). Each row
+   shows the song title only. Rows are large tap targets in generous type.
+3. While loading, a plain loading line; on error, a plain one-sentence message; with no songs,
+   a plain empty-state line.
+4. `/songs` has a way back to `/`.
+5. Tapping a row goes to `/songs/:songId`, which for now shows the song title and a
+   "Back to songs" link (content arrives in Story 7.4). An unknown `songId` shows a plain
+   "Song not found" line with the same link.
+6. `/songs` and `/songs/:songId` are valid routes (amends 7.1 AC3); any other path still
+   redirects to `/`. Signed out, they show the existing login.
+7. No search, filter, editing, gig or setlist features. No change to `api/`, `shared/` or
+   `infra/`; uses the existing `use-songs` / `use-song` hooks.
+8. Same responsive and theming rules as 7.1 (360px–1680px with no horizontal scroll, light/dark
+   via `prefers-color-scheme`, WCAG AA contrast).
+9. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass. Unit tests cover
+   home → Songs → a song; `e2e/smoke` (signed-out only, no auth fixture) checks `/songs` and
+   `/songs/:songId` end on the login, and passes.
+10. Deployed to gig.cormie.com via the normal pipeline.

@@ -21,6 +21,14 @@ test('a removed route (/library) ends on /login showing the same form', async ({
   await expect(page.getByLabel('Password')).toBeVisible();
 });
 
+test('/songs and /songs/:songId end on /login showing the Password field', async ({ page }) => {
+  for (const path of ['/songs', '/songs/anything']) {
+    await page.goto(path);
+    await expect(page).toHaveURL(/\/login$/);
+    await expect(page.getByLabel('Password')).toBeVisible();
+  }
+});
+
 test('has no horizontal scroll at 360px and 1680px viewport widths', async ({ page }) => {
   for (const width of [360, 1680]) {
     await page.setViewportSize({ width, height: 800 });
