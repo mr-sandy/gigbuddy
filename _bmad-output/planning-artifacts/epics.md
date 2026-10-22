@@ -2246,3 +2246,28 @@ old design leftovers stop accumulating.
 6. No visible change other than the song page title size. `pnpm lint`, `pnpm typecheck`,
    `pnpm test` and `pnpm build` pass. `api/`, `shared/` and `infra/` unchanged.
 7. Deployed to gig.cormie.com via the normal pipeline.
+
+### Story 7.5: Basic song page
+
+As Sandy, I want a song's page to show its key, patch and chord chart, so that I can read
+a song from the library without going through a gig or setlist.
+
+**Acceptance criteria**
+1. `/songs/:songId` shows, in order: the title (`PageTitle`); one line with the key and the
+   patch, values only with no labels (e.g. `Fm Blues · Jazz Organ (P14)`); then the chord chart.
+2. The chord chart is shown as plain text in the system font, with its line breaks kept and
+   long lines wrapping. No chord parsing, highlighting or reformatting: prose and "Stage:" cues
+   appear exactly as stored.
+3. Any empty or missing field is left out completely, with no placeholder or heading. If only
+   one of key or patch is set, the line shows just that value.
+4. `performanceNotes` and `practiceNotes` are not shown (revisit in a later story).
+5. The key/patch line and the chart use a type role at least as large as `--text-row` (22px),
+   added to `STYLE.md` and `tokens.css`; no one-off sizes in the route file.
+6. "Back to songs" link, loading, error and "Song not found" behaviour unchanged from 7.3.
+7. Read-only: no editing, previous/next song, performance mode, search, gig or setlist
+   features. No change to `api/`, `shared/` or `infra/`; uses the existing `use-song` hook.
+8. Same responsive and theming rules as 7.1 (360px–1680px with no horizontal scroll, light/dark
+   via `prefers-color-scheme`, WCAG AA contrast).
+9. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass. Unit tests cover a full
+   song, a song with only a title, key without patch, and chart line breaks preserved.
+10. Deployed to gig.cormie.com via the normal pipeline.
