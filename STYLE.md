@@ -1,6 +1,6 @@
 # GigBuddy style guide
 
-The source of truth for how GigBuddy looks. Tokens in `web/src/styles/tokens.css` are named by role (`--text-page-title`, `--text-row`, `--text-body`). Page titles are 28px, set by Sandy on 2026-10-19.
+The source of truth for how GigBuddy looks. Tokens in `web/src/styles/tokens.css` are named by role (`--text-page-title`, `--text-row`, `--text-reading`, `--text-body`). Page titles are 28px, set by Sandy on 2026-10-19.
 
 ## Principles
 
@@ -15,6 +15,7 @@ The source of truth for how GigBuddy looks. Tokens in `web/src/styles/tokens.css
 |---|---|---|---|
 | Page title (`--text-page-title`) | 28px | Lora (serif) | The one `<h1>` on each page |
 | Row (`--text-row`) | 22px | system | Tappable rows (song titles), text links |
+| Reading (`--text-reading`) | 22px | system | Song content: key/patch line, chord chart |
 | Body (`--text-body`) | 18px | system | Status lines, plain text |
 
 Rules:

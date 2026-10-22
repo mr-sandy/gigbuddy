@@ -23,6 +23,10 @@
   --text-row: 22px;
   --text-row--line-height: 1.2;
 
+  /* Song content: key/patch line, chord chart. */
+  --text-reading: 22px;
+  --text-reading--line-height: 1.5;
+
   --text-body: 18px;
   --text-body--line-height: 1.5;
 

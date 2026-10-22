@@ -5,8 +5,9 @@ import { useSongs } from '../hooks/use-songs.js';
 import { SONGS } from '../lib/microcopy.js';
 
 /*
- * Song page stub (Story 7.3); content arrives in Story 7.5. Falls back to
- * the list cache so the title shows instantly and works offline.
+ * Song page (Story 7.3 shell, Story 7.5 content): title, key/patch line and
+ * the chord chart verbatim. Falls back to the list cache so the title shows
+ * instantly and works offline.
  */
 export function Song() {
   const { songId } = useParams();
@@ -22,6 +23,14 @@ export function Song() {
         ? SONGS.loading
         : SONGS.error;
 
+  const keyAndPatch = song
+    ? [song.key, song.patch]
+        .map((v) => v?.trim())
+        .filter(Boolean)
+        .join(' · ')
+    : '';
+  const hasChart = Boolean(song?.chordChart?.trim());
+
   return (
     <>
       <Link
@@ -31,7 +40,22 @@ export function Song() {
         {SONGS.backToSongs}
       </Link>
       {song ? (
-        <PageTitle afterBackLink>{song.title}</PageTitle>
+        <>
+          <PageTitle afterBackLink>{song.title}</PageTitle>
+          {keyAndPatch ? (
+            <p className="mt-[calc(var(--spacing-unit)*4)] text-[length:var(--text-reading)] leading-[var(--text-reading--line-height)] text-[color:var(--color-text-secondary)]">
+              {keyAndPatch}
+            </p>
+          ) : null}
+          {hasChart ? (
+            <p
+              data-testid="chord-chart"
+              className="mt-[calc(var(--spacing-unit)*4)] whitespace-pre-wrap [overflow-wrap:anywhere] text-[length:var(--text-reading)] leading-[var(--text-reading--line-height)] text-[color:var(--color-text-primary)]"
+            >
+              {song.chordChart}
+            </p>
+          ) : null}
+        </>
       ) : (
         <p
           aria-live="polite"

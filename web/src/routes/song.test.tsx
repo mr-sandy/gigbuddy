@@ -21,7 +21,7 @@ function renderSong() {
   );
 }
 
-describe('Song (stub page)', () => {
+describe('Song', () => {
   it('shows the title from useSong', () => {
     useSongMock.mockReturnValue({ data: { songId: 'abc', title: 'Alpha Test Tune' } });
     useSongsMock.mockReturnValue({ data: undefined, isPending: true });
@@ -65,5 +65,56 @@ describe('Song (stub page)', () => {
     useSongsMock.mockReturnValue({ data: [], isPending: false });
     renderSong();
     expect(screen.getByRole('link', { name: SONGS.backToSongs })).toHaveAttribute('href', '/songs');
+  });
+
+  it('shows key, patch and chart for a full song, without the notes', () => {
+    useSongMock.mockReturnValue({
+      data: {
+        songId: 'abc',
+        title: 'Alpha Test Tune',
+        key: 'Fm Blues',
+        patch: 'Jazz Organ (P14)',
+        chordChart: 'Fm7 | Bb7',
+        performanceNotes: 'perf note text',
+        practiceNotes: 'practice note text',
+      },
+    });
+    useSongsMock.mockReturnValue({ data: undefined, isPending: true });
+    renderSong();
+    expect(screen.getByText('Fm Blues · Jazz Organ (P14)')).toBeInTheDocument();
+    expect(screen.getByText('Fm7 | Bb7')).toBeInTheDocument();
+    expect(screen.queryByText('perf note text')).not.toBeInTheDocument();
+    expect(screen.queryByText('practice note text')).not.toBeInTheDocument();
+  });
+
+  it('shows only the title when nothing else is set', () => {
+    useSongMock.mockReturnValue({ data: { songId: 'abc', title: 'Alpha Test Tune' } });
+    useSongsMock.mockReturnValue({ data: undefined, isPending: true });
+    const { container } = renderSong();
+    expect(screen.getByRole('heading', { name: 'Alpha Test Tune' })).toBeInTheDocument();
+    expect(container.textContent).not.toContain('·');
+    expect(container.querySelectorAll('p').length).toBe(0);
+  });
+
+  it('shows just the key when there is no patch', () => {
+    useSongMock.mockReturnValue({
+      data: { songId: 'abc', title: 'Alpha Test Tune', key: 'Fm Blues' },
+    });
+    useSongsMock.mockReturnValue({ data: undefined, isPending: true });
+    const { container } = renderSong();
+    expect(screen.getByText('Fm Blues')).toBeInTheDocument();
+    expect(container.textContent).not.toContain('·');
+  });
+
+  it('keeps chart line breaks', () => {
+    const chart = 'Fm7 | Bb7\nStage: watch Ivan for the stop';
+    useSongMock.mockReturnValue({
+      data: { songId: 'abc', title: 'Alpha Test Tune', chordChart: chart },
+    });
+    useSongsMock.mockReturnValue({ data: undefined, isPending: true });
+    renderSong();
+    const el = screen.getByTestId('chord-chart');
+    expect(el.textContent).toBe(chart);
+    expect(el).toHaveClass('whitespace-pre-wrap');
   });
 });
