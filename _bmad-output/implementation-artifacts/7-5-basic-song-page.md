@@ -4,7 +4,7 @@ baseline_commit: e9c703b
 
 # Story 7.5: Basic song page
 
-Status: review
+Status: done
 
 <!-- Source: epics.md "Epic 7 / Story 7.5"; agreed with Sandy 2026-10-22 (no labels; "patch"; generous type; notes fields hidden for now; system font for the chart) -->
 
