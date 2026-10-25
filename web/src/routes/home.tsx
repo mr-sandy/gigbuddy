@@ -4,7 +4,7 @@ import { PageTitle } from '../components/page-title.js';
 import { useSetlists } from '../hooks/use-setlists.js';
 import { useSongs } from '../hooks/use-songs.js';
 import { formatCounts } from '../lib/counts.js';
-import { HOME, SONGS } from '../lib/microcopy.js';
+import { GIGS, HOME, SONGS } from '../lib/microcopy.js';
 
 /*
  * Landing page (Story 7.1). Shows cached data over a background error —
@@ -34,12 +34,20 @@ export function Home() {
       >
         {bodyLine}
       </p>
-      <Link
-        to="/songs"
-        className="mt-[var(--spacing-section-gap)] inline-flex min-h-tap items-center text-[length:var(--text-row)] leading-[var(--text-row--line-height)] text-[color:var(--color-text-primary)] underline focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]"
-      >
-        {SONGS.heading}
-      </Link>
+      <div className="mt-[var(--spacing-section-gap)] flex flex-col">
+        <Link
+          to="/songs"
+          className="inline-flex min-h-tap items-center text-[length:var(--text-row)] leading-[var(--text-row--line-height)] text-[color:var(--color-text-primary)] underline focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]"
+        >
+          {SONGS.heading}
+        </Link>
+        <Link
+          to="/gigs"
+          className="inline-flex min-h-tap items-center text-[length:var(--text-row)] leading-[var(--text-row--line-height)] text-[color:var(--color-text-primary)] underline focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]"
+        >
+          {GIGS.heading}
+        </Link>
+      </div>
     </>
   );
 }

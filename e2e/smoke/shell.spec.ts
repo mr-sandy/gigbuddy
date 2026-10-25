@@ -31,6 +31,14 @@ test('/songs, /songs/:songId and the add/edit routes end on /login showing the P
   }
 });
 
+test('/gigs and /gigs/:setlistId end on /login showing the Password field', async ({ page }) => {
+  for (const path of ['/gigs', '/gigs/anything']) {
+    await page.goto(path);
+    await expect(page).toHaveURL(/\/login$/);
+    await expect(page.getByLabel('Password')).toBeVisible();
+  }
+});
+
 test('has no horizontal scroll at 360px and 1680px viewport widths', async ({ page }) => {
   for (const width of [360, 1680]) {
     await page.setViewportSize({ width, height: 800 });

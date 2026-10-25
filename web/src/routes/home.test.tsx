@@ -87,6 +87,18 @@ describe('Home (landing page)', () => {
     expect(screen.getByText('3 songs · 2 gigs')).toBeInTheDocument();
   });
 
+  it('links to /gigs alongside /songs', () => {
+    useSongsMock.mockReturnValue({ data: songsArray(1), isPending: false });
+    useSetlistsMock.mockReturnValue({ data: gigsArray(1), isPending: false });
+    render(
+      <MemoryRouter>
+        <Home />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole('link', { name: 'Gigs' })).toHaveAttribute('href', '/gigs');
+    expect(screen.getByRole('link', { name: 'Songs' })).toHaveAttribute('href', '/songs');
+  });
+
   it('gives the status line aria-live="polite"', () => {
     useSongsMock.mockReturnValue({ data: undefined, isPending: true });
     useSetlistsMock.mockReturnValue({ data: undefined, isPending: true });

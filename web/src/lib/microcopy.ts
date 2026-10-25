@@ -41,3 +41,15 @@ export const SONG_FORM = {
   cancel: 'Cancel',
   titleRequired: 'A song needs a title.',
 } as const;
+
+/* Story 7.7 — gig list and gig page copy. */
+export const GIGS = {
+  heading: 'Gigs',
+  loading: 'Loading…',
+  error: "Couldn't load your gigs.",
+  empty: 'No gigs yet.',
+  past: 'Past',
+  notFound: 'Gig not found.',
+  backToHome: 'Home',
+  backToGigs: 'Back to gigs',
+} as const;

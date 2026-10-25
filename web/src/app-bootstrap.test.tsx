@@ -160,6 +160,47 @@ describe('AppBootstrap', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Alpha Test Tune' })).toBeInTheDocument();
   });
 
+  it('signed in: home → Gigs → a gig', async () => {
+    const setlist = {
+      bandId: 'jack-ruby-5',
+      setlistId: 'g1',
+      gigMeta: { venue: 'Test Venue', date: '2026-11-07' },
+      sections: [],
+      clientWrittenAt: '2026-10-19T10:00:00.000Z',
+      serverReceivedAt: '2026-10-19T10:00:00.000Z',
+      version: 1,
+    };
+    fetchMock.mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/auth/me') || url.endsWith('/me')) {
+        return Promise.resolve(
+          jsonResponse(200, { status: 'ok', data: { authenticated: true, daysUntilExpiry: 365 } }),
+        );
+      }
+      if (url.includes('/setlists/g1')) {
+        return Promise.resolve(jsonResponse(200, { status: 'ok', data: setlist }));
+      }
+      return Promise.resolve(
+        jsonResponse(200, { status: 'ok', data: url.includes('/setlists') ? [setlist] : [] }),
+      );
+    });
+    renderBootstrap();
+    await userEvent.click(await screen.findByRole('link', { name: 'Gigs' }));
+    await userEvent.click(await screen.findByRole('link', { name: /Test Venue/ }));
+    expect(await screen.findByRole('link', { name: 'Back to gigs' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Test Venue' })).toBeInTheDocument();
+  });
+
+  it('sends /gigs to /login when signed out', async () => {
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 401 }));
+    window.history.replaceState(null, '', '/gigs');
+    await router.navigate('/gigs', { replace: true });
+    renderBootstrap();
+    await waitFor(() => {
+      expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
+    });
+  });
+
   it('sends /songs to /login when signed out', async () => {
     fetchMock.mockResolvedValueOnce(new Response(null, { status: 401 }));
     window.history.replaceState(null, '', '/songs');

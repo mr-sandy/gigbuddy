@@ -3,6 +3,8 @@ import { createBrowserRouter, Navigate } from 'react-router';
 import { useAuth } from './auth/auth-context.js';
 import { shouldRedirectOn401 } from './auth/redirect-on-401.js';
 import { AuthenticatedShell } from './routes/authenticated-shell.js';
+import { Gig } from './routes/gig.js';
+import { Gigs } from './routes/gigs.js';
 import { Home } from './routes/home.js';
 import { Login } from './routes/login.js';
 import { Song } from './routes/song.js';
@@ -33,6 +35,8 @@ export const router = createBrowserRouter([
       { path: 'songs/new', element: <SongEdit /> },
       { path: 'songs/:songId', element: <Song /> },
       { path: 'songs/:songId/edit', element: <SongEdit /> },
+      { path: 'gigs', element: <Gigs /> },
+      { path: 'gigs/:setlistId', element: <Gig /> },
     ],
   },
   { path: '*', element: <Navigate to="/" replace /> },

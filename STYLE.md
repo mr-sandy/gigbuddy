@@ -38,6 +38,8 @@ Rules:
 - Anything tappable is at least 44px high.
 - List rows: 12px vertical padding, 1px hairline underneath.
 - Back link at the top of a page, then the page title 4px below it.
+- A group label inside a list (e.g. "Past") is Body, secondary text, with the 32px section
+  gap above it.
 
 ## Forms
 
