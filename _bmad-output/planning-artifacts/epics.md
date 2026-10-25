@@ -2271,3 +2271,38 @@ a song from the library without going through a gig or setlist.
 9. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass. Unit tests cover a full
    song, a song with only a title, key without patch, and chart line breaks preserved.
 10. Deployed to gig.cormie.com via the normal pipeline.
+
+### Story 7.6: Add and edit a song
+
+As Sandy, I want to add a new song and correct an existing one, so that I can keep the
+library up to date without touching the database.
+
+**Acceptance criteria**
+1. `/songs` gains one "Add song" link to `/songs/new`. The song page gains one "Edit" link to
+   `/songs/:songId/edit`. Nothing else on either page changes.
+2. Both routes show the same form: title, key, patch and chord chart, in that order, each with
+   a visible label. The chord chart is a multi-line text box that keeps line breaks exactly as
+   typed. All inputs use type roles from `STYLE.md` (no one-off sizes); 16px minimum so iOS
+   does not zoom.
+3. Editing pre-fills the form from the song. Adding starts empty.
+4. "Save" writes the song through the existing `use-song-mutation` hook, then goes to that
+   song's page. A new song gets a fresh 16-char NanoID from `web/src/lib/id.ts`. "Cancel"
+   goes back (to the song page when editing, to `/songs` when adding) without saving.
+5. The title is required: with a blank title, Save shows a plain one-sentence message and
+   does not save. Key, patch and chart are optional; a blank value is saved as absent, not
+   as an empty string, so the song page leaves it out (7.5 AC3).
+6. `performanceNotes` and `practiceNotes` are not shown in the form, and editing keeps their
+   stored values unchanged (the PUT replaces the whole record).
+7. Editing an unknown `songId` shows the same "Song not found" line and "Back to songs" link
+   as the song page.
+8. `/songs/new` and `/songs/:songId/edit` are valid routes (amends 7.3 AC6); signed out, they
+   show the existing login.
+9. No delete, duplicate-title check, autosave, unsaved-changes prompt, gig or setlist
+   features. No change to `api/`, `shared/` or `infra/`.
+10. Same responsive and theming rules as 7.1 (360px–1680px with no horizontal scroll,
+    light/dark via `prefers-color-scheme`, WCAG AA contrast).
+11. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass. Unit tests cover adding
+    a song, editing one (notes preserved, blanked field saved as absent), the blank-title
+    message, and Cancel. `e2e/smoke` checks the two new routes end on the login when signed
+    out.
+12. Deployed to gig.cormie.com via the normal pipeline.
