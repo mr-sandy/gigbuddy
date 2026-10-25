@@ -2306,3 +2306,36 @@ library up to date without touching the database.
     message, and Cancel. `e2e/smoke` checks the two new routes end on the login when signed
     out.
 12. Deployed to gig.cormie.com via the normal pipeline.
+
+### Story 7.7: Gig list at /gigs
+
+As Sandy, I want to open a list of the band's gigs from the home page, upcoming first,
+so that I can find the next gig, or a past one, without remembering its date.
+
+**Acceptance criteria**
+1. Signed in, `/` is unchanged except for one clear "Gigs" link to `/gigs`, alongside the
+   existing "Songs" link. No gigs are listed on `/`.
+2. `/gigs` lists every setlist for the band as a gig. Each row shows the date and the venue
+   on one line (e.g. `Sat 7 Nov 2026 · <venue>`), in British date format with no time. Rows
+   are large tap targets in generous type, using existing `STYLE.md` roles.
+3. Upcoming gigs (date today or later, Europe/London) come first, soonest at the top. Past
+   gigs follow below a plain "Past" line, most recent first. With no upcoming gigs, the list
+   starts at "Past"; with no past gigs, there is no "Past" line.
+4. While loading, a plain loading line; on error, a plain one-sentence message; with no gigs,
+   a plain empty-state line.
+5. `/gigs` has a way back to `/`.
+6. Tapping a row goes to `/gigs/:setlistId`, which for now shows the venue as the title
+   (`PageTitle`), the date on one line beneath it, and a "Back to gigs" link. The setlist
+   itself arrives in a later story. An unknown `setlistId` shows a plain "Gig not found" line
+   with the same link.
+7. `/gigs` and `/gigs/:setlistId` are valid routes (amends 7.1 AC3); any other path still
+   redirects to `/`. Signed out, they show the existing login.
+8. No setlist contents, search, filter, editing or performance features. No change to
+   `api/`, `shared/` or `infra/`; uses the existing `use-setlists` / `use-setlist` hooks.
+9. Same responsive and theming rules as 7.1 (360px–1680px with no horizontal scroll,
+   light/dark via `prefers-color-scheme`, WCAG AA contrast).
+10. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass. Unit tests cover
+    home → Gigs → a gig, the upcoming/past ordering (including a gig dated today), and
+    "Gig not found". `e2e/smoke` checks `/gigs` and `/gigs/:setlistId` end on the login when
+    signed out.
+11. Deployed to gig.cormie.com via the normal pipeline.
