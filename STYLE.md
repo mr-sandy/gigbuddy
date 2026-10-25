@@ -39,9 +39,18 @@ Rules:
 - List rows: 12px vertical padding, 1px hairline underneath.
 - Back link at the top of a page, then the page title 4px below it.
 
+## Forms
+
+- Labels are Body (18px), primary text, above their field.
+- Inputs and the chord-chart box use Reading (22px), primary text on the page background, a 1px
+  border in secondary text colour, 4px radius, `--spacing-unit*3` padding, full width. Never use
+  the hairline token for field borders (it is transparent in dark mode).
+- The Save button is a bordered button: 2px primary-text border, primary text, Row size, at
+  least 44px high. Cancel is an ordinary underlined link.
+
 ## Focus
 
-- Visible keyboard focus on every link: 2px outline in the accent colour.
+- Visible keyboard focus on every link, input and button: 2px outline in the accent colour.
 
 ## Copy
 

@@ -6,6 +6,7 @@ import { AuthenticatedShell } from './routes/authenticated-shell.js';
 import { Home } from './routes/home.js';
 import { Login } from './routes/login.js';
 import { Song } from './routes/song.js';
+import { SongEdit } from './routes/song-edit.js';
 import { Songs } from './routes/songs.js';
 
 function RequireAuth({ children }: { children: ReactNode }) {
@@ -29,7 +30,9 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Home /> },
       { path: 'songs', element: <Songs /> },
+      { path: 'songs/new', element: <SongEdit /> },
       { path: 'songs/:songId', element: <Song /> },
+      { path: 'songs/:songId/edit', element: <SongEdit /> },
     ],
   },
   { path: '*', element: <Navigate to="/" replace /> },

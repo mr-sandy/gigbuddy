@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
-import { SONGS } from '../lib/microcopy.js';
+import { SONG_FORM, SONGS } from '../lib/microcopy.js';
 import { Song } from './song.js';
 
 const { useSongMock, useSongsMock } = vi.hoisted(() => ({
@@ -116,5 +116,22 @@ describe('Song', () => {
     const el = screen.getByTestId('chord-chart');
     expect(el.textContent).toBe(chart);
     expect(el).toHaveClass('whitespace-pre-wrap');
+  });
+
+  it('links to the edit form when the song is shown', () => {
+    useSongMock.mockReturnValue({ data: { songId: 'abc', title: 'Alpha Test Tune' } });
+    useSongsMock.mockReturnValue({ data: undefined, isPending: true });
+    renderSong();
+    expect(screen.getByRole('link', { name: SONG_FORM.editLink })).toHaveAttribute(
+      'href',
+      '/songs/abc/edit',
+    );
+  });
+
+  it('has no edit link when the song is not found', () => {
+    useSongMock.mockReturnValue({ data: null, isPending: false });
+    useSongsMock.mockReturnValue({ data: [], isPending: false });
+    renderSong();
+    expect(screen.queryByRole('link', { name: SONG_FORM.editLink })).not.toBeInTheDocument();
   });
 });

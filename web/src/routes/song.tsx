@@ -1,8 +1,7 @@
 import { Link, useParams } from 'react-router';
 import { PageTitle } from '../components/page-title.js';
-import { useSong } from '../hooks/use-song.js';
-import { useSongs } from '../hooks/use-songs.js';
-import { SONGS } from '../lib/microcopy.js';
+import { useSongOrCached } from '../hooks/use-song-or-cached.js';
+import { SONG_FORM, SONGS } from '../lib/microcopy.js';
 
 /*
  * Song page (Story 7.3 shell, Story 7.5 content): title, key/patch line and
@@ -11,17 +10,7 @@ import { SONGS } from '../lib/microcopy.js';
  */
 export function Song() {
   const { songId } = useParams();
-  const one = useSong(songId ?? null);
-  const list = useSongs();
-
-  const song = one.data ?? list.data?.find((s) => s.songId === songId);
-  const statusLine = song
-    ? null
-    : one.data === null
-      ? SONGS.notFound
-      : one.isPending || list.isPending
-        ? SONGS.loading
-        : SONGS.error;
+  const { song, statusLine } = useSongOrCached(songId);
 
   const keyAndPatch = song
     ? [song.key, song.patch]
@@ -33,12 +22,22 @@ export function Song() {
 
   return (
     <>
-      <Link
-        to="/songs"
-        className="inline-flex min-h-tap items-center text-[length:var(--text-row)] leading-[var(--text-row--line-height)] text-[color:var(--color-text-primary)] underline focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]"
-      >
-        {SONGS.backToSongs}
-      </Link>
+      <div className="flex items-center justify-between gap-[calc(var(--spacing-unit)*4)]">
+        <Link
+          to="/songs"
+          className="inline-flex min-h-tap items-center text-[length:var(--text-row)] leading-[var(--text-row--line-height)] text-[color:var(--color-text-primary)] underline focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]"
+        >
+          {SONGS.backToSongs}
+        </Link>
+        {song ? (
+          <Link
+            to={`/songs/${song.songId}/edit`}
+            className="inline-flex min-h-tap items-center text-[length:var(--text-row)] leading-[var(--text-row--line-height)] text-[color:var(--color-text-primary)] underline focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]"
+          >
+            {SONG_FORM.editLink}
+          </Link>
+        ) : null}
+      </div>
       {song ? (
         <>
           <PageTitle afterBackLink>{song.title}</PageTitle>

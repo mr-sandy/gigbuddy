@@ -21,8 +21,10 @@ test('a removed route (/library) ends on /login showing the same form', async ({
   await expect(page.getByLabel('Password')).toBeVisible();
 });
 
-test('/songs and /songs/:songId end on /login showing the Password field', async ({ page }) => {
-  for (const path of ['/songs', '/songs/anything']) {
+test('/songs, /songs/:songId and the add/edit routes end on /login showing the Password field', async ({
+  page,
+}) => {
+  for (const path of ['/songs', '/songs/anything', '/songs/new', '/songs/anything/edit']) {
     await page.goto(path);
     await expect(page).toHaveURL(/\/login$/);
     await expect(page.getByLabel('Password')).toBeVisible();

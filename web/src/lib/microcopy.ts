@@ -26,3 +26,18 @@ export const SONGS = {
   backToHome: 'Home',
   backToSongs: 'Back to songs',
 } as const;
+
+/* Story 7.6 — add/edit song. */
+export const SONG_FORM = {
+  addLink: 'Add song',
+  editLink: 'Edit',
+  addHeading: 'Add song',
+  editHeading: 'Edit song',
+  title: 'Title',
+  key: 'Key',
+  patch: 'Patch',
+  chordChart: 'Chord chart',
+  save: 'Save',
+  cancel: 'Cancel',
+  titleRequired: 'A song needs a title.',
+} as const;

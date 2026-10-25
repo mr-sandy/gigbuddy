@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
-import { SONGS } from '../lib/microcopy.js';
+import { SONG_FORM, SONGS } from '../lib/microcopy.js';
 import { Songs } from './songs.js';
 
 const { useSongsMock } = vi.hoisted(() => ({ useSongsMock: vi.fn() }));
@@ -79,5 +79,14 @@ describe('Songs (list)', () => {
     useSongsMock.mockReturnValue({ data: [], isPending: false });
     renderSongs();
     expect(screen.getByRole('link', { name: SONGS.backToHome })).toHaveAttribute('href', '/');
+  });
+
+  it('links to the add song form', () => {
+    useSongsMock.mockReturnValue({ data: [], isPending: false });
+    renderSongs();
+    expect(screen.getByRole('link', { name: SONG_FORM.addLink })).toHaveAttribute(
+      'href',
+      '/songs/new',
+    );
   });
 });

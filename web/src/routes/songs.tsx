@@ -1,7 +1,7 @@
 import { Link } from 'react-router';
 import { PageTitle } from '../components/page-title.js';
 import { useSongs } from '../hooks/use-songs.js';
-import { SONGS } from '../lib/microcopy.js';
+import { SONG_FORM, SONGS } from '../lib/microcopy.js';
 
 /*
  * Song list (Story 7.3). Rendered in the order received: the API already
@@ -22,12 +22,20 @@ export function Songs() {
 
   return (
     <>
-      <Link
-        to="/"
-        className="inline-flex min-h-tap items-center text-[length:var(--text-row)] leading-[var(--text-row--line-height)] text-[color:var(--color-text-primary)] underline focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]"
-      >
-        {SONGS.backToHome}
-      </Link>
+      <div className="flex items-center justify-between gap-[calc(var(--spacing-unit)*4)]">
+        <Link
+          to="/"
+          className="inline-flex min-h-tap items-center text-[length:var(--text-row)] leading-[var(--text-row--line-height)] text-[color:var(--color-text-primary)] underline focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]"
+        >
+          {SONGS.backToHome}
+        </Link>
+        <Link
+          to="/songs/new"
+          className="inline-flex min-h-tap items-center text-[length:var(--text-row)] leading-[var(--text-row--line-height)] text-[color:var(--color-text-primary)] underline focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]"
+        >
+          {SONG_FORM.addLink}
+        </Link>
+      </div>
       <PageTitle afterBackLink>{SONGS.heading}</PageTitle>
       {data !== undefined && data.length > 0 ? (
         <ul className="m-0 mt-[calc(var(--spacing-unit)*2)] list-none p-0">
