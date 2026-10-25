@@ -1,6 +1,6 @@
 import { ACTIVE_BAND_ID, type Song, type SongPutInput } from '@gigbuddy/shared';
 import { type FormEvent, useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
+import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { PageTitle } from '../components/page-title.js';
 import { useSongMutation } from '../hooks/use-song-mutation.js';
 import { useSongOrCached } from '../hooks/use-song-or-cached.js';
@@ -13,7 +13,8 @@ import { SONG_FORM, SONGS } from '../lib/microcopy.js';
  * stored performance and practice notes (not shown here) are copied from the
  * song being edited or the PUT would delete them. The form mounts only once
  * the song is available and reads it once, so a background refetch never
- * resets what Sandy is typing.
+ * resets what Sandy is typing. Leaving an edit steps back in history when
+ * there is history to step back to, so the song page isn't stacked twice.
  */
 
 const LINK_CLASS =
@@ -51,6 +52,7 @@ function EditExisting({ songId }: { songId: string }) {
 
 function SongForm({ initial }: { initial?: Song }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const { saveSong } = useSongMutation();
   const [newId] = useState(() => generateId());
   const songId = initial?.songId ?? newId;
@@ -61,6 +63,9 @@ function SongForm({ initial }: { initial?: Song }) {
   const [chart, setChart] = useState(initial?.chordChart ?? '');
   const [titleError, setTitleError] = useState(false);
   const titleRef = useRef<HTMLInputElement>(null);
+  const exitTo = initial ? `/songs/${songId}` : '/songs';
+  // 'default' means this form is the first page in the history stack.
+  const canStepBack = initial !== undefined && location.key !== 'default';
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -89,7 +94,8 @@ function SongForm({ initial }: { initial?: Song }) {
       version: 1,
     };
     await saveSong(record);
-    navigate(`/songs/${songId}`, { replace: true });
+    if (canStepBack) navigate(-1);
+    else navigate(`/songs/${songId}`, { replace: true });
   }
 
   return (
@@ -165,7 +171,16 @@ function SongForm({ initial }: { initial?: Song }) {
         >
           {SONG_FORM.save}
         </button>
-        <Link replace to={initial ? `/songs/${songId}` : '/songs'} className={LINK_CLASS}>
+        <Link
+          replace
+          to={exitTo}
+          onClick={(e) => {
+            if (!canStepBack) return;
+            e.preventDefault();
+            navigate(-1);
+          }}
+          className={LINK_CLASS}
+        >
           {SONG_FORM.cancel}
         </Link>
       </div>

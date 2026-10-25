@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes } from 'react-router';
+import { MemoryRouter, Route, Routes, useNavigate } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SONG_FORM, SONGS } from '../lib/microcopy.js';
 import { SongEdit } from './song-edit.js';
@@ -17,13 +17,30 @@ vi.mock('../hooks/use-song-mutation.js', () => ({
 }));
 vi.mock('../lib/id.js', () => ({ generateId: () => 'newsong000000001' }));
 
-function renderAt(path: string) {
+function BackButton() {
+  const navigate = useNavigate();
+  return (
+    <button type="button" onClick={() => navigate(-1)}>
+      back
+    </button>
+  );
+}
+
+function renderAt(...history: string[]) {
   return render(
-    <MemoryRouter initialEntries={[path]}>
+    <MemoryRouter initialEntries={history} initialIndex={history.length - 1}>
       <Routes>
         <Route path="/songs" element={<p>list page</p>} />
         <Route path="/songs/new" element={<SongEdit />} />
-        <Route path="/songs/:songId" element={<p>song page</p>} />
+        <Route
+          path="/songs/:songId"
+          element={
+            <>
+              <p>song page</p>
+              <BackButton />
+            </>
+          }
+        />
         <Route path="/songs/:songId/edit" element={<SongEdit />} />
       </Routes>
     </MemoryRouter>,
@@ -107,6 +124,24 @@ describe('SongEdit', () => {
     renderAt('/songs/abc/edit');
     await user.click(screen.getByRole('link', { name: SONG_FORM.cancel }));
     expect(screen.getByText('song page')).toBeInTheDocument();
+    expect(saveSongMock).not.toHaveBeenCalled();
+  });
+
+  it('leaves an edit by stepping back, so Back then reaches the list', async () => {
+    const user = userEvent.setup();
+    renderAt('/songs', '/songs/abc', '/songs/abc/edit');
+    await user.click(screen.getByRole('button', { name: SONG_FORM.save }));
+    expect(screen.getByText('song page')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'back' }));
+    expect(screen.getByText('list page')).toBeInTheDocument();
+  });
+
+  it('cancels an edit by stepping back when there is history', async () => {
+    const user = userEvent.setup();
+    renderAt('/songs', '/songs/abc', '/songs/abc/edit');
+    await user.click(screen.getByRole('link', { name: SONG_FORM.cancel }));
+    await user.click(screen.getByRole('button', { name: 'back' }));
+    expect(screen.getByText('list page')).toBeInTheDocument();
     expect(saveSongMock).not.toHaveBeenCalled();
   });
 

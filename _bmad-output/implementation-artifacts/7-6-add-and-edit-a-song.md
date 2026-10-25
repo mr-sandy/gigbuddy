@@ -4,7 +4,7 @@ baseline_commit: 40d977c
 
 # Story 7.6: Add and edit a song
 
-Status: review
+Status: done
 
 <!-- Source: epics.md "Epic 7 / Story 7.6"; agreed with Sandy 2026-10-25 (start simply; explicit Save, no autosave; notes fields stay hidden but must survive an edit) -->
 
@@ -280,3 +280,4 @@ Claude Sonnet 5.5
 ### Change Log
 
 - 2026-10-25: Implemented story 7.6.
+- 2026-10-25: Code review fix — leaving an edit (Save or Cancel) steps back in history when there is history, so Back from the song page reaches the list instead of the same song page. Status → done.
