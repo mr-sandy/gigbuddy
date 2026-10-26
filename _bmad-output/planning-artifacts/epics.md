@@ -2339,3 +2339,35 @@ so that I can find the next gig, or a past one, without remembering its date.
     "Gig not found". `e2e/smoke` checks `/gigs` and `/gigs/:setlistId` end on the login when
     signed out.
 11. Deployed to gig.cormie.com via the normal pipeline.
+
+### Story 7.8: Setlist on the gig page
+
+As Sandy, I want a gig's page to list its songs by section, each opening that song's page,
+so that I can see what we're playing and read any song in it without leaving the gig.
+
+**Acceptance criteria**
+1. `/gigs/:setlistId` keeps its title, date and "Back to gigs" link from 7.7. Beneath them it
+   lists the setlist's songs in stored order, grouped by section. Each section with a
+   non-blank name shows that name as a small heading above its songs; a blank name shows no
+   heading. A section with no songs is left out.
+2. Each song shows its `titleSnapshot` (no Songs-table lookup) as a large tap target in
+   generous type, using existing `STYLE.md` roles, and links to
+   `/gigs/:setlistId/songs/:songId`.
+3. With no songs in any section, the gig page shows a plain one-line empty-state message in
+   place of the list.
+4. `/gigs/:setlistId/songs/:songId` shows the same content as `/songs/:songId` (7.5), with
+   "Back to gig" linking to `/gigs/:setlistId` in place of "Back to songs", and no "Edit"
+   link. Loading, error and "Song not found" behave as on the song page, with the
+   "Back to gig" link.
+5. `/songs/:songId` is unchanged (still "Back to songs" and "Edit").
+6. `/gigs/:setlistId/songs/:songId` is a valid route (amends 7.1 AC3); signed out, it shows
+   the existing login.
+7. No per-gig annotations, previous/next song, performance mode, reordering or setlist
+   editing. No change to `api/`, `shared/` or `infra/`; uses the existing hooks.
+8. Same responsive and theming rules as 7.1 (360px–1680px with no horizontal scroll,
+   light/dark via `prefers-color-scheme`, WCAG AA contrast).
+9. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass. Unit tests cover section
+   headings (including a blank name and an empty section), song order, the empty state, gig →
+   song → "Back to gig", and the gig song page having no "Edit" link. `e2e/smoke` checks
+   `/gigs/:setlistId/songs/:songId` ends on the login when signed out.
+10. Deployed to gig.cormie.com via the normal pipeline.
