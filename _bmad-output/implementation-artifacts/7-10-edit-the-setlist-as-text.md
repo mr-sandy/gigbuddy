@@ -3,7 +3,7 @@ baseline_commit: 393fb941f23f7a189bced0e8d2e92500a11e31f8
 ---
 # Story 7.10: Edit the setlist as text
 
-Status: review
+Status: done
 
 <!-- Source: epics.md "Epic 7 / Story 7.10". Pattern: Story 7.9 (gig-edit.tsx), including the 7.6 review fix (step back in history on leaving an edit). -->
 
