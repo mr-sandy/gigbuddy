@@ -4,7 +4,7 @@ baseline_commit: c9910c1
 
 # Story 7.14: Play a gig song by song
 
-Status: ready-for-dev
+Status: review
 
 <!-- Source: epics.md "Epic 7 / Story 7.14". Builds on 7.8 (setlist on the gig page, gig song page). -->
 
@@ -48,8 +48,8 @@ so that I can move to the next song on stage without going back to the gig list 
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Position helper** (AC: 1, 3, 6)
-  - [ ] New `web/src/lib/gig-position.ts` (+ `gig-position.test.ts`). Pure functions, no React:
+- [x] **Task 1: Position helper** (AC: 1, 3, 6)
+  - [x] New `web/src/lib/gig-position.ts` (+ `gig-position.test.ts`). Pure functions, no React:
     ```ts
     import type { Setlist, SongRef } from '@gigbuddy/shared';
 
@@ -67,22 +67,22 @@ so that I can move to the next song on stage without going back to the gig list 
     export function gigSongPath(setlistId: string, order: SongRef[], index: number): string;
     // → `/gigs/${setlistId}/songs/${order[index].songId}?at=${index + 1}`
     ```
-  - [ ] `at` parsing: accept only a whole number string (`/^\d+$/`) in `1..order.length`.
+  - [x] `at` parsing: accept only a whole number string (`/^\d+$/`) in `1..order.length`.
     `"0"`, `"-1"`, `"2.5"`, `"abc"`, `""`, `null` and out-of-range all fall back.
-  - [ ] Tests: two sections flattened in order; a repeated song resolves to the `at` given
+  - [x] Tests: two sections flattened in order; a repeated song resolves to the `at` given
     (both occurrences); `at` pointing at a different song → first appearance; each bad `at`
     form above → first appearance; song not in setlist → `null`; empty setlist → `null`;
     `gigSongPath` output. Placeholder ids only.
 
-- [ ] **Task 2: Gig page links carry `at`** (AC: 1)
-  - [ ] `web/src/routes/gig.tsx` `SetlistSections`: build each link with `gigSongPath`. Keep a
+- [x] **Task 2: Gig page links carry `at`** (AC: 1)
+  - [x] `web/src/routes/gig.tsx` `SetlistSections`: build each link with `gigSongPath`. Keep a
     running flat index across sections (e.g. compute `playOrder` once and an offset per
     section, or a counter outside the map). Nothing else on the gig page changes.
-  - [ ] Update `gig.test.tsx` href expectations to include `?at=<n>`, including a repeated
+  - [x] Update `gig.test.tsx` href expectations to include `?at=<n>`, including a repeated
     song getting two different `at` values and a second-section song continuing the count.
 
-- [ ] **Task 3: Bottom bar on the gig song page** (AC: 2, 3, 4, 5, 6, 7)
-  - [ ] Copy: append to `web/src/lib/microcopy.ts` a block commented
+- [x] **Task 3: Bottom bar on the gig song page** (AC: 2, 3, 4, 5, 6, 7)
+  - [x] Copy: append to `web/src/lib/microcopy.ts` a block commented
     `/* Story 7.14 — play a gig song by song. */`:
     ```ts
     export const GIG_PLAY = {
@@ -93,14 +93,14 @@ so that I can move to the next song on stage without going back to the gig list 
     ```
     (Check how existing microcopy handles parameterised strings first and follow that if a
     pattern exists.)
-  - [ ] `web/src/routes/song.tsx`: when `setlistId` is set, also call
+  - [x] `web/src/routes/song.tsx`: when `setlistId` is set, also call
     `useSetlistOrCached(setlistId)` and read `at` with `useSearchParams` (from `react-router`).
     Compute `order = playOrder(setlist)` and `place = resolvePlace(order, songId, at)`.
     Render the bar only when `setlist` and `place !== null`. This is independent of whether
     the song record loaded (AC5): render it outside the `song ? … : statusLine` branch.
-  - [ ] Keep the bar in a small local component in `song.tsx` (e.g. `GigPlayBar`), as 7.8 did
+  - [x] Keep the bar in a small local component in `song.tsx` (e.g. `GigPlayBar`), as 7.8 did
     with `SetlistSections`. No new shared component.
-  - [ ] Bar layout:
+  - [x] Bar layout:
     - Outer: `fixed inset-x-0 bottom-0`, background `var(--color-bg)`, 1px top border in
       `var(--color-text-secondary)` (not the hairline token: it is transparent in dark mode),
       bottom padding `env(safe-area-inset-bottom)` (`index.html` already has
@@ -115,30 +115,30 @@ so that I can move to the next song on stage without going back to the gig list 
     - Inert end (AC4): render the same label as a `<span aria-disabled="true">` in secondary
       text, no underline, same box size so nothing shifts. Not a link, not a button, no
       handler.
-  - [ ] Content clearance (AC2): when the bar shows, give the page enough bottom padding that
+  - [x] Content clearance (AC2): when the bar shows, give the page enough bottom padding that
     the last chart line can scroll above the bar, e.g. a wrapper or spacer with
     `pb-[calc(var(--spacing-tap)+var(--spacing-unit)*4+env(safe-area-inset-bottom))]`. Don't
     change `authenticated-shell.tsx`.
-  - [ ] Scroll to top (AC3): there is no `ScrollRestoration` in the app, and Next re-renders
+  - [x] Scroll to top (AC3): there is no `ScrollRestoration` in the app, and Next re-renders
     the same mounted `Song` component, so the scroll position would carry over. Add
     `useEffect(() => { window.scrollTo(0, 0); }, [songId, at])` in `song.tsx`. (Biome may flag
     the extra deps as unnecessary; if so, keep them with a `biome-ignore` comment explaining
     they are the trigger.)
-  - [ ] `/songs/:songId` (no `setlistId`): `useSetlistOrCached` must not fire a request. Check
+  - [x] `/songs/:songId` (no `setlistId`): `useSetlistOrCached` must not fire a request. Check
     `useSetlist(null)` is disabled (it takes `setlistId ?? null`), and `useSetlists` is cached
     list data; acceptable. If `useSetlistOrCached` with `undefined` would show a status line
     or fetch, guard it. No bar, nothing else changes (AC7).
-  - [ ] Update the header comment of `song.tsx` with one line about the bar.
+  - [x] Update the header comment of `song.tsx` with one line about the bar.
 
-- [ ] **Task 4: Style guide** (AC: 9)
-  - [ ] `STYLE.md`, under "Spacing and tap targets", add a "Bottom bar" bullet: fixed to the
+- [x] **Task 4: Style guide** (AC: 9)
+  - [x] `STYLE.md`, under "Spacing and tap targets", add a "Bottom bar" bullet: fixed to the
     bottom on the gig song page; page background; 1px top border in secondary text colour;
     links at Row size, at least 44px; position at Body size, secondary; an unavailable action
     shows as secondary text, not a link; content is padded so nothing hides under it. No
     token changes.
 
-- [ ] **Task 5: Tests** (AC: 10)
-  - [ ] `song.test.tsx`: also mock `../hooks/use-setlist.js` and `../hooks/use-setlists.js`
+- [x] **Task 5: Tests** (AC: 10)
+  - [x] `song.test.tsx`: also mock `../hooks/use-setlist.js` and `../hooks/use-setlists.js`
     (same pattern as `gig.test.tsx`). Fixture: two sections, three songs total, one songId
     repeated. Cover:
     - middle song: Previous and Next links with correct `href` (including `?at=`), "2 of 3";
@@ -149,19 +149,19 @@ so that I can move to the next song on stage without going back to the gig list 
     - setlist not loaded → no bar; song not in setlist → no bar;
     - `/songs/:songId` → no Previous/Next;
     - existing tests keep passing (add a default setlist mock in `beforeEach` if needed).
-  - [ ] `app-bootstrap.test.tsx`: extend the gig → song journey with a second song in the stub
+  - [x] `app-bootstrap.test.tsx`: extend the gig → song journey with a second song in the stub
     setlist (full Zod shape for `/songs/s2`). From `Test Tune`, click Next, expect the second
     song's `h1`; click "Back to gig", expect the gig `h1`.
-  - [ ] No e2e change needed (route unchanged; query string doesn't affect the auth redirect).
-  - [ ] Placeholder names only (`Test Tune`, `Second Test Tune`, `Set 1`). No snapshot tests.
+  - [x] No e2e change needed (route unchanged; query string doesn't affect the auth redirect).
+  - [x] Placeholder names only (`Test Tune`, `Second Test Tune`, `Set 1`). No snapshot tests.
 
 - [ ] **Task 6: Verify, commit, deploy** (AC: 8, 10, 11)
-  - [ ] `git diff --stat HEAD -- api shared infra` is empty.
-  - [ ] `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass.
+  - [x] `git diff --stat HEAD -- api shared infra` is empty.
+  - [x] `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass.
   - [ ] Commit after code review, one commit: `Implement story 7.14: Play a gig song by song`.
     Push to `main` only with Sandy's go-ahead; watch `deploy.yml` with `gh run watch`. If the
     blackout check blocks, report it; don't use `deploy-force.yml` unless Sandy says so.
-  - [ ] Set the story to `review`. No screenshots and no manual checklist for Sandy.
+  - [x] Set the story to `review`. No screenshots and no manual checklist for Sandy.
 
 ## Dev Notes
 
@@ -252,14 +252,30 @@ New: `web/src/lib/gig-position.ts` (+ test). Updated: `web/src/routes/song.tsx` 
 
 ### Agent Model Used
 
+claude-sonnet-5-5
+
 ### Debug Log References
 
 ### Completion Notes List
 
+- Position helper (`playOrder`, `resolvePlace`, `gigSongPath`) is pure; gig links and the song page bar both use it. `GigPlayBar` is local to `song.tsx`; Previous/Next use `<Link replace>`; ends render `<span aria-disabled>`. `useSetlistOrCached(undefined)` doesn't fetch (`useSetlist(null)` disabled), so `/songs/:songId` is unchanged. Scroll-to-top via `useEffect` on `[songId, at]` (biome-ignore for the trigger deps).
+- Lint, typecheck, test (all workspaces) and build pass; `api/`, `shared/`, `infra/` untouched. Commit and deploy left for after code review (Task 6).
 - Ultimate context engine analysis completed - comprehensive developer guide created (2026-10-26).
 
 ### File List
 
+- web/src/lib/gig-position.ts (new)
+- web/src/lib/gig-position.test.ts (new)
+- web/src/lib/microcopy.ts
+- web/src/routes/gig.tsx
+- web/src/routes/gig.test.tsx
+- web/src/routes/song.tsx
+- web/src/routes/song.test.tsx
+- web/src/app-bootstrap.test.tsx
+- STYLE.md
+- _bmad-output/implementation-artifacts/sprint-status.yaml
+
 ### Change Log
 
 - 2026-10-26: Story created; status → ready-for-dev.
+- 2026-10-26: Implemented gig play bar (Tasks 1–5); status → review.

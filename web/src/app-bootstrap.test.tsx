@@ -165,7 +165,15 @@ describe('AppBootstrap', () => {
       bandId: 'jack-ruby-5',
       setlistId: 'g1',
       gigMeta: { venue: 'Test Venue', date: '2026-11-07' },
-      sections: [{ name: 'Set 1', songs: [{ songId: 's1', titleSnapshot: 'Test Tune' }] }],
+      sections: [
+        {
+          name: 'Set 1',
+          songs: [
+            { songId: 's1', titleSnapshot: 'Test Tune' },
+            { songId: 's2', titleSnapshot: 'Second Test Tune' },
+          ],
+        },
+      ],
       clientWrittenAt: '2026-10-19T10:00:00.000Z',
       serverReceivedAt: '2026-10-19T10:00:00.000Z',
       version: 1,
@@ -178,12 +186,17 @@ describe('AppBootstrap', () => {
       serverReceivedAt: '2026-10-19T10:00:00.000Z',
       version: 1,
     };
+    const song2 = { ...song, songId: 's2', title: 'Second Test Tune' };
+    window.scrollTo = vi.fn() as unknown as typeof window.scrollTo;
     fetchMock.mockImplementation((input: RequestInfo | URL) => {
       const url = String(input);
       if (url.includes('/auth/me') || url.endsWith('/me')) {
         return Promise.resolve(
           jsonResponse(200, { status: 'ok', data: { authenticated: true, daysUntilExpiry: 365 } }),
         );
+      }
+      if (url.includes('/songs/s2')) {
+        return Promise.resolve(jsonResponse(200, { status: 'ok', data: song2 }));
       }
       if (url.includes('/songs/s1')) {
         return Promise.resolve(jsonResponse(200, { status: 'ok', data: song }));
@@ -202,6 +215,10 @@ describe('AppBootstrap', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Test Venue' })).toBeInTheDocument();
     await userEvent.click(await screen.findByRole('link', { name: 'Test Tune' }));
     expect(await screen.findByRole('heading', { level: 1, name: 'Test Tune' })).toBeInTheDocument();
+    await userEvent.click(await screen.findByRole('link', { name: 'Next' }));
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Second Test Tune' }),
+    ).toBeInTheDocument();
     await userEvent.click(screen.getByRole('link', { name: 'Back to gig' }));
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Test Venue' }),

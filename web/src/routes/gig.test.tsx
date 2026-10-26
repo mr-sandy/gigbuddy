@@ -99,7 +99,10 @@ describe('Gig', () => {
 
     it('lists songs by section in stored order, linking into the gig', () => {
       setup([
-        { name: 'Set 1', songs: [song('s2', 'Tune B'), song('s1', 'Tune A')] },
+        {
+          name: 'Set 1',
+          songs: [song('s2', 'Tune B'), song('s1', 'Tune A'), song('s2', 'Tune B')],
+        },
         { name: 'Set 2', songs: [song('s3', 'Tune C')] },
       ]);
       expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual([
@@ -114,11 +117,12 @@ describe('Gig', () => {
             l.textContent !== GIG_FORM.editLink &&
             l.textContent !== SETLIST_TEXT.editLink,
         );
-      expect(links.map((l) => l.textContent)).toEqual(['Tune B', 'Tune A', 'Tune C']);
+      expect(links.map((l) => l.textContent)).toEqual(['Tune B', 'Tune A', 'Tune B', 'Tune C']);
       expect(links.map((l) => l.getAttribute('href'))).toEqual([
-        '/gigs/g1/songs/s2',
-        '/gigs/g1/songs/s1',
-        '/gigs/g1/songs/s3',
+        '/gigs/g1/songs/s2?at=1',
+        '/gigs/g1/songs/s1?at=2',
+        '/gigs/g1/songs/s2?at=3',
+        '/gigs/g1/songs/s3?at=4',
       ]);
     });
 

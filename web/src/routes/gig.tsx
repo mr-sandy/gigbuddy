@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router';
 import { PageTitle } from '../components/page-title.js';
 import { useSetlistOrCached } from '../hooks/use-setlist-or-cached.js';
 import { formatGigDate } from '../lib/gig-date.js';
+import { gigSongPath, playOrder } from '../lib/gig-position.js';
 import { GIG_FORM, GIG_SETLIST, GIGS, SETLIST_TEXT } from '../lib/microcopy.js';
 
 /*
@@ -19,9 +20,13 @@ function SetlistSections({ setlist }: { setlist: Setlist }) {
       </p>
     );
   }
+  const order = playOrder(setlist);
+  let offset = 0;
   return (
     <>
       {setlist.sections.map((section, sectionIndex) => {
+        const start = offset;
+        offset += section.songs.length;
         if (section.songs.length === 0) return null;
         const name = section.name.trim();
         return (
@@ -42,7 +47,7 @@ function SetlistSections({ setlist }: { setlist: Setlist }) {
                   className="border-b border-[color:var(--color-border-hairline)]"
                 >
                   <Link
-                    to={`/gigs/${setlist.setlistId}/songs/${song.songId}`}
+                    to={gigSongPath(setlist.setlistId, order, start + songIndex)}
                     className="block min-h-tap py-[calc(var(--spacing-unit)*3)] text-[length:var(--text-row)] leading-[var(--text-row--line-height)] text-[color:var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]"
                   >
                     {song.titleSnapshot}

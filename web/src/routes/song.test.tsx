@@ -1,15 +1,35 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
-import { describe, expect, it, vi } from 'vitest';
-import { GIG_SETLIST, SONG_FORM, SONGS } from '../lib/microcopy.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { GIG_PLAY, GIG_SETLIST, SONG_FORM, SONGS } from '../lib/microcopy.js';
 import { Song } from './song.js';
 
-const { useSongMock, useSongsMock } = vi.hoisted(() => ({
+const { useSongMock, useSongsMock, useSetlistMock, useSetlistsMock } = vi.hoisted(() => ({
   useSongMock: vi.fn(),
   useSongsMock: vi.fn(),
+  useSetlistMock: vi.fn(),
+  useSetlistsMock: vi.fn(),
 }));
 vi.mock('../hooks/use-song.js', () => ({ useSong: useSongMock }));
 vi.mock('../hooks/use-songs.js', () => ({ useSongs: useSongsMock }));
+vi.mock('../hooks/use-setlist.js', () => ({ useSetlist: useSetlistMock }));
+vi.mock('../hooks/use-setlists.js', () => ({ useSetlists: useSetlistsMock }));
+
+beforeEach(() => {
+  useSetlistMock.mockReturnValue({ data: undefined, isPending: true });
+  useSetlistsMock.mockReturnValue({ data: undefined, isPending: true });
+  window.scrollTo = vi.fn() as unknown as typeof window.scrollTo;
+});
+
+const ref = (songId: string) => ({ songId, titleSnapshot: `Title ${songId}` });
+const gigWith = () => ({
+  setlistId: 'g1',
+  gigMeta: { venue: 'Venue A', date: '2026-11-07' },
+  sections: [
+    { name: 'Set 1', songs: [ref('a'), ref('b')] },
+    { name: 'Set 2', songs: [ref('a')] },
+  ],
+});
 
 function renderSong() {
   return render(
@@ -21,9 +41,9 @@ function renderSong() {
   );
 }
 
-function renderGigSong() {
+function renderGigSong(entry = '/gigs/g1/songs/abc') {
   return render(
-    <MemoryRouter initialEntries={['/gigs/g1/songs/abc']}>
+    <MemoryRouter initialEntries={[entry]}>
       <Routes>
         <Route path="/gigs/:setlistId/songs/:songId" element={<Song />} />
       </Routes>
@@ -170,6 +190,77 @@ describe('Song', () => {
         'href',
         '/gigs/g1',
       );
+    });
+  });
+
+  describe('play bar', () => {
+    const setup = (songId: string, query = '', song: unknown = { songId, title: 'T' }) => {
+      useSongMock.mockReturnValue({ data: song, isPending: false });
+      useSongsMock.mockReturnValue({ data: [], isPending: false });
+      useSetlistMock.mockReturnValue({ data: gigWith() });
+      renderGigSong(`/gigs/g1/songs/${songId}${query}`);
+    };
+
+    it('in the middle shows both links and the position', () => {
+      setup('b');
+      expect(screen.getByRole('link', { name: GIG_PLAY.previous })).toHaveAttribute(
+        'href',
+        '/gigs/g1/songs/a?at=1',
+      );
+      expect(screen.getByRole('link', { name: GIG_PLAY.next })).toHaveAttribute(
+        'href',
+        '/gigs/g1/songs/a?at=3',
+      );
+      expect(screen.getByText('2 of 3')).toBeInTheDocument();
+    });
+
+    it('at the first song Previous is inert', () => {
+      setup('a', '?at=1');
+      expect(screen.queryByRole('link', { name: GIG_PLAY.previous })).not.toBeInTheDocument();
+      expect(screen.getByText(GIG_PLAY.previous)).toHaveAttribute('aria-disabled', 'true');
+      expect(screen.getByRole('link', { name: GIG_PLAY.next })).toHaveAttribute(
+        'href',
+        '/gigs/g1/songs/b?at=2',
+      );
+    });
+
+    it('at the last song Next is inert', () => {
+      setup('a', '?at=3');
+      expect(screen.getByText('3 of 3')).toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: GIG_PLAY.next })).not.toBeInTheDocument();
+      expect(screen.getByText(GIG_PLAY.next)).toHaveAttribute('aria-disabled', 'true');
+      expect(screen.getByRole('link', { name: GIG_PLAY.previous })).toBeInTheDocument();
+    });
+
+    it('a repeated song with no at shows its first place', () => {
+      setup('a');
+      expect(screen.getByText('1 of 3')).toBeInTheDocument();
+    });
+
+    it('still shows when the song record is not found', () => {
+      setup('b', '', null);
+      expect(screen.getByText(SONGS.notFound)).toBeInTheDocument();
+      expect(screen.getByText('2 of 3')).toBeInTheDocument();
+    });
+
+    it('is absent when the setlist has not loaded', () => {
+      useSongMock.mockReturnValue({ data: { songId: 'b', title: 'T' } });
+      useSongsMock.mockReturnValue({ data: undefined, isPending: true });
+      renderGigSong('/gigs/g1/songs/b');
+      expect(screen.queryByText(GIG_PLAY.next)).not.toBeInTheDocument();
+    });
+
+    it('is absent when the song is not in the setlist', () => {
+      setup('zzz');
+      expect(screen.queryByText(GIG_PLAY.next)).not.toBeInTheDocument();
+    });
+
+    it('is absent on /songs/:songId', () => {
+      useSongMock.mockReturnValue({ data: { songId: 'abc', title: 'T' } });
+      useSongsMock.mockReturnValue({ data: undefined, isPending: true });
+      renderSong();
+      expect(screen.queryByText(GIG_PLAY.next)).not.toBeInTheDocument();
+      expect(screen.queryByText(GIG_PLAY.previous)).not.toBeInTheDocument();
     });
   });
 });

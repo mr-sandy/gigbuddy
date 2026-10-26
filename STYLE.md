@@ -40,6 +40,10 @@ Rules:
 - Back link at the top of a page, then the page title 4px below it.
 - A group label inside a list (e.g. "Past") is Body, secondary text, with the 32px section
   gap above it.
+- Bottom bar (gig song page): fixed to the bottom, page background, 1px top border in secondary
+  text colour. Links at Row size, at least 44px; the position ("3 of 12") at Body size, secondary.
+  An unavailable action shows as secondary text, not a link. Content is padded so nothing hides
+  under the bar.
 
 ## Forms
 

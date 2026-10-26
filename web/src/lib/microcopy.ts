@@ -105,3 +105,10 @@ export const GIG_DELETE = {
   keep: 'Keep',
   failed: "Couldn't delete the gig. Check your connection and try again.",
 } as const;
+
+/* Story 7.14 — play a gig song by song. */
+export const GIG_PLAY = {
+  previous: 'Previous',
+  next: 'Next',
+  position: (n: number, total: number) => `${n} of ${total}`,
+} as const;
