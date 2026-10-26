@@ -4,7 +4,7 @@ baseline_commit: a049002
 
 # Story 7.16: Purge per-gig notes
 
-Status: review
+Status: done
 
 <!-- Source: epics.md "Epic 7 / Story 7.16" and the 2026-10-26 decisions under Epic 7. -->
 
@@ -110,18 +110,18 @@ so that setlists are just songs in order and there's one less thing to think abo
     the colour-never-alone line (~844). Add a one-line note where the setlist shape is
     described: "Per-gig notes removed in Story 7.16 (2026-10-26)." Don't rewrite anything
     else.
-- [ ] **Task 6: Verify, commit, deploy, purge** (AC 8, 9)
+- [x] **Task 6: Verify, commit, deploy, purge** (AC 8, 9)
   - [x] `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` all green.
   - [x] `git grep -n perGigAnnotation -- shared api/src web e2e` returns only the deliberate
     "old client sends it" / "stored item has it" test fixtures.
-  - [ ] After code review: commit `Implement story 7.16: Purge per-gig notes`, push, and let
+  - [x] After code review: commit `Implement story 7.16: Purge per-gig notes`, push, and let
     the normal pipeline deploy.
-  - [ ] Dry run against prod with Sandy's AWS credentials; **show Sandy the output and wait for
+  - [x] Dry run against prod with Sandy's AWS credentials; **show Sandy the output and wait for
     a go-ahead** before `--apply`. If the permission check blocks `--apply`, ask Sandy to run
     it (`! pnpm --filter api exec tsx scripts/purge-per-gig-notes.ts --apply`), as in 7.13.
-  - [ ] Order with the deploy doesn't matter (old code tolerates a missing note, new code
+  - [x] Order with the deploy doesn't matter (old code tolerates a missing note, new code
     strips one), but deploying first means no new note can be written after the purge.
-  - [ ] Note the dry-run time in the Change Log: it's the PITR restore point if a note is
+  - [x] Note the dry-run time in the Change Log: it's the PITR restore point if a note is
     wanted back.
 
 ## Dev Notes
@@ -235,3 +235,8 @@ Claude Sonnet 5.5
 - 2026-10-26: Code review (lightweight): clean. Two minor notes left as they are by Sandy (no
   write guard in the one-off purge script; the shared strip test parses a setlist, not an
   archive). Committed and pushed to deploy.
+- 2026-10-26: Committed fe34e4d; deploy run 40409337105 and CI green. Sandy ran the prod dry
+  run (9 setlists, 2 with notes, 5 notes: Big Ed's Wedding 2026-05-24, Howlin Wolf
+  2026-04-24) and then `--apply`: OK, no notes left. Restore point is just before the apply
+  run, 2026-10-26.
+- 2026-10-26: Sandy's live check: all good. Status → done.
