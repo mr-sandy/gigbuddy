@@ -2444,3 +2444,33 @@ in a setlist shared by text message and add, remove or reorder songs by editing 
     annotations, and Cancel. `e2e/smoke` checks the new route ends on the login when signed
     out.
 13. Deployed to gig.cormie.com via the normal pipeline.
+
+### Story 7.11: Delete a song
+
+As Sandy, I want to delete a song from the library, so that I can clear out duplicates and
+songs the band no longer plays.
+
+**Acceptance criteria**
+1. The song edit page (`/songs/:songId/edit`) gains a "Delete song" button, below Save/Cancel.
+   It is not shown when adding a song.
+2. Tapping it shows, on the same page, a plain line "Delete <title>?" with "Yes, delete" and
+   "Keep" buttons. "Keep" returns to the form as it was. Nothing is deleted without the
+   second tap.
+3. "Yes, delete" calls a new `DELETE /api/v1/songs/:songId`. On success the song is removed
+   from the app's cached song list and the app goes to `/songs`.
+4. The API refuses (409) to delete a song that appears in any setlist, and the page shows a
+   plain line naming those gigs (venue and date) so Sandy knows which setlists to edit first.
+   Nothing is deleted.
+5. The delete is a real delete of the song record (point-in-time recovery covers mistakes).
+   Deleting a song that no longer exists succeeds quietly.
+6. Delete needs a connection: it does not go through the offline outbox. Offline or on any
+   other failure, a plain line says the song wasn't deleted; the song is unchanged.
+7. A queued edit to the deleted song cannot recreate it later.
+8. `architecture.md` AR-12 gains a note: a single-song delete is allowed; bulk/admin delete
+   endpoints remain out of scope.
+9. No soft delete, undo, bulk delete, or deleting from the song list or song page.
+10. Same responsive and theming rules as 7.1.
+11. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass. API tests cover delete,
+    delete of a missing song, and the 409 with gig details; web tests cover confirm, Keep,
+    success, in-use and failure lines.
+12. Deployed to gig.cormie.com via the normal pipeline.
