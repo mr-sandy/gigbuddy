@@ -1,6 +1,10 @@
+---
+baseline_commit: ab242f994b91cd6a5111a0b539bf8b2b10669764
+---
+
 # Story 7.13: Key setlists by ID, not date
 
-Status: ready-for-dev
+Status: review
 
 <!-- Source: epics.md "Epic 7 / Story 7.13" (revised 2026-10-26: fix the key, not the symptom). -->
 
@@ -21,55 +25,55 @@ architecture.md key docs updated; no record-shape, web or infra change.
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: DDB wrapper** (AC 1–4) — `api/src/ddb/setlists.ts`
-  - [ ] `setlistKey(bandId, setlistId)` → `{ pk: BAND#<bandId>, sk: SETLIST#<setlistId> }` (drop
+- [x] **Task 1: DDB wrapper** (AC 1–4) — `api/src/ddb/setlists.ts`
+  - [x] `setlistKey(bandId, setlistId)` → `{ pk: BAND#<bandId>, sk: SETLIST#<setlistId> }` (drop
     the date parameter). `setlistGsi1Key` unchanged.
-  - [ ] `getSetlist`: `GetCommand` with `Key: setlistKey(bandId, setlistId)`; no `Item` →
+  - [x] `getSetlist`: `GetCommand` with `Key: setlistKey(bandId, setlistId)`; no `Item` →
     `undefined`; otherwise `stripKeyAttrs(Item)` (still Zod-parses, so schema drift still throws).
-  - [ ] `putSetlist`: `PutCommand` with the new `sk` and the GSI1 key from `gigMeta.date`. A date
+  - [x] `putSetlist`: `PutCommand` with the new `sk` and the GSI1 key from `gigMeta.date`. A date
     change now overwrites the one item and moves `gsi1sk`. No condition expression needed — LWW
     stays in the route.
-  - [ ] `deleteSetlist`: one `DeleteCommand` on `setlistKey(...)`. Deleting a missing key is a
+  - [x] `deleteSetlist`: one `DeleteCommand` on `setlistKey(...)`. Deleting a missing key is a
     DDB no-op, so "missing gig succeeds quietly" (7.12 AC) still holds with no extra read.
-  - [ ] Remove `QueryCommand` usage from get/delete (`listSetlistsByBand` keeps its GSI1 query).
+  - [x] Remove `QueryCommand` usage from get/delete (`listSetlistsByBand` keeps its GSI1 query).
     Rewrite the module header comment: new key table, and replace the "getSetlist uses Query not
     GetCommand" trade-off paragraph with one line saying the date lives only in `gsi1sk` so a
     date change can't leave a copy (Story 7.13).
-- [ ] **Task 2: Tests** (AC 7)
-  - [ ] `api/src/ddb/setlists.test.ts`: `rawItem` uses the new `sk`. Replace the `getSetlist`
+- [x] **Task 2: Tests** (AC 7)
+  - [x] `api/src/ddb/setlists.test.ts`: `rawItem` uses the new `sk`. Replace the `getSetlist`
     Query tests with `GetCommand` tests: returns parsed setlist (key attrs stripped), `undefined`
     when no `Item`, throws on malformed item, sends `Key: { pk, sk: SETLIST#<id> }`. `putSetlist`:
     new `sk`; **date change** — two puts with different dates send the same `Key`/`sk` and
     different `gsi1sk`. `deleteSetlist`: exactly one `DeleteCommand` with the new key, no
     `QueryCommand`. Drop the "every copy" and pagination-for-get tests.
-  - [ ] `api/src/routes/setlists.test.ts` (mocks the ddb module): existing PUT tests already cover
+  - [x] `api/src/routes/setlists.test.ts` (mocks the ddb module): existing PUT tests already cover
     unchanged date (apply) and stale write (`dropped-as-stale`, `putSetlist` not called). Add one:
     PUT with a changed `gigMeta.date` and newer `clientWrittenAt` → `applied` and `putSetlist`
     called once with the new date. Delete route tests stay as they are.
-  - [ ] Fixture tidy: `sk` in `api/src/ddb/gigs.test.ts` (lines ~39, ~109) → `SETLIST#<id>`
+  - [x] Fixture tidy: `sk` in `api/src/ddb/gigs.test.ts` (lines ~39, ~109) → `SETLIST#<id>`
     (cosmetic; `listUpcomingGigs` reads GSI1 only). `gigs.ts` needs no change.
-- [ ] **Task 3: Migration script** (AC 5) — `api/scripts/migrate-setlist-keys.ts`, run with
+- [x] **Task 3: Migration script** (AC 5) — `api/scripts/migrate-setlist-keys.ts`, run with
   `pnpm --filter api exec tsx scripts/migrate-setlist-keys.ts [--apply]`, `--region eu-west-2`
   via `AWS_REGION=eu-west-2`, table `gigbuddy-data` (or `TABLE_NAME` env), band `ACTIVE_BAND_ID`
   from `@gigbuddy/shared`.
-  - [ ] Query `pk = BAND#<bandId> AND begins_with(sk, 'SETLIST#')` (paginate). Group by
+  - [x] Query `pk = BAND#<bandId> AND begins_with(sk, 'SETLIST#')` (paginate). Group by
     `setlistId`. Winner per group = latest `clientWrittenAt` (tie → latest `serverReceivedAt`).
-  - [ ] Default (no `--apply`) is a dry run: print one line per `setlistId` — venue, date, item
+  - [x] Default (no `--apply`) is a dry run: print one line per `setlistId` — venue, date, item
     count, and the `sk`s — flagging groups with more than one item, then totals. Change nothing.
-  - [ ] `--apply`: for each group, `PutCommand` the winner (record fields, untouched) under the
+  - [x] `--apply`: for each group, `PutCommand` the winner (record fields, untouched) under the
     new key + `setlistGsi1Key` from its own date, **then** `DeleteCommand` every item in the
     group whose `sk` ≠ the new `sk`. Put-before-delete means nothing is lost if it stops halfway;
     re-running is harmless. Print what it did and end with the remaining item count per
     `setlistId` (must be 1).
-  - [ ] Keep it self-contained (lib-dynamodb directly; build key strings inline with a comment
+  - [x] Keep it self-contained (lib-dynamodb directly; build key strings inline with a comment
     pointing at `ddb/setlists.ts`). It lives outside `src/`, so it isn't bundled into the Lambda
     and isn't in the api `tsc` include — it must still pass `pnpm lint` (Biome covers it).
     Header comment: one-off for Story 7.13, not app code.
-- [ ] **Task 4: Docs** (AC 6) — `_bmad-output/planning-artifacts/architecture.md` line ~227
+- [x] **Task 4: Docs** (AC 6) — `_bmad-output/planning-artifacts/architecture.md` line ~227
   (item shapes) and line ~503 (key prefixes): `SETLIST#<isoDate>#<setlistId>` →
   `SETLIST#<setlistId>`; add `gsi1sk = <isoDate>#<setlistId>` beside the setlist item shape
   so it's clear where the date ordering lives.
-- [ ] **Task 5: Verify** (AC 7): `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`.
+- [x] **Task 5: Verify** (AC 7): `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`.
 - [ ] **Task 6: Migrate, then deploy** (AC 5, 8) — after code review, in this order:
   1. Commit the story (do **not** push yet — push to `main` triggers `deploy.yml`).
   2. Check the deploy won't be blocked by the gig blackout window (Story 1.6): no gig today or
@@ -116,10 +120,28 @@ architecture.md key docs updated; no record-shape, web or infra change.
 
 ### Agent Model Used
 
+Claude Sonnet 5.5
+
 ### Completion Notes List
 
+- Tasks 1–5 done: setlist `sk` is now `SETLIST#<setlistId>`; `getSetlist` is a `GetCommand`, `deleteSetlist` a single `DeleteCommand`; `gsi1sk` unchanged. DDB, route and fixture tests updated/added (date-change overwrite, route PUT with changed date). `pnpm lint`, `typecheck`, `test`, `build` all green.
+- Migration script written (`api/scripts/migrate-setlist-keys.ts`), **not yet run** against prod.
+- Task 6 (commit → dry run shown to Sandy → `--apply` → push/deploy) is deliberately left open: it follows code review and needs Sandy's go-ahead on the dry-run output. 7.12 was already `done` in sprint-status.
+
 ### File List
+
+- api/src/ddb/setlists.ts
+- api/src/ddb/setlists.test.ts
+- api/src/ddb/gigs.test.ts
+- api/src/routes/setlists.test.ts
+- api/scripts/migrate-setlist-keys.ts (new)
+- biome.json (lint api/scripts)
+- _bmad-output/planning-artifacts/architecture.md
+- _bmad-output/implementation-artifacts/7-13-key-setlists-by-id-not-date.md
+- _bmad-output/implementation-artifacts/sprint-status.yaml
 
 ### Change Log
 
 - 2026-10-26: Story created; status → ready-for-dev.
+- 2026-10-26: Implemented tasks 1–5; status → review (Task 6 migrate + deploy pending code review).
+- 2026-10-26: Code review (lightweight). Fixed: Biome wasn't linting `api/scripts/` (added to `biome.json`); dry run now marks the kept copy with `*`; header no longer suggests `AWS_REGION` (region is fixed). Lint green.

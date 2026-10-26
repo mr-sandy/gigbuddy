@@ -36,7 +36,7 @@ function rawItem(setlist: Setlist) {
   const { bandId, setlistId, gigMeta } = setlist;
   return {
     pk: `BAND#${bandId}`,
-    sk: `SETLIST#${gigMeta.date}#${setlistId}`,
+    sk: `SETLIST#${setlistId}`,
     gsi1pk: `BAND#${bandId}#SETLIST_BY_DATE`,
     gsi1sk: `${gigMeta.date}#${setlistId}`,
     ...setlist,
@@ -106,7 +106,7 @@ describe('listUpcomingGigs', () => {
       Items: [
         {
           pk: `BAND#${BAND_ID}`,
-          sk: `SETLIST#${TODAY}#${SETLIST_ID}`,
+          sk: `SETLIST#${SETLIST_ID}`,
           gsi1pk: `BAND#${BAND_ID}#SETLIST_BY_DATE`,
           gsi1sk: `${TODAY}#${SETLIST_ID}`,
           setlistId: SETLIST_ID,

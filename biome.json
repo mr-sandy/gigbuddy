@@ -10,6 +10,7 @@
       "web/src/**",
       "web/pwa-assets.config.ts",
       "api/src/**",
+      "api/scripts/**",
       "shared/src/**",
       "infra/bin/**",
       "infra/lib/**",

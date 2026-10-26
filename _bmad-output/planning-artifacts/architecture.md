@@ -224,7 +224,7 @@ pk = BAND#<bandId>, sk = SONG#<songId>
   { title, key, patch, chordChart, performanceNotes, practiceNotes,
     clientWrittenAt, serverReceivedAt, version }                            (song record)
 
-pk = BAND#<bandId>, sk = SETLIST#<isoDate>#<setlistId>
+pk = BAND#<bandId>, sk = SETLIST#<setlistId>
   { gigMeta: { venue, date, time },
     sections: [
       { name, songs: [{ songId, titleSnapshot, perGigAnnotation? }, ...] },
@@ -500,7 +500,7 @@ These patterns lock the choices AI dev agents would otherwise re-invent per stor
 
 **DynamoDB partition/sort keys:**
 - `SCREAMING_SNAKE_CASE` type prefix with `#` separator
-- `BAND#<bandId>`, `SONG#<songId>`, `SETLIST#<isoDate>#<setlistId>`, `SETLIST_BY_DATE`, `REGISTRY`
+- `BAND#<bandId>`, `SONG#<songId>`, `SETLIST#<setlistId>`, `SETLIST_BY_DATE`, `REGISTRY`
 - IDs use NanoID (16-char URL-safe), never UUIDs or auto-incrementing ints
 
 **API routes:**

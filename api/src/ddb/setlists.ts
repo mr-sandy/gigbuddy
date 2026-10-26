@@ -1,4 +1,4 @@
-import { DeleteCommand, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import { DeleteCommand, GetCommand, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { type Setlist, SetlistSchema } from '@gigbuddy/shared';
 import { getDocClient, getTableName } from './client.js';
 
@@ -10,24 +10,17 @@ import { getDocClient, getTableName } from './client.js';
  *
  * Key derivation:
  *   pk      = BAND#<bandId>
- *   sk      = SETLIST#<gigMeta.date>#<setlistId>
+ *   sk      = SETLIST#<setlistId>
  *   gsi1pk  = BAND#<bandId>#SETLIST_BY_DATE
  *   gsi1sk  = <gigMeta.date>#<setlistId>
  *
- * Trade-off — getSetlist uses Query not GetCommand:
- *   The sk includes <isoDate>. A GetCommand requires the full, exact sk,
- *   but `getSetlist(bandId, setlistId)` has no isoDate at call time (the
- *   route only receives :setlistId from the path). We query the partition
- *   `pk = BAND#<bandId>` with `begins_with(sk, 'SETLIST#')` and filter the
- *   returned Items by setlistId. At V1 single-tenant volume (≤ a few
- *   hundred setlists per band) this is comfortable. Future alternatives:
- *   add a SETLIST_META# item pointing to the canonical sk, or change the
- *   sk shape — both are infra changes outside Story 3.1's scope.
+ * The date lives only in gsi1sk, so changing a gig's date overwrites the
+ * same item and can't leave a stale copy behind (Story 7.13).
  */
 const GSI1_INDEX_NAME = 'GSI1';
 
-function setlistKey(bandId: string, isoDate: string, setlistId: string) {
-  return { pk: `BAND#${bandId}`, sk: `SETLIST#${isoDate}#${setlistId}` };
+function setlistKey(bandId: string, setlistId: string) {
+  return { pk: `BAND#${bandId}`, sk: `SETLIST#${setlistId}` };
 }
 
 function setlistGsi1Key(bandId: string, isoDate: string, setlistId: string) {
@@ -50,28 +43,10 @@ function stripKeyAttrs(item: Record<string, unknown>): Setlist {
 }
 
 export async function getSetlist(bandId: string, setlistId: string): Promise<Setlist | undefined> {
-  // Query the partition for items whose sk begins with 'SETLIST#', then
-  // filter by setlistId in memory. See module-level comment for the
-  // trade-off rationale (no isoDate at call time → cannot Get directly).
-  const client = getDocClient();
-  let cursor: Record<string, unknown> | undefined;
-  do {
-    const result = await client.send(
-      new QueryCommand({
-        TableName: getTableName(),
-        KeyConditionExpression: 'pk = :pk AND begins_with(sk, :skPrefix)',
-        ExpressionAttributeValues: { ':pk': `BAND#${bandId}`, ':skPrefix': 'SETLIST#' },
-        ExclusiveStartKey: cursor,
-      }),
-    );
-    for (const item of result.Items ?? []) {
-      if (typeof item.setlistId === 'string' && item.setlistId === setlistId) {
-        return stripKeyAttrs(item);
-      }
-    }
-    cursor = result.LastEvaluatedKey as Record<string, unknown> | undefined;
-  } while (cursor);
-  return undefined;
+  const result = await getDocClient().send(
+    new GetCommand({ TableName: getTableName(), Key: setlistKey(bandId, setlistId) }),
+  );
+  return result.Item ? stripKeyAttrs(result.Item) : undefined;
 }
 
 export async function putSetlist(record: Setlist): Promise<void> {
@@ -80,7 +55,7 @@ export async function putSetlist(record: Setlist): Promise<void> {
     new PutCommand({
       TableName: getTableName(),
       Item: {
-        ...setlistKey(record.bandId, date, record.setlistId),
+        ...setlistKey(record.bandId, record.setlistId),
         ...setlistGsi1Key(record.bandId, date, record.setlistId),
         ...record,
       },
@@ -89,31 +64,10 @@ export async function putSetlist(record: Setlist): Promise<void> {
 }
 
 export async function deleteSetlist(bandId: string, setlistId: string): Promise<void> {
-  // Story 7.12: delete every item with this setlistId, not just the first.
-  // A gig date change (Story 7.9) writes a new sk and can leave an old-date
-  // copy behind; deleting only one would let that copy bring the gig back.
-  const client = getDocClient();
-  const keys: { pk: string; sk: string }[] = [];
-  let cursor: Record<string, unknown> | undefined;
-  do {
-    const result = await client.send(
-      new QueryCommand({
-        TableName: getTableName(),
-        KeyConditionExpression: 'pk = :pk AND begins_with(sk, :skPrefix)',
-        ExpressionAttributeValues: { ':pk': `BAND#${bandId}`, ':skPrefix': 'SETLIST#' },
-        ExclusiveStartKey: cursor,
-      }),
-    );
-    for (const item of result.Items ?? []) {
-      if (item.setlistId === setlistId) {
-        keys.push({ pk: item.pk as string, sk: item.sk as string });
-      }
-    }
-    cursor = result.LastEvaluatedKey as Record<string, unknown> | undefined;
-  } while (cursor);
-  for (const key of keys) {
-    await client.send(new DeleteCommand({ TableName: getTableName(), Key: key }));
-  }
+  // Deleting a missing key is a DDB no-op, so a missing gig succeeds quietly.
+  await getDocClient().send(
+    new DeleteCommand({ TableName: getTableName(), Key: setlistKey(bandId, setlistId) }),
+  );
 }
 
 export async function listSetlistsByBand(bandId: string): Promise<Setlist[]> {

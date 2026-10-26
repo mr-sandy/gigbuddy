@@ -186,6 +186,24 @@ describe('PUT /api/v1/setlists/:setlistId', () => {
     expect(putSetlistMock).toHaveBeenCalledWith(body.data);
   });
 
+  it('applies a PUT that changes gigMeta.date and writes the new date once', async () => {
+    const existing = makeSetlist({ clientWrittenAt: '2026-06-19T10:00:00.000Z' });
+    getSetlistMock.mockResolvedValue(existing);
+    putSetlistMock.mockResolvedValue(undefined);
+    const input = putInput({
+      clientWrittenAt: '2026-06-20T10:00:00.000Z',
+      gigMeta: { ...existing.gigMeta, date: '2026-08-09' },
+    });
+    const res = await authedRequest(`/api/v1/setlists/${SETLIST_ID_A}`, {
+      method: 'PUT',
+      body: JSON.stringify(input),
+    });
+    const body = (await res.json()) as { status: string };
+    expect(body.status).toBe('applied');
+    expect(putSetlistMock).toHaveBeenCalledTimes(1);
+    expect(putSetlistMock.mock.calls[0]?.[0].gigMeta.date).toBe('2026-08-09');
+  });
+
   it('returns 200 applied when incoming clientWrittenAt >= existing (same-timestamp wins)', async () => {
     const existing = makeSetlist({ clientWrittenAt: '2026-06-19T10:00:00.000Z' });
     getSetlistMock.mockResolvedValue(existing);

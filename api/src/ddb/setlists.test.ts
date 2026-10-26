@@ -1,4 +1,4 @@
-import { DeleteCommand, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import { DeleteCommand, GetCommand, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import type { Setlist } from '@gigbuddy/shared';
 import { mockClient } from 'aws-sdk-client-mock';
 import { beforeEach, describe, expect, it } from 'vitest';
@@ -43,7 +43,7 @@ function rawItem(setlist: Setlist) {
   const { bandId, setlistId, gigMeta } = setlist;
   return {
     pk: `BAND#${bandId}`,
-    sk: `SETLIST#${gigMeta.date}#${setlistId}`,
+    sk: `SETLIST#${setlistId}`,
     gsi1pk: `BAND#${bandId}#SETLIST_BY_DATE`,
     gsi1sk: `${gigMeta.date}#${setlistId}`,
     ...setlist,
@@ -56,70 +56,33 @@ beforeEach(() => {
 });
 
 describe('getSetlist', () => {
-  it('returns undefined when DDB returns no Items', async () => {
-    ddbMock.on(QueryCommand).resolves({ Items: [] });
-    const result = await getSetlist(BAND_ID, SETLIST_ID);
-    expect(result).toBeUndefined();
+  it('returns undefined when DDB returns no Item', async () => {
+    ddbMock.on(GetCommand).resolves({});
+    expect(await getSetlist(BAND_ID, SETLIST_ID)).toBeUndefined();
   });
 
-  it('returns a parsed Setlist when DDB returns a matching item (pk/sk/gsi attrs stripped)', async () => {
+  it('returns a parsed Setlist (pk/sk/gsi attrs stripped)', async () => {
     const setlist = makeSetlist();
-    ddbMock.on(QueryCommand).resolves({ Items: [rawItem(setlist)] });
-    const result = await getSetlist(BAND_ID, SETLIST_ID);
-    expect(result).toEqual(setlist);
-  });
-
-  it('returns undefined when no Item matches the setlistId (multiple setlists in partition)', async () => {
-    const other = makeSetlist({
-      setlistId: 'differentSetlistI',
-      gigMeta: { venue: 'X', date: '2026-07-01' },
-    });
-    ddbMock.on(QueryCommand).resolves({ Items: [rawItem(other)] });
-    const result = await getSetlist(BAND_ID, SETLIST_ID);
-    expect(result).toBeUndefined();
+    ddbMock.on(GetCommand).resolves({ Item: rawItem(setlist) });
+    expect(await getSetlist(BAND_ID, SETLIST_ID)).toEqual(setlist);
   });
 
   it('throws when DDB returns a malformed item (defends against schema drift)', async () => {
-    ddbMock.on(QueryCommand).resolves({
-      Items: [
-        {
-          pk: `BAND#${BAND_ID}`,
-          sk: `SETLIST#${ISO_DATE}#${SETLIST_ID}`,
-          setlistId: SETLIST_ID,
-          // missing required bandId / gigMeta / sections / etc.
-        },
-      ],
+    ddbMock.on(GetCommand).resolves({
+      Item: { pk: `BAND#${BAND_ID}`, sk: `SETLIST#${SETLIST_ID}`, setlistId: SETLIST_ID },
     });
     await expect(getSetlist(BAND_ID, SETLIST_ID)).rejects.toThrow();
   });
 
-  it('issues a QueryCommand on the main table with pk + begins_with(sk, "SETLIST#")', async () => {
-    ddbMock.on(QueryCommand).resolves({ Items: [] });
+  it('sends a GetCommand keyed on pk + SETLIST#<setlistId>', async () => {
+    ddbMock.on(GetCommand).resolves({});
     await getSetlist(BAND_ID, SETLIST_ID);
-    const calls = ddbMock.commandCalls(QueryCommand);
+    const calls = ddbMock.commandCalls(GetCommand);
     expect(calls).toHaveLength(1);
-    const input = calls[0]?.args[0].input;
-    expect(input).toMatchObject({
+    expect(calls[0]?.args[0].input).toMatchObject({
       TableName: 'gigbuddy-data-test',
-      KeyConditionExpression: 'pk = :pk AND begins_with(sk, :skPrefix)',
-      ExpressionAttributeValues: { ':pk': `BAND#${BAND_ID}`, ':skPrefix': 'SETLIST#' },
+      Key: { pk: `BAND#${BAND_ID}`, sk: `SETLIST#${SETLIST_ID}` },
     });
-    // confirms the Query approach not GetCommand: no IndexName on this main-table query
-    expect(input?.IndexName).toBeUndefined();
-  });
-
-  it('pages through DDB when LastEvaluatedKey is returned', async () => {
-    const target = makeSetlist();
-    const cursor = { pk: `BAND#${BAND_ID}`, sk: `SETLIST#${ISO_DATE}#zzz` };
-    ddbMock
-      .on(QueryCommand)
-      .resolvesOnce({ Items: [], LastEvaluatedKey: cursor })
-      .resolvesOnce({ Items: [rawItem(target)] });
-    const result = await getSetlist(BAND_ID, SETLIST_ID);
-    expect(result).toEqual(target);
-    const calls = ddbMock.commandCalls(QueryCommand);
-    expect(calls).toHaveLength(2);
-    expect(calls[1]?.args[0].input.ExclusiveStartKey).toEqual(cursor);
   });
 });
 
@@ -134,12 +97,25 @@ describe('putSetlist', () => {
       TableName: 'gigbuddy-data-test',
       Item: {
         pk: `BAND#${BAND_ID}`,
-        sk: `SETLIST#${ISO_DATE}#${SETLIST_ID}`,
+        sk: `SETLIST#${SETLIST_ID}`,
         gsi1pk: `BAND#${BAND_ID}#SETLIST_BY_DATE`,
         gsi1sk: `${ISO_DATE}#${SETLIST_ID}`,
         ...setlist,
       },
     });
+  });
+
+  it('a date change overwrites the same item: same Key, new gsi1sk', async () => {
+    ddbMock.on(PutCommand).resolves({});
+    await putSetlist(makeSetlist());
+    await putSetlist(makeSetlist({ gigMeta: { venue: 'The Jazz Cafe', date: '2026-07-05' } }));
+    const items = ddbMock.commandCalls(PutCommand).map((c) => c.args[0].input.Item);
+    expect(items).toHaveLength(2);
+    expect(items[0]?.pk).toBe(items[1]?.pk);
+    expect(items[0]?.sk).toBe(`SETLIST#${SETLIST_ID}`);
+    expect(items[1]?.sk).toBe(`SETLIST#${SETLIST_ID}`);
+    expect(items[0]?.gsi1sk).toBe(`${ISO_DATE}#${SETLIST_ID}`);
+    expect(items[1]?.gsi1sk).toBe(`2026-07-05#${SETLIST_ID}`);
   });
 });
 
@@ -204,7 +180,7 @@ describe('listSetlistsByBand', () => {
       Items: [
         {
           pk: `BAND#${BAND_ID}`,
-          sk: `SETLIST#${ISO_DATE}#${SETLIST_ID}`,
+          sk: `SETLIST#${SETLIST_ID}`,
           gsi1pk: `BAND#${BAND_ID}#SETLIST_BY_DATE`,
           gsi1sk: `${ISO_DATE}#${SETLIST_ID}`,
           setlistId: SETLIST_ID,
@@ -217,29 +193,15 @@ describe('listSetlistsByBand', () => {
 });
 
 describe('deleteSetlist', () => {
-  it('deletes every item with the setlistId (old-date copies too) and leaves others', async () => {
-    const current = makeSetlist();
-    const oldCopy = makeSetlist({ gigMeta: { venue: 'The Jazz Cafe', date: '2026-06-14' } });
-    const other = makeSetlist({
-      setlistId: 'differentSetlistI',
-      gigMeta: { venue: 'X', date: '2026-07-01' },
-    });
-    ddbMock
-      .on(QueryCommand)
-      .resolvesOnce({ Items: [rawItem(oldCopy), rawItem(other)], LastEvaluatedKey: { pk: 'p' } })
-      .resolvesOnce({ Items: [rawItem(current)] });
+  it('sends exactly one DeleteCommand on the setlist key and no Query', async () => {
     ddbMock.on(DeleteCommand).resolves({});
     await deleteSetlist(BAND_ID, SETLIST_ID);
-    const keys = ddbMock.commandCalls(DeleteCommand).map((call) => call.args[0].input.Key);
-    expect(keys).toEqual([
-      { pk: `BAND#${BAND_ID}`, sk: `SETLIST#2026-06-14#${SETLIST_ID}` },
-      { pk: `BAND#${BAND_ID}`, sk: `SETLIST#${ISO_DATE}#${SETLIST_ID}` },
-    ]);
-  });
-
-  it('does nothing when no item has the setlistId', async () => {
-    ddbMock.on(QueryCommand).resolves({ Items: [] });
-    await deleteSetlist(BAND_ID, SETLIST_ID);
-    expect(ddbMock.commandCalls(DeleteCommand)).toHaveLength(0);
+    const calls = ddbMock.commandCalls(DeleteCommand);
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.args[0].input).toMatchObject({
+      TableName: 'gigbuddy-data-test',
+      Key: { pk: `BAND#${BAND_ID}`, sk: `SETLIST#${SETLIST_ID}` },
+    });
+    expect(ddbMock.commandCalls(QueryCommand)).toHaveLength(0);
   });
 });
