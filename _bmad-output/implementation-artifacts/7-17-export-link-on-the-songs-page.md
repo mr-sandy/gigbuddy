@@ -4,7 +4,7 @@ baseline_commit: 8824dd6
 
 # Story 7.17: Export link on the songs page
 
-Status: review
+Status: done
 
 <!-- Source: epics.md "Epic 7 / Story 7.17" and the 2026-10-26 decisions under Epic 7. -->
 
@@ -60,9 +60,9 @@ so that I can save a copy of all my songs and gigs whenever I like.
   - [x] Empty (`data: []`) and error (`data: undefined, isPending: false`) each still render it.
   - [x] Check the existing first test still passes: it reads `listitem`s, not all links, so the
     extra link shouldn't affect it.
-- [ ] **Task 5: Verify, commit, deploy** (AC 6, 7)
+- [x] **Task 5: Verify, commit, deploy** (AC 6, 7)
   - [x] `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` all green.
-  - [ ] After code review: commit `Implement story 7.17: Export link on the songs page`, push;
+  - [x] After code review: commit `Implement story 7.17: Export link on the songs page`, push;
     the push to `main` deploys. Then Sandy's quick look on phone and laptop.
 
 ## Dev Notes
@@ -121,3 +121,6 @@ Claude Sonnet 5.5
 
 - 2026-10-26: Story created; status → ready-for-dev.
 - 2026-10-26: Implemented; status → review.
+- 2026-10-26: Code review clean. Committed c694f9f; CI green, deploy run 40419475420 green.
+- 2026-10-26: Sandy's live check on phone and laptop: link looks fine, export downloads OK.
+  Status → done.
