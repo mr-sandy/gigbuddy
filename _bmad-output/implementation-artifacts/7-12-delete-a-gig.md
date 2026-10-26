@@ -3,7 +3,7 @@ baseline_commit: f2fc38f
 ---
 # Story 7.12: Delete a gig
 
-Status: review
+Status: done
 
 <!-- Source: epics.md "Epic 7 / Story 7.12". Decisions by Sandy 2026-10-26: any gig (past or upcoming) can be deleted; same pattern as 7.11 (second-tap confirm, real delete, online only). -->
 
@@ -51,7 +51,7 @@ recreate it; AR-12 note; no soft delete, undo or bulk delete.
 - [x] **Task 4: Docs** (AC 8): extend the architecture.md single-song delete note (line ~259)
   to cover single-gig delete (`DELETE /api/v1/setlists/:setlistId`, online only, deletes the
   setlist with it).
-- [ ] **Task 5: Verify, commit, deploy** (AC 11, 12). Verified 2026-10-26; commit and deploy follow code review.
+- [x] **Task 5: Verify, commit, deploy** (AC 11, 12). Verified, committed, deployed; Sandy checked the live app 2026-10-26.
 
 ## Dev Notes
 
@@ -111,3 +111,4 @@ claude-opus-5-5
 - 2026-10-26: Story created; status → ready-for-dev.
 - 2026-10-26: Implemented story 7.12 (delete a gig); status → review.
 - 2026-10-26: Code review (light: auditor + edge-case); "Keep" disabled while deleting; status → review.
+- 2026-10-26: Deployed; Sandy's live check passed. Status → done.
