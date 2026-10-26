@@ -4,7 +4,7 @@ baseline_commit: c9910c1
 
 # Story 7.14: Play a gig song by song
 
-Status: review
+Status: done
 
 <!-- Source: epics.md "Epic 7 / Story 7.14". Builds on 7.8 (setlist on the gig page, gig song page). -->
 
@@ -155,10 +155,10 @@ so that I can move to the next song on stage without going back to the gig list 
   - [x] No e2e change needed (route unchanged; query string doesn't affect the auth redirect).
   - [x] Placeholder names only (`Test Tune`, `Second Test Tune`, `Set 1`). No snapshot tests.
 
-- [ ] **Task 6: Verify, commit, deploy** (AC: 8, 10, 11)
+- [x] **Task 6: Verify, commit, deploy** (AC: 8, 10, 11)
   - [x] `git diff --stat HEAD -- api shared infra` is empty.
   - [x] `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass.
-  - [ ] Commit after code review, one commit: `Implement story 7.14: Play a gig song by song`.
+  - [x] Commit after code review, one commit: `Implement story 7.14: Play a gig song by song`.
     Push to `main` only with Sandy's go-ahead; watch `deploy.yml` with `gh run watch`. If the
     blackout check blocks, report it; don't use `deploy-force.yml` unless Sandy says so.
   - [x] Set the story to `review`. No screenshots and no manual checklist for Sandy.
@@ -279,3 +279,4 @@ claude-sonnet-5-5
 
 - 2026-10-26: Story created; status → ready-for-dev.
 - 2026-10-26: Implemented gig play bar (Tasks 1–5); status → review.
+- 2026-10-26: Code review (lightweight): no fixes. Committed 9f063ca; deploy run 40399668633 and CI green. Sandy's live check on phone and laptop: all good. Status → done.
