@@ -2540,3 +2540,39 @@ builds or queries the setlist key.
    change (one item, new `gsi1sk`), an unchanged date, a stale write, get, and delete.
 8. Deployed to gig.cormie.com via the normal pipeline.
 
+
+### Story 7.14: Play a gig song by song
+
+As Sandy, I want to step through a gig's songs in order from the song page, so that I can
+move to the next song on stage without going back to the gig list each time.
+
+**Acceptance criteria**
+1. Gig song links carry the song's place in the setlist: `/gigs/:setlistId/songs/:songId?at=<n>`,
+   where `n` is the 1-based position across all sections in stored order. A song that repeats
+   has a different `n` each time.
+2. The gig song page shows a bar fixed to the bottom of the screen with "Previous", the
+   position ("3 of 12") and "Next". The page content never sits under it: the end of a long
+   chart can scroll fully clear of the bar. Navigation lives only in the bar; there is no
+   tap-on-content or swipe navigation.
+3. Next opens the song at `n+1`, Previous the song at `n−1`, crossing section boundaries.
+   Each opens at the top of the page. History is replaced, so the browser's Back and
+   "Back to gig" both return to the gig.
+4. At the first song Previous is shown but inert; at the last song Next is shown but inert.
+   Neither ever turns into another action.
+5. The place comes from the setlist, not the song record. If the song is missing from the
+   library ("Song not found."), the bar still shows so Sandy can step past it.
+6. If `at` is missing, not a number, out of range, or points at a different song, the place is
+   the song's first appearance in the setlist. If the song is not in the setlist at all, or
+   the setlist hasn't loaded, there is no bar. Position logic lives in one pure helper so a
+   later mid-set jump can show another song while keeping the planned place, without
+   changing the setlist.
+7. `/songs/:songId` is unchanged (no bar).
+8. No mid-set jump, performance notes, per-gig annotations, next-song title preview, swipe
+   or keyboard shortcuts, wake lock, or full-screen mode. No change to `api/`, `shared/` or
+   `infra/`.
+9. Same responsive and theming rules as 7.1. `STYLE.md` gains a short "Bottom bar" entry.
+10. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass. Unit tests cover the
+    position helper (repeats, bad `at`, not in setlist, across sections), the bar at first,
+    middle and last songs, the missing-song case, and no bar on `/songs/:songId`.
+11. Deployed to gig.cormie.com via the normal pipeline. A UI review follows this story
+    (Sandy, 2026-10-26).
