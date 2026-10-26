@@ -46,6 +46,8 @@ Rules:
   under the bar.
 - "Screen may sleep" line on song pages: Body size, secondary text, under the back link; shown
   only when the screen can't be kept awake. No token changes.
+- Export link at the foot of the songs page: Body size, secondary text, underlined, 44px tap
+  height, 32px section gap above. No token changes.
 
 ## Forms
 

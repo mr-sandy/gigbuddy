@@ -2636,3 +2636,21 @@ and there's one less thing to think about.
    has no notes; the text editor no longer keeps them.
 9. Deployed to gig.cormie.com via the normal pipeline; the purge runs after Sandy has seen
    the dry run.
+
+### Story 7.17: Export link on the songs page
+
+As Sandy, I want an "Export all data" link back in the app, so that I can save a copy of all
+my songs and gigs whenever I like.
+
+**Acceptance criteria**
+1. The songs page (`/songs`) ends with a quiet link, "Export all data", below the list. It
+   shows whatever the list is doing (loaded, empty, loading or error).
+2. It is a plain `<a href="/api/v1/export">`, not a router link, so the browser downloads
+   `gigbuddy-<date>.json` from the existing endpoint.
+3. Same link on phone and laptop: no device detection.
+4. Body size, secondary text, at least 44px high, 32px section gap above it. `STYLE.md` notes it.
+5. No change to `api/`, `shared/` or `infra/`. The service worker keeps its network-only rule for
+   `/api/v1/export`.
+6. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass. Tests cover: the link and
+   its href on a loaded list, and that it shows when the list is empty or errored.
+7. Deployed to gig.cormie.com via the normal pipeline.

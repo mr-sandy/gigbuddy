@@ -117,3 +117,6 @@ export const GIG_PLAY = {
 export const WAKE_LOCK = {
   maySleep: 'Screen may sleep',
 } as const;
+
+/* Story 7.17 — export link on the songs page. */
+export const EXPORT = { link: 'Export all data' } as const;

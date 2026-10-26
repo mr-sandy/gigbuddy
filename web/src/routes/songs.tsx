@@ -1,11 +1,12 @@
 import { Link } from 'react-router';
 import { PageTitle } from '../components/page-title.js';
 import { useSongs } from '../hooks/use-songs.js';
-import { SONG_FORM, SONGS } from '../lib/microcopy.js';
+import { EXPORT, SONG_FORM, SONGS } from '../lib/microcopy.js';
 
 /*
  * Song list (Story 7.3). Rendered in the order received: the API already
  * sorts A–Z case-insensitively. Cached data wins over a background error.
+ * Story 7.17: export link at the foot.
  */
 export function Songs() {
   const songs = useSongs();
@@ -58,6 +59,15 @@ export function Songs() {
           {statusLine}
         </p>
       )}
+      <footer className="mt-[var(--spacing-section-gap)]">
+        {/* Plain <a>, not Link: the router would swallow the click and the download would never fire. */}
+        <a
+          href="/api/v1/export"
+          className="inline-flex min-h-tap items-center text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-[color:var(--color-text-secondary)] underline focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]"
+        >
+          {EXPORT.link}
+        </a>
+      </footer>
     </>
   );
 }

@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
-import { SONG_FORM, SONGS } from '../lib/microcopy.js';
+import { EXPORT, SONG_FORM, SONGS } from '../lib/microcopy.js';
 import { Songs } from './songs.js';
 
 const { useSongsMock } = vi.hoisted(() => ({ useSongsMock: vi.fn() }));
@@ -88,5 +88,27 @@ describe('Songs (list)', () => {
       'href',
       '/songs/new',
     );
+  });
+
+  it('ends a loaded list with a plain export link', () => {
+    useSongsMock.mockReturnValue({
+      data: [{ songId: 'a1', title: 'Alpha Test Tune' }],
+      isPending: false,
+    });
+    renderSongs();
+    expect(screen.getByRole('link', { name: EXPORT.link })).toHaveAttribute(
+      'href',
+      '/api/v1/export',
+    );
+  });
+
+  it('shows the export link when the list is empty or errored', () => {
+    useSongsMock.mockReturnValue({ data: [], isPending: false });
+    const { unmount } = renderSongs();
+    expect(screen.getByRole('link', { name: EXPORT.link })).toBeInTheDocument();
+    unmount();
+    useSongsMock.mockReturnValue({ data: undefined, isPending: false, isError: true });
+    renderSongs();
+    expect(screen.getByRole('link', { name: EXPORT.link })).toBeInTheDocument();
   });
 });
