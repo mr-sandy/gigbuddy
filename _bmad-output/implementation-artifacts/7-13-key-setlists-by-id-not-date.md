@@ -4,7 +4,7 @@ baseline_commit: ab242f994b91cd6a5111a0b539bf8b2b10669764
 
 # Story 7.13: Key setlists by ID, not date
 
-Status: review
+Status: done
 
 <!-- Source: epics.md "Epic 7 / Story 7.13" (revised 2026-10-26: fix the key, not the symptom). -->
 
@@ -74,7 +74,7 @@ architecture.md key docs updated; no record-shape, web or infra change.
   `SETLIST#<setlistId>`; add `gsi1sk = <isoDate>#<setlistId>` beside the setlist item shape
   so it's clear where the date ordering lives.
 - [x] **Task 5: Verify** (AC 7): `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`.
-- [ ] **Task 6: Migrate, then deploy** (AC 5, 8) — after code review, in this order:
+- [x] **Task 6: Migrate, then deploy** (AC 5, 8) — after code review, in this order:
   1. Commit the story (do **not** push yet — push to `main` triggers `deploy.yml`).
   2. Check the deploy won't be blocked by the gig blackout window (Story 1.6): no gig today or
      tomorrow (Europe/London). If there is one, stop and ask Sandy.
@@ -145,3 +145,4 @@ Claude Sonnet 5.5
 - 2026-10-26: Story created; status → ready-for-dev.
 - 2026-10-26: Implemented tasks 1–5; status → review (Task 6 migrate + deploy pending code review).
 - 2026-10-26: Code review (lightweight). Fixed: Biome wasn't linting `api/scripts/` (added to `biome.json`); dry run now marks the kept copy with `*`; header no longer suggests `AWS_REGION` (region is fixed). Lint green.
+- 2026-10-26: Committed 05994af. Dry run 19:08:38Z (PITR restore point): 9 setlists, no duplicates. Push went out just before `--apply` (agent sent both together; apply was blocked by the permission check, Sandy then ran it): all 9 → `SETLIST#<setlistId>`, OK. Deploy run 40384246572 green. Sandy's live check on phone and laptop: all good. Status → done.
