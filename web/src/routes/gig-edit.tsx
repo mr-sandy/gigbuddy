@@ -4,8 +4,9 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { PageTitle } from '../components/page-title.js';
 import { useSetlistMutation } from '../hooks/use-setlist-mutation.js';
 import { useSetlistOrCached } from '../hooks/use-setlist-or-cached.js';
+import { formatGigDate } from '../lib/gig-date.js';
 import { generateId } from '../lib/id.js';
-import { GIG_FORM, GIGS } from '../lib/microcopy.js';
+import { GIG_DELETE, GIG_FORM, GIGS } from '../lib/microcopy.js';
 
 /*
  * Add / edit gig form (Story 7.9). `/gigs/new` adds, `/gigs/:setlistId/edit`
@@ -15,6 +16,9 @@ import { GIG_FORM, GIGS } from '../lib/microcopy.js';
  * is available and reads it once, so a background refetch never resets what
  * Sandy is typing. Leaving an edit steps back in history when there is history
  * to step back to, so the gig page isn't stacked twice.
+ *
+ * Editing also offers "Delete gig" (Story 7.12) behind a second tap. The gig
+ * and its setlist are one record, so both go.
  */
 
 const LINK_CLASS =
@@ -25,6 +29,10 @@ const FIELD_CLASS =
   'mt-[var(--spacing-unit)] box-border w-full rounded-[4px] border border-[color:var(--color-text-secondary)] bg-[color:var(--color-bg)] p-[calc(var(--spacing-unit)*3)] text-[length:var(--text-reading)] leading-[var(--text-reading--line-height)] text-[color:var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]';
 const TAP_FIELD_CLASS = `${FIELD_CLASS} min-h-tap`;
 const PAIR_GAP = 'mt-[calc(var(--spacing-unit)*4)]';
+const BUTTON_CLASS =
+  'min-h-tap rounded-[4px] border-2 border-[color:var(--color-text-primary)] bg-transparent px-[calc(var(--spacing-unit)*6)] text-[length:var(--text-row)] leading-[var(--text-row--line-height)] text-[color:var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]';
+const BODY_PRIMARY =
+  'text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-[color:var(--color-text-primary)]';
 
 export function GigEdit() {
   const { setlistId } = useParams();
@@ -148,10 +156,7 @@ function GigForm({ initial }: { initial?: Setlist }) {
       </div>
 
       <div className="mt-[calc(var(--spacing-unit)*8)] flex items-center gap-[calc(var(--spacing-unit)*6)]">
-        <button
-          type="submit"
-          className="min-h-tap rounded-[4px] border-2 border-[color:var(--color-text-primary)] bg-transparent px-[calc(var(--spacing-unit)*6)] text-[length:var(--text-row)] leading-[var(--text-row--line-height)] text-[color:var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]"
-        >
+        <button type="submit" className={BUTTON_CLASS}>
           {GIG_FORM.save}
         </button>
         <Link
@@ -167,6 +172,73 @@ function GigForm({ initial }: { initial?: Setlist }) {
           {GIG_FORM.cancel}
         </Link>
       </div>
+
+      {initial ? <DeleteGig gig={initial} /> : null}
     </form>
+  );
+}
+
+function DeleteGig({ gig }: { gig: Setlist }) {
+  const navigate = useNavigate();
+  const { deleteSetlist } = useSetlistMutation();
+  const [confirming, setConfirming] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  // The saved record, not the unsaved form fields.
+  const venue = gig.gigMeta.venue.trim();
+  const date = formatGigDate(gig.gigMeta.date);
+
+  async function onConfirm() {
+    setDeleting(true);
+    try {
+      await deleteSetlist(gig.setlistId);
+      navigate('/gigs', { replace: true });
+      return;
+    } catch {
+      setFailed(true);
+    }
+    setDeleting(false);
+    setConfirming(false);
+  }
+
+  return (
+    <div className="mt-[calc(var(--spacing-unit)*12)]">
+      {confirming ? (
+        <>
+          <p className={BODY_PRIMARY}>
+            {`${GIG_DELETE.confirm} ${venue ? `${venue}, ${date}` : date}?`}
+          </p>
+          <div className="mt-[calc(var(--spacing-unit)*4)] flex flex-wrap items-center gap-[calc(var(--spacing-unit)*6)]">
+            <button type="button" onClick={onConfirm} disabled={deleting} className={BUTTON_CLASS}>
+              {GIG_DELETE.yes}
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirming(false)}
+              disabled={deleting}
+              className={BUTTON_CLASS}
+            >
+              {GIG_DELETE.keep}
+            </button>
+          </div>
+        </>
+      ) : (
+        <button
+          type="button"
+          onClick={() => {
+            setFailed(false);
+            setConfirming(true);
+          }}
+          className={BUTTON_CLASS}
+        >
+          {GIG_DELETE.button}
+        </button>
+      )}
+      {failed ? (
+        <p role="alert" className={`mt-[var(--spacing-unit)] ${BODY_PRIMARY}`}>
+          {GIG_DELETE.failed}
+        </p>
+      ) : null}
+    </div>
   );
 }

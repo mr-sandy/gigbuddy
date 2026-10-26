@@ -12,6 +12,9 @@ vi.mock('../sync/flusher.js', () => ({
   flushOnce: vi.fn().mockResolvedValue('flushed'),
 }));
 
+const { deleteSetlistRequestMock } = vi.hoisted(() => ({ deleteSetlistRequestMock: vi.fn() }));
+vi.mock('../api/setlists.js', () => ({ deleteSetlist: deleteSetlistRequestMock }));
+
 function makePutInput(
   setlistId: string,
   venue: string,
@@ -111,6 +114,53 @@ describe('useSetlistMutation.saveSetlist', () => {
     const cachedList = queryClient.getQueryData<Setlist[]>(['setlists', ACTIVE_BAND_ID]);
     expect(cachedList).toHaveLength(1);
     expect(cachedList?.[0]?.gigMeta.venue).toBe('Edit Two Venue');
+  });
+});
+
+describe('useSetlistMutation.deleteSetlist', () => {
+  it('on success drops the queued edit and removes the gig from both caches', async () => {
+    deleteSetlistRequestMock.mockResolvedValue(undefined);
+    queryClient.setQueryData(
+      ['setlists', ACTIVE_BAND_ID],
+      [makeSetlist('abc', 'A', '2026-06-21'), makeSetlist('def', 'B', '2026-06-28')],
+    );
+    queryClient.setQueryData(
+      ['setlist', ACTIVE_BAND_ID, 'abc'],
+      makeSetlist('abc', 'A', '2026-06-21'),
+    );
+    const { result } = renderHook(() => useSetlistMutation());
+    await act(async () => {
+      await result.current.saveSetlist(
+        makePutInput('abc', 'A2', '2026-06-21', '2026-06-20T09:00:00.000Z'),
+      );
+    });
+
+    await act(async () => {
+      await result.current.deleteSetlist('abc');
+    });
+
+    expect(deleteSetlistRequestMock).toHaveBeenCalledWith('abc');
+    expect(await listAll()).toHaveLength(0);
+    expect(
+      queryClient.getQueryData<Setlist[]>(['setlists', ACTIVE_BAND_ID])?.map((s) => s.setlistId),
+    ).toEqual(['def']);
+    expect(queryClient.getQueryData(['setlist', ACTIVE_BAND_ID, 'abc'])).toBeUndefined();
+  });
+
+  it('on failure throws and changes nothing', async () => {
+    deleteSetlistRequestMock.mockRejectedValue(new TypeError('Failed to fetch'));
+    queryClient.setQueryData(['setlists', ACTIVE_BAND_ID], [makeSetlist('abc', 'A', '2026-06-21')]);
+    const { result } = renderHook(() => useSetlistMutation());
+    await act(async () => {
+      await result.current.saveSetlist(
+        makePutInput('abc', 'A2', '2026-06-21', '2026-06-20T09:00:00.000Z'),
+      );
+    });
+    await act(async () => {
+      await expect(result.current.deleteSetlist('abc')).rejects.toThrow();
+    });
+    expect(await listAll()).toHaveLength(1);
+    expect(queryClient.getQueryData<Setlist[]>(['setlists', ACTIVE_BAND_ID])).toHaveLength(1);
   });
 });
 

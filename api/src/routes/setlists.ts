@@ -1,6 +1,6 @@
 import { ACTIVE_BAND_ID, type Setlist, SetlistPutInputSchema } from '@gigbuddy/shared';
 import { Hono } from 'hono';
-import { getSetlist, listSetlistsByBand, putSetlist } from '../ddb/setlists.js';
+import { deleteSetlist, getSetlist, listSetlistsByBand, putSetlist } from '../ddb/setlists.js';
 import { compareLww } from '../lww.js';
 
 /*
@@ -95,4 +95,10 @@ export const setlistsRoute = new Hono()
     const record: Setlist = { ...parsed.data, serverReceivedAt: new Date().toISOString() };
     await putSetlist(record);
     return c.json({ status: 'applied' as const, data: record });
+  })
+  .delete('/:setlistId', async (c) => {
+    // Story 7.12: a gig and its setlist are one record. Deleting a missing
+    // gig succeeds quietly.
+    await deleteSetlist(ACTIVE_BAND_ID, c.req.param('setlistId'));
+    return c.body(null, 204);
   });

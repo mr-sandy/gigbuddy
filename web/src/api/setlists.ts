@@ -68,3 +68,16 @@ export async function putSetlist(input: SetlistPutInput): Promise<PutSetlistResu
   }
   throw new Error(`putSetlist: error envelope ${response.data.error.code}`);
 }
+
+/*
+ * Story 7.12: not an outbox write. A connection is needed; offline the fetch
+ * throws, and any other failure throws too.
+ */
+export async function deleteSetlist(setlistId: string): Promise<void> {
+  const response = await apiFetch(`/api/v1/setlists/${setlistId}`, {
+    method: 'DELETE',
+    schema: ErrorResponseSchema,
+  });
+  if (response.status === 204) return;
+  throw new Error(`deleteSetlist: unexpected status ${response.status}`);
+}

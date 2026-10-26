@@ -1,9 +1,9 @@
-import { PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import { DeleteCommand, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import type { Setlist } from '@gigbuddy/shared';
 import { mockClient } from 'aws-sdk-client-mock';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { getDocClient } from './client.js';
-import { getSetlist, listSetlistsByBand, putSetlist } from './setlists.js';
+import { deleteSetlist, getSetlist, listSetlistsByBand, putSetlist } from './setlists.js';
 
 // aws-sdk-client-mock patches the cached DocClient instance in place; we
 // keep the cache for the lifetime of the test file (no __resetDdbClientForTests
@@ -213,5 +213,33 @@ describe('listSetlistsByBand', () => {
       ],
     });
     await expect(listSetlistsByBand(BAND_ID)).rejects.toThrow();
+  });
+});
+
+describe('deleteSetlist', () => {
+  it('deletes every item with the setlistId (old-date copies too) and leaves others', async () => {
+    const current = makeSetlist();
+    const oldCopy = makeSetlist({ gigMeta: { venue: 'The Jazz Cafe', date: '2026-06-14' } });
+    const other = makeSetlist({
+      setlistId: 'differentSetlistI',
+      gigMeta: { venue: 'X', date: '2026-07-01' },
+    });
+    ddbMock
+      .on(QueryCommand)
+      .resolvesOnce({ Items: [rawItem(oldCopy), rawItem(other)], LastEvaluatedKey: { pk: 'p' } })
+      .resolvesOnce({ Items: [rawItem(current)] });
+    ddbMock.on(DeleteCommand).resolves({});
+    await deleteSetlist(BAND_ID, SETLIST_ID);
+    const keys = ddbMock.commandCalls(DeleteCommand).map((call) => call.args[0].input.Key);
+    expect(keys).toEqual([
+      { pk: `BAND#${BAND_ID}`, sk: `SETLIST#2026-06-14#${SETLIST_ID}` },
+      { pk: `BAND#${BAND_ID}`, sk: `SETLIST#${ISO_DATE}#${SETLIST_ID}` },
+    ]);
+  });
+
+  it('does nothing when no item has the setlistId', async () => {
+    ddbMock.on(QueryCommand).resolves({ Items: [] });
+    await deleteSetlist(BAND_ID, SETLIST_ID);
+    expect(ddbMock.commandCalls(DeleteCommand)).toHaveLength(0);
   });
 });

@@ -1,7 +1,8 @@
-import type { Setlist, SetlistPutInput } from '@gigbuddy/shared';
+import { ACTIVE_BAND_ID, type Setlist, type SetlistPutInput } from '@gigbuddy/shared';
 import { useCallback } from 'react';
+import { deleteSetlist as deleteSetlistRequest } from '../api/setlists.js';
 import { flushOnce } from '../sync/flusher.js';
-import { enqueue } from '../sync/outbox.js';
+import { enqueue, removePending } from '../sync/outbox.js';
 import { queryClient } from '../sync/query-client.js';
 import { setlistRecordKey } from '../sync/record-key.js';
 
@@ -25,6 +26,11 @@ import { setlistRecordKey } from '../sync/record-key.js';
  * same reason as useSongMutation: optimistic writes must hit the singleton
  * the SyncProvider exposes — the same store the flusher writes to on the
  * `dropped-as-stale` path.
+ *
+ * `deleteSetlist()` (Story 7.12) mirrors useSongMutation.deleteSong: it needs
+ * a connection, goes straight to the API rather than the outbox, and throws
+ * on failure. On success it drops any queued edit to the gig (so the flusher
+ * can't recreate it) and removes the gig from both caches.
  */
 export function mergeSetlistIntoList(current: Setlist[], next: Setlist): Setlist[] {
   const idx = current.findIndex((s) => s.setlistId === next.setlistId);
@@ -36,6 +42,7 @@ export function mergeSetlistIntoList(current: Setlist[], next: Setlist): Setlist
 
 export function useSetlistMutation(): {
   saveSetlist: (record: SetlistPutInput) => Promise<void>;
+  deleteSetlist: (setlistId: string) => Promise<void>;
 } {
   const saveSetlist = useCallback(async (record: SetlistPutInput): Promise<void> => {
     const optimistic: Setlist = { ...record, serverReceivedAt: new Date().toISOString() };
@@ -50,5 +57,13 @@ export function useSetlistMutation(): {
     });
     void flushOnce();
   }, []);
-  return { saveSetlist };
+  const deleteSetlist = useCallback(async (setlistId: string): Promise<void> => {
+    await deleteSetlistRequest(setlistId);
+    await removePending(setlistRecordKey(ACTIVE_BAND_ID, setlistId));
+    queryClient.setQueryData<Setlist[]>(['setlists', ACTIVE_BAND_ID], (current) =>
+      current?.filter((s) => s.setlistId !== setlistId),
+    );
+    queryClient.removeQueries({ queryKey: ['setlist', ACTIVE_BAND_ID, setlistId] });
+  }, []);
+  return { saveSetlist, deleteSetlist };
 }

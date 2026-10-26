@@ -97,3 +97,11 @@ export const SONG_DELETE = {
   inUseUnknown: "This song is in a gig's setlist, so it wasn't deleted.",
   failed: "Couldn't delete the song. Check your connection and try again.",
 } as const;
+
+export const GIG_DELETE = {
+  button: 'Delete gig',
+  confirm: 'Delete',
+  yes: 'Yes, delete',
+  keep: 'Keep',
+  failed: "Couldn't delete the gig. Check your connection and try again.",
+} as const;

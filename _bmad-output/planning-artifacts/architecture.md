@@ -256,7 +256,7 @@ pk = BAND#<bandId>, sk = SETLIST#<isoDate>#<setlistId>
 - DynamoDB **`DeletionProtection: true`** on `gigbuddy-data` (CDK flag; blocks `DeleteTable` API call until explicitly disabled)
 - CDK **termination protection** on the data stack (blocks `cdk destroy`)
 - No "delete all records" admin endpoint in the API; no admin endpoints at all in V1
-- Single-song delete is allowed (`DELETE /api/v1/songs/:songId`, Story 7.11): online only, not via the outbox, and refused (409 `SONG_IN_USE`) while the song is in any setlist, so setlist history never points at a missing song. Bulk or admin delete stays out of scope.
+- Single-song delete is allowed (`DELETE /api/v1/songs/:songId`, Story 7.11): online only, not via the outbox, and refused (409 `SONG_IN_USE`) while the song is in any setlist, so setlist history never points at a missing song. Single-gig delete is allowed too (`DELETE /api/v1/setlists/:setlistId`, Story 7.12): online only, not via the outbox; a gig and its setlist are one record, so both go, and a missing gig succeeds quietly. Bulk or admin delete stays out of scope.
 
 **Cost:** ~$0.20/mo at single-user volume.
 

@@ -6,6 +6,7 @@ const {
   getSetlistMock,
   listSetlistsByBandMock,
   putSetlistMock,
+  deleteSetlistMock,
   getSongMock,
   listSongsByBandMock,
   putSongMock,
@@ -14,6 +15,7 @@ const {
   getSetlistMock: vi.fn(),
   listSetlistsByBandMock: vi.fn(),
   putSetlistMock: vi.fn(),
+  deleteSetlistMock: vi.fn(),
   getSongMock: vi.fn(),
   listSongsByBandMock: vi.fn(),
   putSongMock: vi.fn(),
@@ -28,6 +30,7 @@ vi.mock('../ddb/setlists.js', () => ({
   getSetlist: getSetlistMock,
   listSetlistsByBand: listSetlistsByBandMock,
   putSetlist: putSetlistMock,
+  deleteSetlist: deleteSetlistMock,
 }));
 
 // Songs ddb is also mocked because app.ts wires the songs route and
@@ -80,6 +83,8 @@ beforeEach(async () => {
   getSetlistMock.mockReset();
   listSetlistsByBandMock.mockReset();
   putSetlistMock.mockReset();
+  deleteSetlistMock.mockReset();
+  deleteSetlistMock.mockResolvedValue(undefined);
   getSongMock.mockReset();
   listSongsByBandMock.mockReset();
   putSongMock.mockReset();
@@ -328,6 +333,25 @@ describe('PUT /api/v1/setlists/:setlistId', () => {
       headers: { 'content-type': 'application/json' },
     });
     expect(res.status).toBe(401);
+  });
+});
+
+describe('DELETE /api/v1/setlists/:setlistId', () => {
+  it('deletes the setlist and returns 204', async () => {
+    const res = await authedRequest(`/api/v1/setlists/${SETLIST_ID_A}`, { method: 'DELETE' });
+    expect(res.status).toBe(204);
+    expect(deleteSetlistMock).toHaveBeenCalledWith(ACTIVE_BAND_ID, SETLIST_ID_A);
+  });
+
+  it('returns 204 for a setlist that does not exist', async () => {
+    const res = await authedRequest(`/api/v1/setlists/${SETLIST_ID_B}`, { method: 'DELETE' });
+    expect(res.status).toBe(204);
+  });
+
+  it('returns 401 without an auth cookie', async () => {
+    const res = await app.request(`/api/v1/setlists/${SETLIST_ID_A}`, { method: 'DELETE' });
+    expect(res.status).toBe(401);
+    expect(deleteSetlistMock).not.toHaveBeenCalled();
   });
 });
 

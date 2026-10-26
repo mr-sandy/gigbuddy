@@ -2,18 +2,20 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { GIG_FORM, GIGS } from '../lib/microcopy.js';
+import { formatGigDate } from '../lib/gig-date.js';
+import { GIG_DELETE, GIG_FORM, GIGS } from '../lib/microcopy.js';
 import { GigEdit } from './gig-edit.js';
 
-const { useSetlistMock, useSetlistsMock, saveSetlistMock } = vi.hoisted(() => ({
+const { useSetlistMock, useSetlistsMock, saveSetlistMock, deleteSetlistMock } = vi.hoisted(() => ({
   useSetlistMock: vi.fn(),
   useSetlistsMock: vi.fn(),
   saveSetlistMock: vi.fn(),
+  deleteSetlistMock: vi.fn(),
 }));
 vi.mock('../hooks/use-setlist.js', () => ({ useSetlist: useSetlistMock }));
 vi.mock('../hooks/use-setlists.js', () => ({ useSetlists: useSetlistsMock }));
 vi.mock('../hooks/use-setlist-mutation.js', () => ({
-  useSetlistMutation: () => ({ saveSetlist: saveSetlistMock }),
+  useSetlistMutation: () => ({ saveSetlist: saveSetlistMock, deleteSetlist: deleteSetlistMock }),
 }));
 vi.mock('../lib/id.js', () => ({ generateId: () => 'newgig0000000001' }));
 
@@ -46,6 +48,7 @@ const fullGig = {
 
 beforeEach(() => {
   saveSetlistMock.mockReset().mockResolvedValue(undefined);
+  deleteSetlistMock.mockReset().mockResolvedValue(undefined);
   useSetlistMock.mockReturnValue({ data: fullGig });
   useSetlistsMock.mockReturnValue({ data: undefined, isPending: true });
 });
@@ -133,5 +136,67 @@ describe('GigEdit', () => {
     expect(screen.getByText(GIGS.notFound)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: GIGS.backToGigs })).toHaveAttribute('href', '/gigs');
     expect(screen.queryByLabelText(GIG_FORM.venue)).not.toBeInTheDocument();
+  });
+});
+
+describe('GigEdit delete', () => {
+  const confirmLine = `${GIG_DELETE.confirm} Venue A, ${formatGigDate('2026-11-07')}?`;
+
+  it('offers no delete when adding a gig', () => {
+    renderAt('/gigs/new');
+    expect(screen.queryByRole('button', { name: GIG_DELETE.button })).not.toBeInTheDocument();
+  });
+
+  it('asks first, naming the saved gig, and Keep returns to the form', async () => {
+    const user = userEvent.setup();
+    renderAt('/gigs/g1/edit');
+    await user.clear(screen.getByLabelText(GIG_FORM.venue));
+    await user.type(screen.getByLabelText(GIG_FORM.venue), 'Unsaved');
+    await user.click(screen.getByRole('button', { name: GIG_DELETE.button }));
+    expect(screen.getByText(confirmLine)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: GIG_DELETE.keep }));
+    expect(deleteSetlistMock).not.toHaveBeenCalled();
+    expect(screen.getByLabelText(GIG_FORM.venue)).toHaveValue('Unsaved');
+    expect(screen.getByRole('button', { name: GIG_DELETE.button })).toBeInTheDocument();
+  });
+
+  it('names the gig by date alone when it has no venue', async () => {
+    useSetlistMock.mockReturnValue({
+      data: { ...fullGig, gigMeta: { venue: '', date: '2026-11-07' } },
+    });
+    const user = userEvent.setup();
+    renderAt('/gigs/g1/edit');
+    await user.click(screen.getByRole('button', { name: GIG_DELETE.button }));
+    expect(
+      screen.getByText(`${GIG_DELETE.confirm} ${formatGigDate('2026-11-07')}?`),
+    ).toBeInTheDocument();
+  });
+
+  it('deletes on the second tap and goes to the gig list', async () => {
+    const user = userEvent.setup();
+    renderAt('/gigs/g1/edit');
+    await user.click(screen.getByRole('button', { name: GIG_DELETE.button }));
+    await user.click(screen.getByRole('button', { name: GIG_DELETE.yes }));
+    expect(deleteSetlistMock).toHaveBeenCalledWith('g1');
+    expect(await screen.findByText('list page')).toBeInTheDocument();
+  });
+
+  it('disables "Yes, delete" while the request runs', async () => {
+    deleteSetlistMock.mockReturnValue(new Promise(() => {}));
+    const user = userEvent.setup();
+    renderAt('/gigs/g1/edit');
+    await user.click(screen.getByRole('button', { name: GIG_DELETE.button }));
+    await user.click(screen.getByRole('button', { name: GIG_DELETE.yes }));
+    expect(screen.getByRole('button', { name: GIG_DELETE.yes })).toBeDisabled();
+  });
+
+  it('says so when the delete fails', async () => {
+    deleteSetlistMock.mockRejectedValue(new TypeError('Failed to fetch'));
+    const user = userEvent.setup();
+    renderAt('/gigs/g1/edit');
+    await user.click(screen.getByRole('button', { name: GIG_DELETE.button }));
+    await user.click(screen.getByRole('button', { name: GIG_DELETE.yes }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(GIG_DELETE.failed);
+    expect(screen.getByLabelText(GIG_FORM.venue)).toHaveValue('Venue A');
   });
 });

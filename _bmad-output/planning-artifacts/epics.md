@@ -2503,3 +2503,27 @@ As Sandy, I want to delete a gig, so that I can clear out cancelled or wrongly e
 11. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass. API tests cover delete
     and delete of a missing gig; web tests cover confirm, Keep, success and failure lines.
 12. Deployed to gig.cormie.com via the normal pipeline.
+
+### Story 7.13: Fix gig date change leaving an old copy
+
+As Sandy, I want changing a gig's date to move the gig rather than copy it, so that a gig
+never shows up twice or reverts to its old details.
+
+**Background:** the setlist's DDB sort key includes the gig date
+(`SETLIST#<date>#<setlistId>`), and `putSetlist` writes a new item when the date changes
+without removing the old one (Story 7.9 bug). The old-date copy then appears in the gig list,
+and because `getSetlist` returns the first match in sort-key order, a gig moved to a later
+date can open showing the old copy. Story 7.12's delete already removes every copy.
+
+**Acceptance criteria**
+1. Saving a gig with a changed date leaves exactly one item for that `setlistId`, at the new
+   date. Saving with an unchanged date behaves as now.
+2. A gig whose date has been changed opens, lists and edits with its latest details.
+3. Stale writes are still dropped by the existing last-writer-wins check and remove nothing.
+4. Prod tidy-up: list every `setlistId` with more than one item in prod and show Sandy the
+   list before anything is deleted. For each, keep the item with the latest `clientWrittenAt`
+   and delete the others. One-off; no new admin endpoint.
+5. No change to the setlist record shape or the DDB key design; no web change.
+6. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass. API tests cover a date
+   change (old copy removed), an unchanged date, and a stale write.
+7. Deployed to gig.cormie.com via the normal pipeline.

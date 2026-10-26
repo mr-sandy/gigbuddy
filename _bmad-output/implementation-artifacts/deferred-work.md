@@ -97,3 +97,7 @@
 - **Manifest colours still dark** (`web/vite.config.ts:80-81`) — `theme_color`/`background_color` `#1a1209`, so installed-PWA splash/task switcher is dark in light mode. Out of scope for 7.1 (`build-output.test.ts` asserts the values).
 - **Orphaned persisted query keys** (`web/src/sync/query-client.tsx:22`) — keys for removed screens (tonight-gig prefetch, per-song/per-setlist detail) restore with `gcTime: Infinity` under unchanged `buster: 'v1'` and are re-persisted forever. Harmless; clear on next buster bump.
 - **Restore-drill spec drives deleted UI** (`e2e/restore/verified-restore.spec.ts:42-56`) — expects `Setlists` heading, `/library` song links and setlist-card buttons, all removed in 7.1. Not in CI (own config). Reason: rewrite when the deferred Story 5.2 Task 4 drill is next due, against the screens that exist then; prerequisite noted on 5.2 Task 4.
+
+## Deferred from: code review of story-7.12 (2026-10-26)
+
+- **Delete-a-gig races a queued/in-flight edit** (`web/src/hooks/use-setlist-mutation.ts:60`, `api/src/ddb/setlists.ts:63`) — a flush in flight, or a put landing mid-delete, can recreate the gig after the server delete. Spec-accepted gap, same as 7.11; single user.

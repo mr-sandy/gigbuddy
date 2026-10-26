@@ -1,7 +1,7 @@
 import { ACTIVE_BAND_ID, type Setlist, type SetlistPutInput } from '@gigbuddy/shared';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { __resetDriftWarningForTests, setUnauthorizedHandler } from './client.js';
-import { getSetlist, listSetlists, putSetlist } from './setlists.js';
+import { deleteSetlist, getSetlist, listSetlists, putSetlist } from './setlists.js';
 
 function jsonRes(status: number, body: unknown, headers: Record<string, string> = {}): Response {
   return new Response(JSON.stringify(body), {
@@ -158,5 +158,25 @@ describe('putSetlist', () => {
     expect(path).toBe('/api/v1/setlists/abc');
     expect(init.method).toBe('PUT');
     expect(init.body).toBe(JSON.stringify(input));
+  });
+});
+
+describe('deleteSetlist', () => {
+  it('sends DELETE to /api/v1/setlists/<setlistId> and resolves on 204', async () => {
+    fetchMock.mockResolvedValue(
+      new Response(null, { status: 204, headers: { 'x-server-now': new Date().toISOString() } }),
+    );
+    await expect(deleteSetlist('abc')).resolves.toBeUndefined();
+    expect(fetchMock.mock.calls[0]?.[0]).toBe('/api/v1/setlists/abc');
+    expect((fetchMock.mock.calls[0]?.[1] as RequestInit).method).toBe('DELETE');
+  });
+
+  it('throws on any other status and when the fetch fails', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonRes(500, { status: 'error', error: { code: 'INTERNAL', message: 'x' } }),
+    );
+    await expect(deleteSetlist('abc')).rejects.toThrow();
+    fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    await expect(deleteSetlist('abc')).rejects.toThrow();
   });
 });

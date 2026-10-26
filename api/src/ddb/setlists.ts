@@ -1,4 +1,4 @@
-import { PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import { DeleteCommand, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { type Setlist, SetlistSchema } from '@gigbuddy/shared';
 import { getDocClient, getTableName } from './client.js';
 
@@ -86,6 +86,34 @@ export async function putSetlist(record: Setlist): Promise<void> {
       },
     }),
   );
+}
+
+export async function deleteSetlist(bandId: string, setlistId: string): Promise<void> {
+  // Story 7.12: delete every item with this setlistId, not just the first.
+  // A gig date change (Story 7.9) writes a new sk and can leave an old-date
+  // copy behind; deleting only one would let that copy bring the gig back.
+  const client = getDocClient();
+  const keys: { pk: string; sk: string }[] = [];
+  let cursor: Record<string, unknown> | undefined;
+  do {
+    const result = await client.send(
+      new QueryCommand({
+        TableName: getTableName(),
+        KeyConditionExpression: 'pk = :pk AND begins_with(sk, :skPrefix)',
+        ExpressionAttributeValues: { ':pk': `BAND#${bandId}`, ':skPrefix': 'SETLIST#' },
+        ExclusiveStartKey: cursor,
+      }),
+    );
+    for (const item of result.Items ?? []) {
+      if (item.setlistId === setlistId) {
+        keys.push({ pk: item.pk as string, sk: item.sk as string });
+      }
+    }
+    cursor = result.LastEvaluatedKey as Record<string, unknown> | undefined;
+  } while (cursor);
+  for (const key of keys) {
+    await client.send(new DeleteCommand({ TableName: getTableName(), Key: key }));
+  }
 }
 
 export async function listSetlistsByBand(bandId: string): Promise<Setlist[]> {
