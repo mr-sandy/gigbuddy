@@ -4,7 +4,7 @@ baseline_commit: a737bef
 
 # Story 7.15: Keep the screen awake on song pages
 
-Status: review
+Status: done
 
 <!-- Source: epics.md "Epic 7 / Story 7.15". Builds on 7.5 (song page) and 7.14 (gig play bar). -->
 
@@ -101,10 +101,10 @@ so that the phone resting on the Nord doesn't dim or lock mid-song.
     note will show; that's fine unless a test asserts its absence.
   - [x] Placeholder names only. No snapshot tests.
 
-- [ ] **Task 5: Verify, commit, deploy** (AC: 6, 8, 9)
+- [x] **Task 5: Verify, commit, deploy** (AC: 6, 8, 9)
   - [x] `git diff --stat HEAD -- api shared infra` is empty.
   - [x] `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass.
-  - [ ] Commit after code review, one commit: `Implement story 7.15: Keep the screen awake on
+  - [x] Commit after code review, one commit: `Implement story 7.15: Keep the screen awake on
     song pages`. Push to `main` only with Sandy's go-ahead; watch `deploy.yml` with
     `gh run watch`. If the blackout check blocks, report it; don't use `deploy-force.yml`
     unless Sandy says so.
@@ -213,3 +213,6 @@ Claude Opus 5.5 (claude-opus-5-5)
 - 2026-10-26: Story created; status → ready-for-dev.
 - 2026-10-26: Implemented wake lock hook, song page note, copy and style guide line; tests
   added; status → review (commit and deploy pending code review and Sandy's go-ahead).
+- 2026-10-26: Code review (lightweight): one patch, an in-flight guard so overlapping release and
+  visibility events can't leak a second lock; test added. Committed 4dcb093; deploy run
+  40404331455 and CI green. Sandy's live check: all good. Status → done.
