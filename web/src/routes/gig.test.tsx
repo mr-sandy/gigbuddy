@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
-import { GIG_SETLIST, GIGS } from '../lib/microcopy.js';
+import { GIG_FORM, GIG_SETLIST, GIGS } from '../lib/microcopy.js';
 import { Gig } from './gig.js';
 
 const { useSetlistMock, useSetlistsMock } = vi.hoisted(() => ({
@@ -63,6 +63,21 @@ describe('Gig', () => {
     expect(screen.getByRole('link', { name: GIGS.backToGigs })).toHaveAttribute('href', '/gigs');
   });
 
+  it('links to the edit form only when the gig is shown', () => {
+    useSetlistMock.mockReturnValue({ data: gig('Venue A') });
+    useSetlistsMock.mockReturnValue({ data: undefined, isPending: true });
+    const { unmount } = renderGig();
+    expect(screen.getByRole('link', { name: GIG_FORM.editLink })).toHaveAttribute(
+      'href',
+      '/gigs/g1/edit',
+    );
+    unmount();
+    useSetlistMock.mockReturnValue({ data: null, isPending: false });
+    useSetlistsMock.mockReturnValue({ data: [], isPending: false });
+    renderGig();
+    expect(screen.queryByRole('link', { name: GIG_FORM.editLink })).not.toBeInTheDocument();
+  });
+
   it('shows loading', () => {
     useSetlistMock.mockReturnValue({ data: undefined, isPending: true });
     useSetlistsMock.mockReturnValue({ data: undefined, isPending: true });
@@ -86,7 +101,9 @@ describe('Gig', () => {
         'Set 1',
         'Set 2',
       ]);
-      const links = screen.getAllByRole('link').filter((l) => l.textContent !== GIGS.backToGigs);
+      const links = screen
+        .getAllByRole('link')
+        .filter((l) => l.textContent !== GIGS.backToGigs && l.textContent !== GIG_FORM.editLink);
       expect(links.map((l) => l.textContent)).toEqual(['Tune B', 'Tune A', 'Tune C']);
       expect(links.map((l) => l.getAttribute('href'))).toEqual([
         '/gigs/g1/songs/s2',

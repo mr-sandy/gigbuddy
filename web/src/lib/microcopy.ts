@@ -59,3 +59,17 @@ export const GIG_SETLIST = {
   empty: 'No songs in this setlist yet.',
   backToGig: 'Back to gig',
 } as const;
+
+/* Story 7.9 — add/edit gig. */
+export const GIG_FORM = {
+  addLink: 'Add gig',
+  editLink: 'Edit',
+  addHeading: 'Add gig',
+  editHeading: 'Edit gig',
+  venue: 'Venue',
+  date: 'Date',
+  time: 'Time',
+  save: 'Save',
+  cancel: 'Cancel',
+  required: 'A gig needs a venue and a date.',
+} as const;

@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { GIGS } from '../lib/microcopy.js';
+import { GIG_FORM, GIGS } from '../lib/microcopy.js';
 import { Gigs } from './gigs.js';
 
 const { useSetlistsMock } = vi.hoisted(() => ({ useSetlistsMock: vi.fn() }));
@@ -111,5 +111,14 @@ describe('Gigs (list)', () => {
     useSetlistsMock.mockReturnValue({ data: [], isPending: false });
     renderGigs();
     expect(screen.getByRole('link', { name: GIGS.backToHome })).toHaveAttribute('href', '/');
+  });
+
+  it('links to the add gig form', () => {
+    useSetlistsMock.mockReturnValue({ data: [], isPending: false });
+    renderGigs();
+    expect(screen.getByRole('link', { name: GIG_FORM.addLink })).toHaveAttribute(
+      'href',
+      '/gigs/new',
+    );
   });
 });

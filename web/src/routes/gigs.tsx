@@ -3,7 +3,7 @@ import { Link } from 'react-router';
 import { PageTitle } from '../components/page-title.js';
 import { useSetlists } from '../hooks/use-setlists.js';
 import { formatGigDate, orderGigs, todayLondon } from '../lib/gig-date.js';
-import { GIGS } from '../lib/microcopy.js';
+import { GIG_FORM, GIGS } from '../lib/microcopy.js';
 
 /*
  * Gig list (Story 7.7). Upcoming gigs (today or later, London) soonest first,
@@ -48,12 +48,20 @@ export function Gigs() {
 
   return (
     <>
-      <Link
-        to="/"
-        className="inline-flex min-h-tap items-center text-[length:var(--text-row)] leading-[var(--text-row--line-height)] text-[color:var(--color-text-primary)] underline focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]"
-      >
-        {GIGS.backToHome}
-      </Link>
+      <div className="flex items-center justify-between gap-[calc(var(--spacing-unit)*4)]">
+        <Link
+          to="/"
+          className="inline-flex min-h-tap items-center text-[length:var(--text-row)] leading-[var(--text-row--line-height)] text-[color:var(--color-text-primary)] underline focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]"
+        >
+          {GIGS.backToHome}
+        </Link>
+        <Link
+          to="/gigs/new"
+          className="inline-flex min-h-tap items-center text-[length:var(--text-row)] leading-[var(--text-row--line-height)] text-[color:var(--color-text-primary)] underline focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]"
+        >
+          {GIG_FORM.addLink}
+        </Link>
+      </div>
       <PageTitle afterBackLink>{GIGS.heading}</PageTitle>
       {data !== undefined && data.length > 0 ? (
         <>

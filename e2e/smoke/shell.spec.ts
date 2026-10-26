@@ -31,10 +31,16 @@ test('/songs, /songs/:songId and the add/edit routes end on /login showing the P
   }
 });
 
-test('/gigs, /gigs/:setlistId and /gigs/:setlistId/songs/:songId end on /login showing the Password field', async ({
+test('/gigs, /gigs/new, /gigs/:setlistId, /gigs/:setlistId/edit and /gigs/:setlistId/songs/:songId end on /login showing the Password field', async ({
   page,
 }) => {
-  for (const path of ['/gigs', '/gigs/anything', '/gigs/anything/songs/anything']) {
+  for (const path of [
+    '/gigs',
+    '/gigs/new',
+    '/gigs/anything',
+    '/gigs/anything/edit',
+    '/gigs/anything/songs/anything',
+  ]) {
     await page.goto(path);
     await expect(page).toHaveURL(/\/login$/);
     await expect(page.getByLabel('Password')).toBeVisible();

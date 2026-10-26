@@ -4,6 +4,7 @@ import { useAuth } from './auth/auth-context.js';
 import { shouldRedirectOn401 } from './auth/redirect-on-401.js';
 import { AuthenticatedShell } from './routes/authenticated-shell.js';
 import { Gig } from './routes/gig.js';
+import { GigEdit } from './routes/gig-edit.js';
 import { Gigs } from './routes/gigs.js';
 import { Home } from './routes/home.js';
 import { Login } from './routes/login.js';
@@ -36,7 +37,9 @@ export const router = createBrowserRouter([
       { path: 'songs/:songId', element: <Song /> },
       { path: 'songs/:songId/edit', element: <SongEdit /> },
       { path: 'gigs', element: <Gigs /> },
+      { path: 'gigs/new', element: <GigEdit /> },
       { path: 'gigs/:setlistId', element: <Gig /> },
+      { path: 'gigs/:setlistId/edit', element: <GigEdit /> },
       { path: 'gigs/:setlistId/songs/:songId', element: <Song /> },
     ],
   },
