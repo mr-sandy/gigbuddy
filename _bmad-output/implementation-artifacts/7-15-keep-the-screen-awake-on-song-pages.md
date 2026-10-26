@@ -4,7 +4,7 @@ baseline_commit: a737bef
 
 # Story 7.15: Keep the screen awake on song pages
 
-Status: ready-for-dev
+Status: review
 
 <!-- Source: epics.md "Epic 7 / Story 7.15". Builds on 7.5 (song page) and 7.14 (gig play bar). -->
 
@@ -37,13 +37,13 @@ so that the phone resting on the Nord doesn't dim or lock mid-song.
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: `useWakeLock` hook** (AC: 1, 3, 4, 5, 6)
-  - [ ] New `web/src/hooks/use-wake-lock.ts` (+ `use-wake-lock.test.tsx`):
+- [x] **Task 1: `useWakeLock` hook** (AC: 1, 3, 4, 5, 6)
+  - [x] New `web/src/hooks/use-wake-lock.ts` (+ `use-wake-lock.test.tsx`):
     ```ts
     /** Holds a screen wake lock while the calling component is mounted. */
     export function useWakeLock(): { failed: boolean };
     ```
-  - [ ] One `useEffect` with empty deps. Inside it keep a local `sentinel` and an `active`
+  - [x] One `useEffect` with empty deps. Inside it keep a local `sentinel` and an `active`
     flag (set false in cleanup so late promises do nothing).
     - `request()`: if `!('wakeLock' in navigator)` → `setFailed(true)`, return. Otherwise
       `navigator.wakeLock.request('screen')`; on success, if still active store the sentinel,
@@ -54,37 +54,37 @@ so that the phone resting on the Nord doesn't dim or lock mid-song.
     - `visibilitychange` listener: when visible, active and no held sentinel, call `request()`.
     - Cleanup: `active = false`, remove the `visibilitychange` listener, release the sentinel
       if held (`void sentinel.release()`).
-  - [ ] `failed` starts `false`, so nothing shows before the first request settles.
-  - [ ] No retry timers, no module-level singleton. (The old `web/src/performance/wake-lock.ts`
+  - [x] `failed` starts `false`, so nothing shows before the first request settles.
+  - [x] No retry timers, no module-level singleton. (The old `web/src/performance/wake-lock.ts`
     from Story 4.2, removed in 7.1, had backoff timers and a singleton; that is more than this
     needs. Re-requesting on visibility and on release is enough, and can't loop.)
-  - [ ] A short header comment in the style of the other hooks.
+  - [x] A short header comment in the style of the other hooks.
 
-- [ ] **Task 2: Use it on the song page** (AC: 1, 2, 3, 5)
-  - [ ] `web/src/routes/song.tsx`: call `useWakeLock()` in `Song`. One component serves both
+- [x] **Task 2: Use it on the song page** (AC: 1, 2, 3, 5)
+  - [x] `web/src/routes/song.tsx`: call `useWakeLock()` in `Song`. One component serves both
     song routes (`router.tsx` lines 38 and 45), and Previous/Next re-render the same mounted
     `Song`, so the lock is held across steps (AC2) and released when the route changes to
     any other page (AC3). Don't add it to `SongEdit`, `Gig` or any other route.
-  - [ ] When `failed`, render a `<p>` with `WAKE_LOCK.maySleep` text (see copy below) just
+  - [x] When `failed`, render a `<p>` with `WAKE_LOCK.maySleep` text (see copy below) just
     below the back-link row and above the title: Body size, secondary colour,
     `mt-[calc(var(--spacing-unit)*2)]`. Static; no icon, no `aria-live`. Show it whether or
     not the song record loaded.
-  - [ ] Update the header comment of `song.tsx` with one line about the wake lock.
+  - [x] Update the header comment of `song.tsx` with one line about the wake lock.
 
-- [ ] **Task 3: Copy and style guide** (AC: 5, 7)
-  - [ ] Append to `web/src/lib/microcopy.ts`:
+- [x] **Task 3: Copy and style guide** (AC: 5, 7)
+  - [x] Append to `web/src/lib/microcopy.ts`:
     ```ts
     /* Story 7.15 — keep the screen awake on song pages. */
     export const WAKE_LOCK = {
       maySleep: 'Screen may sleep',
     } as const;
     ```
-  - [ ] `STYLE.md`, after the "Bottom bar" bullet: "Screen may sleep" line on song pages:
+  - [x] `STYLE.md`, after the "Bottom bar" bullet: "Screen may sleep" line on song pages:
     Body size, secondary text, under the back link; shown only when the screen can't be kept
     awake. No token changes.
 
-- [ ] **Task 4: Tests** (AC: 8)
-  - [ ] `use-wake-lock.test.tsx`: stub `navigator.wakeLock` with a fake `request` returning a
+- [x] **Task 4: Tests** (AC: 8)
+  - [x] `use-wake-lock.test.tsx`: stub `navigator.wakeLock` with a fake `request` returning a
     fake sentinel (an `EventTarget` with `release: vi.fn()` and `released` flag). Use
     `Object.defineProperty(navigator, 'wakeLock', { configurable: true, value })` and delete
     it in `afterEach`. Cover: requests on mount; `failed` false while held; rejection →
@@ -92,23 +92,23 @@ so that the phone resting on the Nord doesn't dim or lock mid-song.
     `visibilitychange` to visible after a release → requested again; sentinel `release`
     event while visible → requested again; request resolving after unmount → released at once.
     Use `renderHook` from `@testing-library/react`.
-  - [ ] `song.test.tsx`: mock `../hooks/use-wake-lock.js` (default `{ failed: false }`).
+  - [x] `song.test.tsx`: mock `../hooks/use-wake-lock.js` (default `{ failed: false }`).
     Cover: hook called on `/songs/:songId` and on the gig song route; note absent when
     `failed` false; note shown when `failed` true (on both routes, and when the song is not
     found).
-  - [ ] Other route tests: no change needed; they don't render `Song`. If
+  - [x] Other route tests: no change needed; they don't render `Song`. If
     `app-bootstrap.test.tsx` renders a song page and jsdom lacks `navigator.wakeLock`, the
     note will show; that's fine unless a test asserts its absence.
-  - [ ] Placeholder names only. No snapshot tests.
+  - [x] Placeholder names only. No snapshot tests.
 
 - [ ] **Task 5: Verify, commit, deploy** (AC: 6, 8, 9)
-  - [ ] `git diff --stat HEAD -- api shared infra` is empty.
-  - [ ] `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass.
+  - [x] `git diff --stat HEAD -- api shared infra` is empty.
+  - [x] `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass.
   - [ ] Commit after code review, one commit: `Implement story 7.15: Keep the screen awake on
     song pages`. Push to `main` only with Sandy's go-ahead; watch `deploy.yml` with
     `gh run watch`. If the blackout check blocks, report it; don't use `deploy-force.yml`
     unless Sandy says so.
-  - [ ] Set the story to `review`. No screenshots and no manual checklist for Sandy.
+  - [x] Set the story to `review`. No screenshots and no manual checklist for Sandy.
 
 ## Dev Notes
 
@@ -173,12 +173,43 @@ New: `web/src/hooks/use-wake-lock.ts` (+ test). Updated: `web/src/routes/song.ts
 
 ### Agent Model Used
 
+Claude Opus 5.5 (claude-opus-5-5)
+
 ### Debug Log References
 
 ### Completion Notes List
 
+- `useWakeLock` (`web/src/hooks/use-wake-lock.ts`): one effect with empty deps, local `sentinel`
+  and `active` flag. Requests on mount; re-requests on `visibilitychange` to visible when no lock
+  is held, and on the sentinel's `release` event while visible. No timers, no singleton. A lock
+  resolving after unmount is released at once; a rejection after unmount is ignored. Cleanup
+  removes the `release` listener before releasing so leaving never triggers a re-request.
+- `Song` calls the hook once; both song routes render the same component and Previous/Next
+  re-render it in place, so the lock is held across steps and released on leaving. Integration
+  test in `song.test.tsx` counts the hook's mount/unmount across Next then Back to gig (1/0, then
+  1/1). Edit and gig pages untouched.
+- "Screen may sleep" note: Body, secondary, `mt-[calc(var(--spacing-unit)*2)]`, between the
+  back-link row and the title; shown whether or not the song loaded. `WAKE_LOCK` copy in
+  `microcopy.ts`; `STYLE.md` bullet after "Bottom bar".
+- Tests: 8 hook tests (`renderHook`, fake `navigator.wakeLock` via `defineProperty`), 6 new song
+  tests. `pnpm lint`, `typecheck`, `test` (web 301 passed), `build` pass.
+  `git diff --stat HEAD -- api shared infra` empty. `app-bootstrap.test.tsx` needed no change.
+- Not yet done: commit (after code review) and deploy (needs Sandy's go-ahead) — Task 5's
+  commit/deploy subtask left open.
+
 ### File List
+
+- `web/src/hooks/use-wake-lock.ts` (new)
+- `web/src/hooks/use-wake-lock.test.tsx` (new)
+- `web/src/routes/song.tsx`
+- `web/src/routes/song.test.tsx`
+- `web/src/lib/microcopy.ts`
+- `STYLE.md`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- `_bmad-output/implementation-artifacts/7-15-keep-the-screen-awake-on-song-pages.md`
 
 ### Change Log
 
 - 2026-10-26: Story created; status → ready-for-dev.
+- 2026-10-26: Implemented wake lock hook, song page note, copy and style guide line; tests
+  added; status → review (commit and deploy pending code review and Sandy's go-ahead).

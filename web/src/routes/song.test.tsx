@@ -1,23 +1,30 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { useEffect } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { GIG_PLAY, GIG_SETLIST, SONG_FORM, SONGS } from '../lib/microcopy.js';
+import { GIG_PLAY, GIG_SETLIST, SONG_FORM, SONGS, WAKE_LOCK } from '../lib/microcopy.js';
 import { Song } from './song.js';
 
-const { useSongMock, useSongsMock, useSetlistMock, useSetlistsMock } = vi.hoisted(() => ({
-  useSongMock: vi.fn(),
-  useSongsMock: vi.fn(),
-  useSetlistMock: vi.fn(),
-  useSetlistsMock: vi.fn(),
-}));
+const { useSongMock, useSongsMock, useSetlistMock, useSetlistsMock, useWakeLockMock } = vi.hoisted(
+  () => ({
+    useSongMock: vi.fn(),
+    useSongsMock: vi.fn(),
+    useSetlistMock: vi.fn(),
+    useSetlistsMock: vi.fn(),
+    useWakeLockMock: vi.fn(),
+  }),
+);
 vi.mock('../hooks/use-song.js', () => ({ useSong: useSongMock }));
 vi.mock('../hooks/use-songs.js', () => ({ useSongs: useSongsMock }));
 vi.mock('../hooks/use-setlist.js', () => ({ useSetlist: useSetlistMock }));
 vi.mock('../hooks/use-setlists.js', () => ({ useSetlists: useSetlistsMock }));
+vi.mock('../hooks/use-wake-lock.js', () => ({ useWakeLock: useWakeLockMock }));
 
 beforeEach(() => {
   useSetlistMock.mockReturnValue({ data: undefined, isPending: true });
   useSetlistsMock.mockReturnValue({ data: undefined, isPending: true });
+  useWakeLockMock.mockReset();
+  useWakeLockMock.mockReturnValue({ failed: false });
   window.scrollTo = vi.fn() as unknown as typeof window.scrollTo;
 });
 
@@ -261,6 +268,83 @@ describe('Song', () => {
       renderSong();
       expect(screen.queryByText(GIG_PLAY.next)).not.toBeInTheDocument();
       expect(screen.queryByText(GIG_PLAY.previous)).not.toBeInTheDocument();
+    });
+  });
+
+  describe('wake lock', () => {
+    const found = () => {
+      useSongMock.mockReturnValue({ data: { songId: 'abc', title: 'T' }, isPending: false });
+      useSongsMock.mockReturnValue({ data: [], isPending: false });
+    };
+    const notFound = () => {
+      useSongMock.mockReturnValue({ data: null, isPending: false });
+      useSongsMock.mockReturnValue({ data: [], isPending: false });
+    };
+
+    it('is held on /songs/:songId', () => {
+      found();
+      renderSong();
+      expect(useWakeLockMock).toHaveBeenCalled();
+    });
+
+    it('is held on the gig song route', () => {
+      found();
+      renderGigSong();
+      expect(useWakeLockMock).toHaveBeenCalled();
+    });
+
+    it('shows no note while the lock is held', () => {
+      found();
+      renderSong();
+      expect(screen.queryByText(WAKE_LOCK.maySleep)).not.toBeInTheDocument();
+    });
+
+    it('shows the note when the lock failed, on both routes', () => {
+      useWakeLockMock.mockReturnValue({ failed: true });
+      found();
+      const { unmount } = renderSong();
+      expect(screen.getByText(WAKE_LOCK.maySleep)).toBeInTheDocument();
+      unmount();
+      renderGigSong();
+      expect(screen.getByText(WAKE_LOCK.maySleep)).toBeInTheDocument();
+    });
+
+    it('shows the note when the song is not found', () => {
+      useWakeLockMock.mockReturnValue({ failed: true });
+      notFound();
+      renderSong();
+      expect(screen.getByText(SONGS.notFound)).toBeInTheDocument();
+      expect(screen.getByText(WAKE_LOCK.maySleep)).toBeInTheDocument();
+    });
+
+    it('is kept across Next and released on leaving the song page', () => {
+      const life = { mounts: 0, unmounts: 0 };
+      useWakeLockMock.mockImplementation(() => {
+        useEffect(() => {
+          life.mounts += 1;
+          return () => {
+            life.unmounts += 1;
+          };
+        }, []);
+        return { failed: false };
+      });
+      useSongMock.mockReturnValue({ data: { songId: 'a', title: 'T' }, isPending: false });
+      useSongsMock.mockReturnValue({ data: [], isPending: false });
+      useSetlistMock.mockReturnValue({ data: gigWith() });
+      render(
+        <MemoryRouter initialEntries={['/gigs/g1/songs/a?at=1']}>
+          <Routes>
+            <Route path="/gigs/:setlistId" element={<p>Gig page</p>} />
+            <Route path="/gigs/:setlistId/songs/:songId" element={<Song />} />
+          </Routes>
+        </MemoryRouter>,
+      );
+      fireEvent.click(screen.getByRole('link', { name: GIG_PLAY.next }));
+      expect(screen.getByText('2 of 3')).toBeInTheDocument();
+      expect(life).toEqual({ mounts: 1, unmounts: 0 });
+      fireEvent.click(screen.getByRole('link', { name: GIG_SETLIST.backToGig }));
+      expect(screen.getByText('Gig page')).toBeInTheDocument();
+      expect(life).toEqual({ mounts: 1, unmounts: 1 });
     });
   });
 });

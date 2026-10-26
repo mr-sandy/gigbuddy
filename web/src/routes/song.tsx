@@ -4,8 +4,9 @@ import { Link, useParams, useSearchParams } from 'react-router';
 import { PageTitle } from '../components/page-title.js';
 import { useSetlistOrCached } from '../hooks/use-setlist-or-cached.js';
 import { useSongOrCached } from '../hooks/use-song-or-cached.js';
+import { useWakeLock } from '../hooks/use-wake-lock.js';
 import { gigSongPath, playOrder, resolvePlace } from '../lib/gig-position.js';
-import { GIG_PLAY, GIG_SETLIST, SONG_FORM, SONGS } from '../lib/microcopy.js';
+import { GIG_PLAY, GIG_SETLIST, SONG_FORM, SONGS, WAKE_LOCK } from '../lib/microcopy.js';
 
 /*
  * Song page (Story 7.3 shell, Story 7.5 content): title, key/patch line and
@@ -13,6 +14,7 @@ import { GIG_PLAY, GIG_SETLIST, SONG_FORM, SONGS } from '../lib/microcopy.js';
  * instantly and works offline. Under /gigs/:setlistId/songs/:songId (Story 7.8)
  * it is the same page with "Back to gig" and no Edit link, plus (Story 7.14)
  * a fixed bottom bar stepping Previous/Next through the gig's setlist.
+ * Both routes keep the screen awake while open (Story 7.15).
  */
 const LINK_CLASS =
   'inline-flex min-h-tap min-w-[var(--spacing-tap)] items-center text-[length:var(--text-row)] leading-[var(--text-row--line-height)]';
@@ -58,6 +60,7 @@ export function Song() {
   const place =
     setlistId && setlist && songId ? resolvePlace(playOrder(setlist), songId, at) : null;
   const showBar = setlist !== undefined && place !== null;
+  const wakeLock = useWakeLock();
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: songId and at are the trigger; Next re-renders this same mounted page
   useEffect(() => {
@@ -96,6 +99,11 @@ export function Song() {
           </Link>
         ) : null}
       </div>
+      {wakeLock.failed ? (
+        <p className="mt-[calc(var(--spacing-unit)*2)] text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-[color:var(--color-text-secondary)]">
+          {WAKE_LOCK.maySleep}
+        </p>
+      ) : null}
       {song ? (
         <>
           <PageTitle afterBackLink>{song.title}</PageTitle>

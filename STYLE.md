@@ -44,6 +44,8 @@ Rules:
   text colour. Links at Row size, at least 44px; the position ("3 of 12") at Body size, secondary.
   An unavailable action shows as secondary text, not a link. Content is padded so nothing hides
   under the bar.
+- "Screen may sleep" line on song pages: Body size, secondary text, under the back link; shown
+  only when the screen can't be kept awake. No token changes.
 
 ## Forms
 

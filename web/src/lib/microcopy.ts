@@ -112,3 +112,8 @@ export const GIG_PLAY = {
   next: 'Next',
   position: (n: number, total: number) => `${n} of ${total}`,
 } as const;
+
+/* Story 7.15 — keep the screen awake on song pages. */
+export const WAKE_LOCK = {
+  maySleep: 'Screen may sleep',
+} as const;
