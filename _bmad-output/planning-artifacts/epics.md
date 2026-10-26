@@ -2474,3 +2474,32 @@ songs the band no longer plays.
     delete of a missing song, and the 409 with gig details; web tests cover confirm, Keep,
     success, in-use and failure lines.
 12. Deployed to gig.cormie.com via the normal pipeline.
+
+### Story 7.12: Delete a gig
+
+As Sandy, I want to delete a gig, so that I can clear out cancelled or wrongly entered gigs
+(and free their songs for deletion).
+
+**Acceptance criteria**
+1. The gig edit page gains a "Delete gig" button, below Save/Cancel. It is not shown when
+   adding a gig.
+2. Tapping it shows, on the same page, a plain line "Delete <venue>, <date>?" (date only when
+   there is no venue) with "Yes, delete" and "Keep" buttons. "Keep" returns to the form as it
+   was. Nothing is deleted without the second tap. "Yes, delete" is disabled while the request
+   runs.
+3. "Yes, delete" calls a new `DELETE /api/v1/setlists/:setlistId`. A gig and its setlist are
+   one record, so this deletes both. On success the gig is removed from the app's cached gig
+   list and the app goes to `/gigs`.
+4. Any gig can be deleted, past or upcoming (Sandy, 2026-10-26).
+5. The delete is a real delete of the record (point-in-time recovery covers mistakes).
+   Deleting a gig that no longer exists succeeds quietly.
+6. Delete needs a connection: it does not go through the offline outbox. Offline or on any
+   other failure, a plain line says the gig wasn't deleted; the gig is unchanged.
+7. A queued edit to the deleted gig or its setlist cannot recreate it later.
+8. `architecture.md` AR-12 note extends to a single-gig delete; bulk/admin delete endpoints
+   remain out of scope.
+9. No soft delete, undo, bulk delete, or deleting from the gig list or gig page.
+10. Same responsive and theming rules as 7.1.
+11. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass. API tests cover delete
+    and delete of a missing gig; web tests cover confirm, Keep, success and failure lines.
+12. Deployed to gig.cormie.com via the normal pipeline.
