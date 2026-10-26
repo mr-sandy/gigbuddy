@@ -4,7 +4,7 @@ baseline_commit: 3d45be6
 
 # Story 7.8: Setlist on the gig page
 
-Status: review
+Status: done
 
 <!-- Source: epics.md "Epic 7 / Story 7.8". Builds on 7.7 (gig page shell) and 7.5 (song page). -->
 
@@ -124,7 +124,7 @@ so that I can see what we're playing and read any song in it without leaving the
 - [x] **Task 5: Verify, commit, deploy** (AC: 7, 9, 10)
   - [x] `git diff --stat HEAD -- api shared infra` is empty.
   - [x] `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass.
-  - [ ] Commit after code review, one commit: `Implement story 7.8: Setlist on the gig page`.
+  - [x] Commit after code review, one commit: `Implement story 7.8: Setlist on the gig page`.
     Push to `main` only with Sandy's go-ahead; watch `deploy.yml` with `gh run watch`. If the
     blackout check blocks, report it; don't use `deploy-force.yml` unless Sandy says so.
   - [x] Set the story to `review`. No screenshots and no manual checklist for Sandy.
@@ -235,3 +235,4 @@ Claude Sonnet 5.5
 ### Change Log
 
 - 2026-10-26: Implemented story 7.8 (setlist on the gig page); status → review.
+- 2026-10-26: Code review clean; committed (f2a60f8), deployed, Sandy checked live; status → done.
