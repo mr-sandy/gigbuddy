@@ -2504,26 +2504,39 @@ As Sandy, I want to delete a gig, so that I can clear out cancelled or wrongly e
     and delete of a missing gig; web tests cover confirm, Keep, success and failure lines.
 12. Deployed to gig.cormie.com via the normal pipeline.
 
-### Story 7.13: Fix gig date change leaving an old copy
+### Story 7.13: Key setlists by ID, not date
 
-As Sandy, I want changing a gig's date to move the gig rather than copy it, so that a gig
-never shows up twice or reverts to its old details.
+As Sandy, I want changing a gig's date to update the gig in place, so that a gig never shows
+up twice or reverts to its old details.
 
 **Background:** the setlist's DDB sort key includes the gig date
-(`SETLIST#<date>#<setlistId>`), and `putSetlist` writes a new item when the date changes
+(`SETLIST#<date>#<setlistId>`), so `putSetlist` writes a new item when the date changes
 without removing the old one (Story 7.9 bug). The old-date copy then appears in the gig list,
-and because `getSetlist` returns the first match in sort-key order, a gig moved to a later
-date can open showing the old copy. Story 7.12's delete already removes every copy.
+and because `getSetlist` scans the partition and returns the first match in sort-key order, a
+gig moved to a later date can open showing the old copy. The root cause is the date in the
+key. Fix it there: `sk = SETLIST#<setlistId>`, with the date kept in `gsi1sk`
+(`<date>#<setlistId>`), which already orders the gig list. Only `api/src/ddb/setlists.ts`
+builds or queries the setlist key.
 
 **Acceptance criteria**
-1. Saving a gig with a changed date leaves exactly one item for that `setlistId`, at the new
-   date. Saving with an unchanged date behaves as now.
-2. A gig whose date has been changed opens, lists and edits with its latest details.
-3. Stale writes are still dropped by the existing last-writer-wins check and remove nothing.
-4. Prod tidy-up: list every `setlistId` with more than one item in prod and show Sandy the
-   list before anything is deleted. For each, keep the item with the latest `clientWrittenAt`
-   and delete the others. One-off; no new admin endpoint.
-5. No change to the setlist record shape or the DDB key design; no web change.
-6. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass. API tests cover a date
-   change (old copy removed), an unchanged date, and a stale write.
-7. Deployed to gig.cormie.com via the normal pipeline.
+1. Setlist items use `sk = SETLIST#<setlistId>`. `gsi1pk`/`gsi1sk` are unchanged, so the gig
+   list order is unchanged. No change to the setlist record shape; no web change; no infra
+   change.
+2. `getSetlist` is a direct `GetItem` on the new key (no partition scan) and
+   `deleteSetlist` is a single `DeleteItem`. The 7.12 delete-every-copy loop is removed.
+3. Saving a gig with a changed date overwrites the same item and updates `gsi1sk`; exactly one
+   item exists for that `setlistId`. A gig whose date has changed opens, lists and edits with
+   its latest details.
+4. Stale writes are still dropped by the existing last-writer-wins check and change nothing.
+5. Prod migration: list every existing setlist item, grouped by `setlistId`, and show Sandy
+   the list (including any `setlistId` with more than one item) before anything is changed.
+   Then, for each `setlistId`, write the item with the latest `clientWrittenAt` under the new
+   key and delete all old-key items. One-off script; no new admin endpoint. Order: run the
+   migration, then deploy the new code straight after. Sandy is the only user and does not
+   edit gigs in between, so no dual-read or re-run handling is needed.
+6. `architecture.md` key documentation (`SETLIST#<isoDate>#<setlistId>`, two places) is
+   updated to the new key.
+7. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass. API tests cover a date
+   change (one item, new `gsi1sk`), an unchanged date, a stale write, get, and delete.
+8. Deployed to gig.cormie.com via the normal pipeline.
+
