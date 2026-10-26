@@ -4,7 +4,7 @@ baseline_commit: 916ba23bcc1f3fb5b6d1b6151b634826889cabc2
 
 # Story 7.7: Gig list at /gigs
 
-Status: review
+Status: done
 
 <!-- Source: epics.md "Epic 7 / Story 7.7". Mirrors Story 7.3 (song list) for gigs. -->
 
@@ -158,10 +158,10 @@ so that I can find the next gig, or a past one, without remembering its date.
   - [x] Test venues are placeholders (`Venue A`, `Venue B`, `Test Venue`). Don't invent real
     venue names. No snapshot tests.
 
-- [ ] **Task 8: Verify, commit, deploy** (AC: 8, 10, 11)
+- [x] **Task 8: Verify, commit, deploy** (AC: 8, 10, 11)
   - [x] `git diff --stat HEAD -- api shared infra` is empty.
   - [x] `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass.
-  - [ ] One commit: `Implement story 7.7: Gig list at /gigs`. Push to `main` only with
+  - [x] One commit: `Implement story 7.7: Gig list at /gigs`. Push to `main` only with
     Sandy's go-ahead; watch `deploy.yml` with `gh run watch`. If the blackout check blocks,
     report it; don't use `deploy-force.yml`.
   - [x] Set the story to `review`. No screenshots and no manual checklist for Sandy.
@@ -273,3 +273,4 @@ Claude Sonnet 5.5
 ### Change Log
 
 - 2026-10-25: Implemented story 7.7 (gig list and gig page); status → review.
+- 2026-10-26: Code review clean (no findings). Deploy blocked by Sunday-evening blackout, then forced by Sandy; live check OK. Status → done.
