@@ -2371,3 +2371,76 @@ so that I can see what we're playing and read any song in it without leaving the
    song → "Back to gig", and the gig song page having no "Edit" link. `e2e/smoke` checks
    `/gigs/:setlistId/songs/:songId` ends on the login when signed out.
 10. Deployed to gig.cormie.com via the normal pipeline.
+
+### Story 7.9: Add and edit a gig
+
+As Sandy, I want to add a new gig and correct an existing one's details, so that the gig list
+stays up to date without touching the database.
+
+**Acceptance criteria**
+1. `/gigs` gains one "Add gig" link to `/gigs/new`. The gig page gains one "Edit" link to
+   `/gigs/:setlistId/edit`. Nothing else on either page changes.
+2. Both routes show the same form: venue, date and time, in that order, each with a visible
+   label. Date and time use the browser's native date and time inputs. All inputs use type
+   roles from `STYLE.md` (no one-off sizes); 16px minimum so iOS does not zoom.
+3. Editing pre-fills the form from the gig. Adding starts empty.
+4. "Save" writes the setlist through the existing `use-setlist-mutation` hook, then goes to
+   that gig's page. A new gig gets a fresh 16-char NanoID from `web/src/lib/id.ts` and no
+   sections. "Cancel" goes back (to the gig page when editing, to `/gigs` when adding)
+   without saving.
+5. Venue and date are required: with either blank, Save shows a plain one-sentence message and
+   does not save. Time is optional; a blank time is saved as absent, not as an empty string.
+6. Editing keeps the stored sections and songs unchanged (the PUT replaces the whole record).
+7. Editing an unknown `setlistId` shows the same "Gig not found" line and "Back to gigs" link
+   as the gig page.
+8. `/gigs/new` and `/gigs/:setlistId/edit` are valid routes (amends 7.1 AC3); signed out, they
+   show the existing login.
+9. No delete, setlist editing, duplicate-gig check, autosave or unsaved-changes prompt. No
+   change to `api/`, `shared/` or `infra/`.
+10. Same responsive and theming rules as 7.1 (360px–1680px with no horizontal scroll,
+    light/dark via `prefers-color-scheme`, WCAG AA contrast).
+11. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass. Unit tests cover adding
+    a gig, editing one (sections preserved, blanked time saved as absent), the required-field
+    message, and Cancel. `e2e/smoke` checks the two new routes end on the login when signed
+    out.
+12. Deployed to gig.cormie.com via the normal pipeline.
+
+### Story 7.10: Edit the setlist as text
+
+As Sandy, I want to edit a gig's setlist as plain text, one song per line, so that I can paste
+in a setlist shared by text message and add, remove or reorder songs by editing lines.
+
+**Acceptance criteria**
+1. The gig page gains one "Edit setlist" link to `/gigs/:setlistId/setlist`. Nothing else on
+   the gig page changes.
+2. `/gigs/:setlistId/setlist` shows the venue as the title (`PageTitle`) and one labelled
+   multi-line text box, using `STYLE.md` type roles (16px minimum), pre-filled from the stored
+   setlist: each song's `titleSnapshot` on its own line, in stored order; each section with a
+   non-blank name preceded by a line `## <name>`; a blank line between sections.
+3. On "Save", the text is read line by line. Blank lines are ignored. A line starting `##`
+   starts a new section named by the rest of the line, trimmed. Lines before the first `##`
+   form a section with a blank name. Every other line, trimmed, is a song title.
+4. Each title is matched to a library song by title, ignoring case and surrounding spaces.
+   `titleSnapshot` is set to the library song's current title. The same song may appear more
+   than once.
+5. If any title matches no song, or more than one song, nothing is saved and a plain message
+   lists those lines (e.g. "Not in the library: <title>"). The text box keeps what was typed.
+6. A valid save writes the setlist through the existing `use-setlist-mutation` hook,
+   replacing its sections and keeping the gig details, then goes to the gig page. "Cancel"
+   goes back to the gig page without saving.
+7. Per-gig annotations are not shown or edited. A song already in the setlist keeps its
+   stored `perGigAnnotation` (matched by `songId`); new songs have none.
+8. An unknown `setlistId` shows the same "Gig not found" line and "Back to gigs" link as the
+   gig page. While the library is loading or fails, Save is unavailable with a plain line.
+9. `/gigs/:setlistId/setlist` is a valid route (amends 7.1 AC3); signed out, it shows the
+   existing login.
+10. No fuzzy matching, creating songs from unmatched lines, drag reordering, autosave or
+    unsaved-changes prompt. No change to `api/`, `shared/` or `infra/`.
+11. Same responsive and theming rules as 7.1 (360px–1680px with no horizontal scroll,
+    light/dark via `prefers-color-scheme`, WCAG AA contrast).
+12. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass. Unit tests cover the
+    text round trip (stored setlist → text → same sections), section headings and the
+    unnamed first section, case-insensitive matching, unmatched and ambiguous titles, kept
+    annotations, and Cancel. `e2e/smoke` checks the new route ends on the login when signed
+    out.
+13. Deployed to gig.cormie.com via the normal pipeline.
