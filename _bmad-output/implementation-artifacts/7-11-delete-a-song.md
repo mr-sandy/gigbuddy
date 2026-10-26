@@ -3,7 +3,7 @@ baseline_commit: aba8d62
 ---
 # Story 7.11: Delete a song
 
-Status: review
+Status: done
 
 <!-- Source: epics.md "Epic 7 / Story 7.11". Decisions by Sandy 2026-10-26: block when in a setlist, second-tap confirm, real delete. -->
 
@@ -33,7 +33,8 @@ can't recreate it; AR-12 note; no soft delete, undo or bulk delete.
   - [x] `apiFetch` method union gains `'DELETE'`.
   - [x] `web/src/api/songs.ts`: `deleteSong(songId): Promise<'deleted' | 'in-use'>`; 204 →
     deleted, 409 `SONG_IN_USE` → in-use, anything else throws (fetch throws offline).
-  - [x] `outbox.ts`: `removeByRecordKey(recordKey)`.
+  - [x] `outbox.ts`: `removePending(recordKey)` (pending entries only; an in-flight entry is
+    left to the flusher — see the known gap below).
   - [x] `useSongMutation()` gains `deleteSong(songId)`: calls the API (not the outbox); on
     `deleted` drops outbox entries for the song, removes it from `['songs', band]` and removes
     `['song', band, songId]`. Returns the result; throws on failure.
@@ -82,3 +83,4 @@ claude-opus-5-5
 ### Change Log
 
 - 2026-10-26: Implemented story 7.11 (delete a song); status → review.
+- 2026-10-26: Code review (lightweight): clean. Applied one nit: "Yes, delete" is disabled while the request runs. Status → done.

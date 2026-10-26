@@ -203,11 +203,13 @@ function DeleteSong({ song }: { song: Song }) {
   const { data: setlists } = useSetlists();
   const [step, setStep] = useState<'idle' | 'confirm'>('idle');
   const [message, setMessage] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const gigs = (setlists ?? []).filter((setlist) =>
     setlist.sections.some((section) => section.songs.some((ref) => ref.songId === song.songId)),
   );
 
   async function onConfirm() {
+    setDeleting(true);
     try {
       const result = await deleteSong(song.songId);
       if (result === 'deleted') {
@@ -218,6 +220,7 @@ function DeleteSong({ song }: { song: Song }) {
     } catch {
       setMessage(SONG_DELETE.failed);
     }
+    setDeleting(false);
     setStep('idle');
   }
 
@@ -263,7 +266,7 @@ function DeleteSong({ song }: { song: Song }) {
         <>
           <p className={BODY_PRIMARY}>{`${SONG_DELETE.confirm} ${song.title}?`}</p>
           <div className="mt-[calc(var(--spacing-unit)*4)] flex flex-wrap items-center gap-[calc(var(--spacing-unit)*6)]">
-            <button type="button" onClick={onConfirm} className={BUTTON_CLASS}>
+            <button type="button" onClick={onConfirm} disabled={deleting} className={BUTTON_CLASS}>
               {SONG_DELETE.yes}
             </button>
             {keep}
