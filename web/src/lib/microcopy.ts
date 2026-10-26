@@ -73,3 +73,16 @@ export const GIG_FORM = {
   cancel: 'Cancel',
   required: 'A gig needs a venue and a date.',
 } as const;
+
+/* Story 7.10 — edit the setlist as text. */
+export const SETLIST_TEXT = {
+  editLink: 'Edit setlist',
+  label: 'Setlist',
+  hint: 'One song per line. Start a line with ## to name a section.',
+  save: 'Save',
+  cancel: 'Cancel',
+  notInLibrary: 'Not in the library:',
+  ambiguous: 'More than one song is called:',
+  songsLoading: 'Loading songs…',
+  songsError: "Couldn't load your songs, so the setlist can't be saved yet.",
+} as const;

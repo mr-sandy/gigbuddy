@@ -8,6 +8,7 @@ import { GigEdit } from './routes/gig-edit.js';
 import { Gigs } from './routes/gigs.js';
 import { Home } from './routes/home.js';
 import { Login } from './routes/login.js';
+import { SetlistEdit } from './routes/setlist-edit.js';
 import { Song } from './routes/song.js';
 import { SongEdit } from './routes/song-edit.js';
 import { Songs } from './routes/songs.js';
@@ -40,6 +41,7 @@ export const router = createBrowserRouter([
       { path: 'gigs/new', element: <GigEdit /> },
       { path: 'gigs/:setlistId', element: <Gig /> },
       { path: 'gigs/:setlistId/edit', element: <GigEdit /> },
+      { path: 'gigs/:setlistId/setlist', element: <SetlistEdit /> },
       { path: 'gigs/:setlistId/songs/:songId', element: <Song /> },
     ],
   },

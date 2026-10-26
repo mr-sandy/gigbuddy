@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
-import { GIG_FORM, GIG_SETLIST, GIGS } from '../lib/microcopy.js';
+import { GIG_FORM, GIG_SETLIST, GIGS, SETLIST_TEXT } from '../lib/microcopy.js';
 import { Gig } from './gig.js';
 
 const { useSetlistMock, useSetlistsMock } = vi.hoisted(() => ({
@@ -71,11 +71,16 @@ describe('Gig', () => {
       'href',
       '/gigs/g1/edit',
     );
+    expect(screen.getByRole('link', { name: SETLIST_TEXT.editLink })).toHaveAttribute(
+      'href',
+      '/gigs/g1/setlist',
+    );
     unmount();
     useSetlistMock.mockReturnValue({ data: null, isPending: false });
     useSetlistsMock.mockReturnValue({ data: [], isPending: false });
     renderGig();
     expect(screen.queryByRole('link', { name: GIG_FORM.editLink })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: SETLIST_TEXT.editLink })).not.toBeInTheDocument();
   });
 
   it('shows loading', () => {
@@ -103,7 +108,12 @@ describe('Gig', () => {
       ]);
       const links = screen
         .getAllByRole('link')
-        .filter((l) => l.textContent !== GIGS.backToGigs && l.textContent !== GIG_FORM.editLink);
+        .filter(
+          (l) =>
+            l.textContent !== GIGS.backToGigs &&
+            l.textContent !== GIG_FORM.editLink &&
+            l.textContent !== SETLIST_TEXT.editLink,
+        );
       expect(links.map((l) => l.textContent)).toEqual(['Tune B', 'Tune A', 'Tune C']);
       expect(links.map((l) => l.getAttribute('href'))).toEqual([
         '/gigs/g1/songs/s2',

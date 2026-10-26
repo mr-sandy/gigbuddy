@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router';
 import { PageTitle } from '../components/page-title.js';
 import { useSetlistOrCached } from '../hooks/use-setlist-or-cached.js';
 import { formatGigDate } from '../lib/gig-date.js';
-import { GIG_FORM, GIG_SETLIST, GIGS } from '../lib/microcopy.js';
+import { GIG_FORM, GIG_SETLIST, GIGS, SETLIST_TEXT } from '../lib/microcopy.js';
 
 /*
  * Gig page (Story 7.7 shell, Story 7.8 setlist): venue as the title, date
@@ -66,7 +66,7 @@ export function Gig() {
 
   return (
     <>
-      <div className="flex items-center justify-between gap-[calc(var(--spacing-unit)*4)]">
+      <div className="flex flex-wrap items-center justify-between gap-[calc(var(--spacing-unit)*4)]">
         <Link
           to="/gigs"
           className="inline-flex min-h-tap items-center text-[length:var(--text-row)] leading-[var(--text-row--line-height)] text-[color:var(--color-text-primary)] underline focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]"
@@ -74,12 +74,20 @@ export function Gig() {
           {GIGS.backToGigs}
         </Link>
         {setlist ? (
-          <Link
-            to={`/gigs/${setlist.setlistId}/edit`}
-            className="inline-flex min-h-tap items-center text-[length:var(--text-row)] leading-[var(--text-row--line-height)] text-[color:var(--color-text-primary)] underline focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]"
-          >
-            {GIG_FORM.editLink}
-          </Link>
+          <div className="flex flex-wrap items-center gap-[calc(var(--spacing-unit)*4)]">
+            <Link
+              to={`/gigs/${setlist.setlistId}/setlist`}
+              className="inline-flex min-h-tap items-center text-[length:var(--text-row)] leading-[var(--text-row--line-height)] text-[color:var(--color-text-primary)] underline focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]"
+            >
+              {SETLIST_TEXT.editLink}
+            </Link>
+            <Link
+              to={`/gigs/${setlist.setlistId}/edit`}
+              className="inline-flex min-h-tap items-center text-[length:var(--text-row)] leading-[var(--text-row--line-height)] text-[color:var(--color-text-primary)] underline focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]"
+            >
+              {GIG_FORM.editLink}
+            </Link>
+          </div>
         ) : null}
       </div>
       {setlist ? (

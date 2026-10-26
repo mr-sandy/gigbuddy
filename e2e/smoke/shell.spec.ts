@@ -31,7 +31,7 @@ test('/songs, /songs/:songId and the add/edit routes end on /login showing the P
   }
 });
 
-test('/gigs, /gigs/new, /gigs/:setlistId, /gigs/:setlistId/edit and /gigs/:setlistId/songs/:songId end on /login showing the Password field', async ({
+test('/gigs, /gigs/new, /gigs/:setlistId, /gigs/:setlistId/edit, /gigs/:setlistId/setlist and /gigs/:setlistId/songs/:songId end on /login showing the Password field', async ({
   page,
 }) => {
   for (const path of [
@@ -39,6 +39,7 @@ test('/gigs, /gigs/new, /gigs/:setlistId, /gigs/:setlistId/edit and /gigs/:setli
     '/gigs/new',
     '/gigs/anything',
     '/gigs/anything/edit',
+    '/gigs/anything/setlist',
     '/gigs/anything/songs/anything',
   ]) {
     await page.goto(path);

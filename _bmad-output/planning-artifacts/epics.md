@@ -2420,9 +2420,9 @@ in a setlist shared by text message and add, remove or reorder songs by editing 
 3. On "Save", the text is read line by line. Blank lines are ignored. A line starting `##`
    starts a new section named by the rest of the line, trimmed. Lines before the first `##`
    form a section with a blank name. Every other line, trimmed, is a song title.
-4. Each title is matched to a library song by title, ignoring case and surrounding spaces.
-   `titleSnapshot` is set to the library song's current title. The same song may appear more
-   than once.
+4. Each title is matched to a library song by title, ignoring case and surrounding spaces,
+   and treating curly quotes (‘ ’ “ ”) as straight ones (' "). `titleSnapshot` is set to the
+   library song's current title. The same song may appear more than once.
 5. If any title matches no song, or more than one song, nothing is saved and a plain message
    lists those lines (e.g. "Not in the library: <title>"). The text box keeps what was typed.
 6. A valid save writes the setlist through the existing `use-setlist-mutation` hook,
