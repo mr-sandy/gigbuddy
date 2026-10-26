@@ -2174,6 +2174,15 @@ specified. Source: `sprint-change-proposal-2026-10-19.md`. Each story ends with 
 (Story 7.2, review snapshots, was dropped on 2026-10-19: Sandy checks the live app directly, which
 saves tokens.)
 
+**Decisions, 2026-10-26 (after 7.14):**
+- Mid-set jump is dropped for now. To play a called song, Sandy goes to `/songs`, opens it,
+  then returns to the gig for the next planned song. No jump UI.
+- Next-song title preview: not wanted.
+- Per-gig notes (`perGigAnnotation`) are to be purged, not shown (a later story).
+- JSON export is kept; its link (lost in the 7.1 reset) is to be re-homed (a later story).
+- Queue: 7.15 wake lock, then per-gig notes purge, then export link, then a wide UI review
+  (chord-chart polish folds into that).
+
 ### Story 7.1: Front-end reset to a responsive landing page
 
 As Sandy, I want GigBuddy to open on one simple page that works on my phone and my laptop,
@@ -2576,3 +2585,29 @@ move to the next song on stage without going back to the gig list each time.
     middle and last songs, the missing-song case, and no bar on `/songs/:songId`.
 11. Deployed to gig.cormie.com via the normal pipeline. A UI review follows this story
     (Sandy, 2026-10-26).
+
+### Story 7.15: Keep the screen awake on song pages
+
+As Sandy, I want the screen to stay on while a song is open, so that the phone resting on the
+Nord doesn't dim or lock mid-song.
+
+**Acceptance criteria**
+1. While a song page is open, at either `/songs/:songId` or `/gigs/:setlistId/songs/:songId`,
+   GigBuddy holds a screen wake lock (`navigator.wakeLock.request('screen')`). This covers a
+   called song opened from the library that isn't in the set. Other pages, including song
+   and gig edit pages, keep normal sleep.
+2. Moving Previous/Next between gig songs keeps the lock: no drop and re-request per song.
+3. Leaving the song pages releases the lock.
+4. When the app comes back to the foreground, or the system releases the lock while the page
+   is visible, the lock is requested again. No timed retry loop.
+5. If a request fails or the API is missing, a small static note "Screen may sleep" shows in
+   secondary text near the top of the song page. It never shows while the lock is held or
+   before the first request has settled. No animation, banner or toast.
+6. Lock logic lives in one hook in `web/src/hooks/`. No change to `api/`, `shared/` or `infra/`.
+7. Same responsive and theming rules as 7.1. `STYLE.md` notes the "Screen may sleep" line.
+8. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass. Unit tests cover:
+   lock requested on both song routes, not on other pages; held across Previous/Next;
+   released on leaving; re-requested on returning visible; note shown on failure and when
+   unsupported, hidden when held.
+9. Deployed to gig.cormie.com via the normal pipeline.
+
