@@ -53,3 +53,9 @@ export const GIGS = {
   backToHome: 'Home',
   backToGigs: 'Back to gigs',
 } as const;
+
+/* Story 7.8 — setlist on the gig page, and the song page inside a gig. */
+export const GIG_SETLIST = {
+  empty: 'No songs in this setlist yet.',
+  backToGig: 'Back to gig',
+} as const;

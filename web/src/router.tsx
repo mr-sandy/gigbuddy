@@ -37,6 +37,7 @@ export const router = createBrowserRouter([
       { path: 'songs/:songId/edit', element: <SongEdit /> },
       { path: 'gigs', element: <Gigs /> },
       { path: 'gigs/:setlistId', element: <Gig /> },
+      { path: 'gigs/:setlistId/songs/:songId', element: <Song /> },
     ],
   },
   { path: '*', element: <Navigate to="/" replace /> },

@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
-import { SONG_FORM, SONGS } from '../lib/microcopy.js';
+import { GIG_SETLIST, SONG_FORM, SONGS } from '../lib/microcopy.js';
 import { Song } from './song.js';
 
 const { useSongMock, useSongsMock } = vi.hoisted(() => ({
@@ -16,6 +16,16 @@ function renderSong() {
     <MemoryRouter initialEntries={['/songs/abc']}>
       <Routes>
         <Route path="/songs/:songId" element={<Song />} />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
+function renderGigSong() {
+  return render(
+    <MemoryRouter initialEntries={['/gigs/g1/songs/abc']}>
+      <Routes>
+        <Route path="/gigs/:setlistId/songs/:songId" element={<Song />} />
       </Routes>
     </MemoryRouter>,
   );
@@ -133,5 +143,33 @@ describe('Song', () => {
     useSongsMock.mockReturnValue({ data: [], isPending: false });
     renderSong();
     expect(screen.queryByRole('link', { name: SONG_FORM.editLink })).not.toBeInTheDocument();
+  });
+
+  describe('inside a gig', () => {
+    it('shows the title, links Back to gig and has no Edit link', () => {
+      useSongMock.mockReturnValue({ data: { songId: 'abc', title: 'Alpha Test Tune' } });
+      useSongsMock.mockReturnValue({ data: undefined, isPending: true });
+      renderGigSong();
+      expect(
+        screen.getByRole('heading', { level: 1, name: 'Alpha Test Tune' }),
+      ).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: GIG_SETLIST.backToGig })).toHaveAttribute(
+        'href',
+        '/gigs/g1',
+      );
+      expect(screen.queryByRole('link', { name: SONGS.backToSongs })).not.toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: SONG_FORM.editLink })).not.toBeInTheDocument();
+    });
+
+    it('shows not found with Back to gig', () => {
+      useSongMock.mockReturnValue({ data: null, isPending: false });
+      useSongsMock.mockReturnValue({ data: [], isPending: false });
+      renderGigSong();
+      expect(screen.getByText(SONGS.notFound)).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: GIG_SETLIST.backToGig })).toHaveAttribute(
+        'href',
+        '/gigs/g1',
+      );
+    });
   });
 });

@@ -165,7 +165,15 @@ describe('AppBootstrap', () => {
       bandId: 'jack-ruby-5',
       setlistId: 'g1',
       gigMeta: { venue: 'Test Venue', date: '2026-11-07' },
-      sections: [],
+      sections: [{ name: 'Set 1', songs: [{ songId: 's1', titleSnapshot: 'Test Tune' }] }],
+      clientWrittenAt: '2026-10-19T10:00:00.000Z',
+      serverReceivedAt: '2026-10-19T10:00:00.000Z',
+      version: 1,
+    };
+    const song = {
+      bandId: 'jack-ruby-5',
+      songId: 's1',
+      title: 'Test Tune',
       clientWrittenAt: '2026-10-19T10:00:00.000Z',
       serverReceivedAt: '2026-10-19T10:00:00.000Z',
       version: 1,
@@ -176,6 +184,9 @@ describe('AppBootstrap', () => {
         return Promise.resolve(
           jsonResponse(200, { status: 'ok', data: { authenticated: true, daysUntilExpiry: 365 } }),
         );
+      }
+      if (url.includes('/songs/s1')) {
+        return Promise.resolve(jsonResponse(200, { status: 'ok', data: song }));
       }
       if (url.includes('/setlists/g1')) {
         return Promise.resolve(jsonResponse(200, { status: 'ok', data: setlist }));
@@ -189,6 +200,12 @@ describe('AppBootstrap', () => {
     await userEvent.click(await screen.findByRole('link', { name: /Test Venue/ }));
     expect(await screen.findByRole('link', { name: 'Back to gigs' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 1, name: 'Test Venue' })).toBeInTheDocument();
+    await userEvent.click(await screen.findByRole('link', { name: 'Test Tune' }));
+    expect(await screen.findByRole('heading', { level: 1, name: 'Test Tune' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('link', { name: 'Back to gig' }));
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Test Venue' }),
+    ).toBeInTheDocument();
   });
 
   it('sends /gigs to /login when signed out', async () => {
