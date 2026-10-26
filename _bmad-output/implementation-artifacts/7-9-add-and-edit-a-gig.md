@@ -1,6 +1,6 @@
 # Story 7.9: Add and edit a gig
 
-Status: review
+Status: done
 
 <!-- Source: epics.md "Epic 7 / Story 7.9". Pattern: Story 7.6 (add and edit a song), including its review fix (step back in history on leaving an edit). -->
 
@@ -148,10 +148,10 @@ so that the gig list stays up to date without touching the database.
     `/gigs` test, and update its title to name them.
   - [x] No snapshot tests.
 
-- [ ] **Task 6: Verify, commit, deploy** (AC: 9, 11, 12)
+- [x] **Task 6: Verify, commit, deploy** (AC: 9, 11, 12)
   - [x] `git diff --stat HEAD -- api shared infra` is empty.
   - [x] `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass.
-  - [ ] After code review: one commit, `Implement story 7.9: Add and edit a gig`. Push to
+  - [x] After code review: one commit, `Implement story 7.9: Add and edit a gig`. Push to
     `main` only with Sandy's go-ahead, then watch `deploy.yml` with `gh run watch`. If the
     blackout check blocks, report it; don't use `deploy-force.yml`.
   - [x] Set the story to `review`. No screenshots and no manual checklist for Sandy.
@@ -251,3 +251,4 @@ Claude Sonnet 5.5
 ### Change Log
 
 - 2026-10-26: Implemented story 7.9 (add and edit a gig).
+- 2026-10-26: Code review clean (light single-pass); committed b53711b, deployed, checked by Sandy; status → done.
