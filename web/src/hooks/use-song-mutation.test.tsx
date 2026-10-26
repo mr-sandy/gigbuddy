@@ -12,6 +12,9 @@ vi.mock('../sync/flusher.js', () => ({
   flushOnce: vi.fn().mockResolvedValue('flushed'),
 }));
 
+const { deleteSongRequestMock } = vi.hoisted(() => ({ deleteSongRequestMock: vi.fn() }));
+vi.mock('../api/songs.js', () => ({ deleteSong: deleteSongRequestMock }));
+
 function makePutInput(songId: string, title: string, clientWrittenAt: string): SongPutInput {
   return {
     bandId: ACTIVE_BAND_ID,
@@ -87,6 +90,45 @@ describe('useSongMutation.saveSong', () => {
     const cachedList = queryClient.getQueryData<Song[]>(['songs', ACTIVE_BAND_ID]);
     expect(cachedList).toHaveLength(1);
     expect(cachedList?.[0]?.title).toBe('Edit Two');
+  });
+});
+
+describe('useSongMutation.deleteSong', () => {
+  it('on success drops the queued edit and removes the song from both caches', async () => {
+    deleteSongRequestMock.mockResolvedValue('deleted');
+    queryClient.setQueryData(
+      ['songs', ACTIVE_BAND_ID],
+      [makeSong('abc', 'A'), makeSong('def', 'B')],
+    );
+    queryClient.setQueryData(['song', ACTIVE_BAND_ID, 'abc'], makeSong('abc', 'A'));
+    const { result } = renderHook(() => useSongMutation());
+    await act(async () => {
+      await result.current.saveSong(makePutInput('abc', 'A2', '2026-06-18T09:00:00.000Z'));
+    });
+
+    let outcome: string | undefined;
+    await act(async () => {
+      outcome = await result.current.deleteSong('abc');
+    });
+
+    expect(outcome).toBe('deleted');
+    expect(await listAll()).toHaveLength(0);
+    expect(
+      queryClient.getQueryData<Song[]>(['songs', ACTIVE_BAND_ID])?.map((s) => s.songId),
+    ).toEqual(['def']);
+    expect(queryClient.getQueryData(['song', ACTIVE_BAND_ID, 'abc'])).toBeUndefined();
+  });
+
+  it('when the song is in use, changes nothing', async () => {
+    deleteSongRequestMock.mockResolvedValue('in-use');
+    queryClient.setQueryData(['songs', ACTIVE_BAND_ID], [makeSong('abc', 'A')]);
+    const { result } = renderHook(() => useSongMutation());
+    let outcome: string | undefined;
+    await act(async () => {
+      outcome = await result.current.deleteSong('abc');
+    });
+    expect(outcome).toBe('in-use');
+    expect(queryClient.getQueryData<Song[]>(['songs', ACTIVE_BAND_ID])).toHaveLength(1);
   });
 });
 

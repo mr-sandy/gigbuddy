@@ -2,18 +2,23 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useNavigate } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { SONG_FORM, SONGS } from '../lib/microcopy.js';
+import { SONG_DELETE, SONG_FORM, SONGS } from '../lib/microcopy.js';
 import { SongEdit } from './song-edit.js';
 
-const { useSongMock, useSongsMock, saveSongMock } = vi.hoisted(() => ({
-  useSongMock: vi.fn(),
-  useSongsMock: vi.fn(),
-  saveSongMock: vi.fn(),
-}));
+const { useSongMock, useSongsMock, useSetlistsMock, saveSongMock, deleteSongMock } = vi.hoisted(
+  () => ({
+    useSongMock: vi.fn(),
+    useSongsMock: vi.fn(),
+    useSetlistsMock: vi.fn(),
+    saveSongMock: vi.fn(),
+    deleteSongMock: vi.fn(),
+  }),
+);
 vi.mock('../hooks/use-song.js', () => ({ useSong: useSongMock }));
 vi.mock('../hooks/use-songs.js', () => ({ useSongs: useSongsMock }));
+vi.mock('../hooks/use-setlists.js', () => ({ useSetlists: useSetlistsMock }));
 vi.mock('../hooks/use-song-mutation.js', () => ({
-  useSongMutation: () => ({ saveSong: saveSongMock }),
+  useSongMutation: () => ({ saveSong: saveSongMock, deleteSong: deleteSongMock }),
 }));
 vi.mock('../lib/id.js', () => ({ generateId: () => 'newsong000000001' }));
 
@@ -65,6 +70,8 @@ beforeEach(() => {
   saveSongMock.mockReset().mockResolvedValue(undefined);
   useSongMock.mockReturnValue({ data: fullSong });
   useSongsMock.mockReturnValue({ data: undefined, isPending: true });
+  useSetlistsMock.mockReturnValue({ data: [] });
+  deleteSongMock.mockReset().mockResolvedValue('deleted');
 });
 
 describe('SongEdit', () => {
@@ -160,5 +167,69 @@ describe('SongEdit', () => {
     expect(screen.getByText(SONGS.notFound)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: SONGS.backToSongs })).toHaveAttribute('href', '/songs');
     expect(screen.queryByLabelText(SONG_FORM.title)).not.toBeInTheDocument();
+  });
+});
+
+describe('SongEdit delete', () => {
+  const gigWith = (songId: string) => ({
+    setlistId: 'g1',
+    gigMeta: { venue: 'The Venue', date: '2026-11-14' },
+    sections: [{ name: '', songs: [{ songId, titleSnapshot: 'Alpha Test Tune' }] }],
+  });
+
+  it('is not offered when adding a song', () => {
+    renderAt('/songs/new');
+    expect(screen.queryByRole('button', { name: SONG_DELETE.button })).not.toBeInTheDocument();
+  });
+
+  it('asks first, and Keep leaves the song alone', async () => {
+    const user = userEvent.setup();
+    renderAt('/songs/abc/edit');
+    await user.click(screen.getByRole('button', { name: SONG_DELETE.button }));
+    expect(screen.getByText(`${SONG_DELETE.confirm} Alpha Test Tune?`)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: SONG_DELETE.keep }));
+    expect(deleteSongMock).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: SONG_DELETE.button })).toBeInTheDocument();
+  });
+
+  it('deletes on the second tap and goes to the song list', async () => {
+    const user = userEvent.setup();
+    renderAt('/songs/abc/edit');
+    await user.click(screen.getByRole('button', { name: SONG_DELETE.button }));
+    await user.click(screen.getByRole('button', { name: SONG_DELETE.yes }));
+    expect(deleteSongMock).toHaveBeenCalledWith('abc');
+    expect(await screen.findByText('list page')).toBeInTheDocument();
+  });
+
+  it('names the gigs that use the song and offers no delete', async () => {
+    useSetlistsMock.mockReturnValue({
+      data: [gigWith('abc'), { ...gigWith('zzz'), setlistId: 'g2' }],
+    });
+    const user = userEvent.setup();
+    renderAt('/songs/abc/edit');
+    await user.click(screen.getByRole('button', { name: SONG_DELETE.button }));
+    expect(screen.getByText(SONG_DELETE.inUse)).toBeInTheDocument();
+    expect(screen.getAllByRole('listitem')).toHaveLength(1);
+    expect(screen.getByRole('listitem').textContent).toMatch(/^The Venue, /);
+    expect(screen.queryByRole('button', { name: SONG_DELETE.yes })).not.toBeInTheDocument();
+  });
+
+  it('says so when the API reports the song in use', async () => {
+    deleteSongMock.mockResolvedValue('in-use');
+    const user = userEvent.setup();
+    renderAt('/songs/abc/edit');
+    await user.click(screen.getByRole('button', { name: SONG_DELETE.button }));
+    await user.click(screen.getByRole('button', { name: SONG_DELETE.yes }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(SONG_DELETE.inUseUnknown);
+  });
+
+  it('says so when the delete fails', async () => {
+    deleteSongMock.mockRejectedValue(new TypeError('Failed to fetch'));
+    const user = userEvent.setup();
+    renderAt('/songs/abc/edit');
+    await user.click(screen.getByRole('button', { name: SONG_DELETE.button }));
+    await user.click(screen.getByRole('button', { name: SONG_DELETE.yes }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(SONG_DELETE.failed);
+    expect(screen.getByLabelText(SONG_FORM.title)).toHaveValue('Alpha Test Tune');
   });
 });

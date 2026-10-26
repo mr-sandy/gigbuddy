@@ -2,10 +2,12 @@ import { ACTIVE_BAND_ID, type Song, type SongPutInput } from '@gigbuddy/shared';
 import { type FormEvent, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { PageTitle } from '../components/page-title.js';
+import { useSetlists } from '../hooks/use-setlists.js';
 import { useSongMutation } from '../hooks/use-song-mutation.js';
 import { useSongOrCached } from '../hooks/use-song-or-cached.js';
+import { formatGigDate } from '../lib/gig-date.js';
 import { generateId } from '../lib/id.js';
-import { SONG_FORM, SONGS } from '../lib/microcopy.js';
+import { SONG_DELETE, SONG_FORM, SONGS } from '../lib/microcopy.js';
 
 /*
  * Add / edit song form (Story 7.6). `/songs/new` adds, `/songs/:songId/edit`
@@ -15,6 +17,10 @@ import { SONG_FORM, SONGS } from '../lib/microcopy.js';
  * the song is available and reads it once, so a background refetch never
  * resets what Sandy is typing. Leaving an edit steps back in history when
  * there is history to step back to, so the song page isn't stacked twice.
+ *
+ * Editing also offers "Delete song" (Story 7.11) behind a second tap. A song
+ * in any setlist can't be deleted: the cached setlists name the gigs up front,
+ * and the API's 409 covers anything the cache missed.
  */
 
 const LINK_CLASS =
@@ -24,6 +30,10 @@ const LABEL_CLASS =
 const FIELD_CLASS =
   'mt-[var(--spacing-unit)] box-border w-full rounded-[4px] border border-[color:var(--color-text-secondary)] bg-[color:var(--color-bg)] p-[calc(var(--spacing-unit)*3)] text-[length:var(--text-reading)] leading-[var(--text-reading--line-height)] text-[color:var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]';
 const PAIR_GAP = 'mt-[calc(var(--spacing-unit)*4)]';
+const BUTTON_CLASS =
+  'min-h-tap rounded-[4px] border-2 border-[color:var(--color-text-primary)] bg-transparent px-[calc(var(--spacing-unit)*6)] text-[length:var(--text-row)] leading-[var(--text-row--line-height)] text-[color:var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]';
+const BODY_PRIMARY =
+  'text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-[color:var(--color-text-primary)]';
 
 export function SongEdit() {
   const { songId } = useParams();
@@ -165,10 +175,7 @@ function SongForm({ initial }: { initial?: Song }) {
       </div>
 
       <div className="mt-[calc(var(--spacing-unit)*8)] flex items-center gap-[calc(var(--spacing-unit)*6)]">
-        <button
-          type="submit"
-          className="min-h-tap rounded-[4px] border-2 border-[color:var(--color-text-primary)] bg-transparent px-[calc(var(--spacing-unit)*6)] text-[length:var(--text-row)] leading-[var(--text-row--line-height)] text-[color:var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]"
-        >
+        <button type="submit" className={BUTTON_CLASS}>
           {SONG_FORM.save}
         </button>
         <Link
@@ -184,6 +191,90 @@ function SongForm({ initial }: { initial?: Song }) {
           {SONG_FORM.cancel}
         </Link>
       </div>
+
+      {initial ? <DeleteSong song={initial} /> : null}
     </form>
+  );
+}
+
+function DeleteSong({ song }: { song: Song }) {
+  const navigate = useNavigate();
+  const { deleteSong } = useSongMutation();
+  const { data: setlists } = useSetlists();
+  const [step, setStep] = useState<'idle' | 'confirm'>('idle');
+  const [message, setMessage] = useState<string | null>(null);
+  const gigs = (setlists ?? []).filter((setlist) =>
+    setlist.sections.some((section) => section.songs.some((ref) => ref.songId === song.songId)),
+  );
+
+  async function onConfirm() {
+    try {
+      const result = await deleteSong(song.songId);
+      if (result === 'deleted') {
+        navigate('/songs', { replace: true });
+        return;
+      }
+      setMessage(SONG_DELETE.inUseUnknown);
+    } catch {
+      setMessage(SONG_DELETE.failed);
+    }
+    setStep('idle');
+  }
+
+  const keep = (
+    <button
+      type="button"
+      onClick={() => {
+        setStep('idle');
+        setMessage(null);
+      }}
+      className={BUTTON_CLASS}
+    >
+      {SONG_DELETE.keep}
+    </button>
+  );
+
+  return (
+    <div className="mt-[calc(var(--spacing-unit)*12)]">
+      {step === 'idle' ? (
+        <button
+          type="button"
+          onClick={() => {
+            setMessage(null);
+            setStep('confirm');
+          }}
+          className={BUTTON_CLASS}
+        >
+          {SONG_DELETE.button}
+        </button>
+      ) : gigs.length > 0 ? (
+        <>
+          <p className={BODY_PRIMARY}>{SONG_DELETE.inUse}</p>
+          <ul className={`mt-[var(--spacing-unit)] ${BODY_PRIMARY}`}>
+            {gigs.map((gig) => {
+              const venue = gig.gigMeta.venue.trim();
+              const date = formatGigDate(gig.gigMeta.date);
+              return <li key={gig.setlistId}>{venue ? `${venue}, ${date}` : date}</li>;
+            })}
+          </ul>
+          <div className="mt-[calc(var(--spacing-unit)*4)]">{keep}</div>
+        </>
+      ) : (
+        <>
+          <p className={BODY_PRIMARY}>{`${SONG_DELETE.confirm} ${song.title}?`}</p>
+          <div className="mt-[calc(var(--spacing-unit)*4)] flex flex-wrap items-center gap-[calc(var(--spacing-unit)*6)]">
+            <button type="button" onClick={onConfirm} className={BUTTON_CLASS}>
+              {SONG_DELETE.yes}
+            </button>
+            {keep}
+          </div>
+        </>
+      )}
+      {message ? (
+        <p role="alert" className={`mt-[var(--spacing-unit)] ${BODY_PRIMARY}`}>
+          {message}
+        </p>
+      ) : null}
+    </div>
   );
 }

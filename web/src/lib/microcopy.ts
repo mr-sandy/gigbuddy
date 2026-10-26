@@ -86,3 +86,14 @@ export const SETLIST_TEXT = {
   songsLoading: 'Loading songs…',
   songsError: "Couldn't load your songs, so the setlist can't be saved yet.",
 } as const;
+
+/* Story 7.11 — delete a song. */
+export const SONG_DELETE = {
+  button: 'Delete song',
+  confirm: 'Delete',
+  yes: 'Yes, delete',
+  keep: 'Keep',
+  inUse: 'This song is in the setlist for these gigs. Take it out of them first:',
+  inUseUnknown: "This song is in a gig's setlist, so it wasn't deleted.",
+  failed: "Couldn't delete the song. Check your connection and try again.",
+} as const;

@@ -52,6 +52,20 @@ export async function getSong(songId: string): Promise<Song | null> {
   throw new Error(`getSong: unexpected error code ${response.data.error.code}`);
 }
 
+/**
+ * Story 7.11: not an outbox write. A connection is needed; offline the fetch
+ * throws, and any other failure throws too.
+ */
+export async function deleteSong(songId: string): Promise<'deleted' | 'in-use'> {
+  const response = await apiFetch(`/api/v1/songs/${songId}`, {
+    method: 'DELETE',
+    schema: ErrorResponseSchema,
+  });
+  if (response.status === 204) return 'deleted';
+  if (response.status === 409 && response.data.error.code === 'SONG_IN_USE') return 'in-use';
+  throw new Error(`deleteSong: unexpected status ${response.status}`);
+}
+
 export type PutSongResult =
   | { kind: 'applied'; data: Song }
   | { kind: 'dropped-as-stale'; currentState: Song };

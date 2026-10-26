@@ -1,7 +1,7 @@
 import { ACTIVE_BAND_ID, type SongPutInput } from '@gigbuddy/shared';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { __resetDriftWarningForTests, setUnauthorizedHandler } from './client.js';
-import { getSong, listSongs, putSong } from './songs.js';
+import { deleteSong, getSong, listSongs, putSong } from './songs.js';
 
 function jsonRes(status: number, body: unknown, headers: Record<string, string> = {}): Response {
   return new Response(JSON.stringify(body), {
@@ -141,5 +141,32 @@ describe('putSong', () => {
     expect(path).toBe('/api/v1/songs/abc');
     expect(init.method).toBe('PUT');
     expect(init.body).toBe(JSON.stringify(input));
+  });
+});
+
+describe('deleteSong', () => {
+  it('sends DELETE to /api/v1/songs/<songId> and returns "deleted" on 204', async () => {
+    fetchMock.mockResolvedValue(
+      new Response(null, { status: 204, headers: { 'x-server-now': new Date().toISOString() } }),
+    );
+    await expect(deleteSong('abc')).resolves.toBe('deleted');
+    expect(fetchMock.mock.calls[0]?.[0]).toBe('/api/v1/songs/abc');
+    expect((fetchMock.mock.calls[0]?.[1] as RequestInit).method).toBe('DELETE');
+  });
+
+  it('returns "in-use" on 409 SONG_IN_USE', async () => {
+    fetchMock.mockResolvedValue(
+      jsonRes(409, { status: 'error', error: { code: 'SONG_IN_USE', message: 'x' } }),
+    );
+    await expect(deleteSong('abc')).resolves.toBe('in-use');
+  });
+
+  it('throws on any other status and when the fetch fails', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonRes(500, { status: 'error', error: { code: 'INTERNAL', message: 'x' } }),
+    );
+    await expect(deleteSong('abc')).rejects.toThrow();
+    fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    await expect(deleteSong('abc')).rejects.toThrow();
   });
 });

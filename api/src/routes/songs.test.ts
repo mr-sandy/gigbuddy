@@ -1,11 +1,20 @@
 import { ACTIVE_BAND_ID, type Song } from '@gigbuddy/shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { getJwtKeyMock, getSongMock, listSongsByBandMock, putSongMock } = vi.hoisted(() => ({
+const {
+  getJwtKeyMock,
+  getSongMock,
+  listSongsByBandMock,
+  putSongMock,
+  deleteSongMock,
+  listSetlistsByBandMock,
+} = vi.hoisted(() => ({
   getJwtKeyMock: vi.fn(),
   getSongMock: vi.fn(),
   listSongsByBandMock: vi.fn(),
   putSongMock: vi.fn(),
+  deleteSongMock: vi.fn(),
+  listSetlistsByBandMock: vi.fn(),
 }));
 
 vi.mock('../secrets/ssm.js', () => ({
@@ -17,6 +26,11 @@ vi.mock('../ddb/songs.js', () => ({
   getSong: getSongMock,
   listSongsByBand: listSongsByBandMock,
   putSong: putSongMock,
+  deleteSong: deleteSongMock,
+}));
+
+vi.mock('../ddb/setlists.js', () => ({
+  listSetlistsByBand: listSetlistsByBandMock,
 }));
 
 import { app } from '../app.js';
@@ -48,6 +62,9 @@ beforeEach(async () => {
   getSongMock.mockReset();
   listSongsByBandMock.mockReset();
   putSongMock.mockReset();
+  deleteSongMock.mockReset();
+  listSetlistsByBandMock.mockReset();
+  listSetlistsByBandMock.mockResolvedValue([]);
 
   const now = Math.floor(Date.now() / 1000);
   const token = await signSession(now);
@@ -198,5 +215,32 @@ describe('PUT /api/v1/songs/:songId', () => {
     expect(res.status).toBe(400);
     const body = (await res.json()) as { status: string; error: { code: string; message: string } };
     expect(body.error.message).toBe('bandId does not match the active band');
+  });
+});
+
+describe('DELETE /api/v1/songs/:songId', () => {
+  const setlistWith = (songId: string) => ({
+    sections: [{ name: '', songs: [{ songId, titleSnapshot: 'Round Midnight' }] }],
+  });
+
+  it('deletes the song and answers 204', async () => {
+    listSetlistsByBandMock.mockResolvedValue([setlistWith(SONG_ID_B)]);
+    const res = await authedRequest(`/api/v1/songs/${SONG_ID_A}`, { method: 'DELETE' });
+    expect(res.status).toBe(204);
+    expect(deleteSongMock).toHaveBeenCalledWith(ACTIVE_BAND_ID, SONG_ID_A);
+  });
+
+  it('answers 204 for a song that does not exist', async () => {
+    const res = await authedRequest(`/api/v1/songs/${SONG_ID_C}`, { method: 'DELETE' });
+    expect(res.status).toBe(204);
+  });
+
+  it('answers 409 SONG_IN_USE and deletes nothing when a setlist holds the song', async () => {
+    listSetlistsByBandMock.mockResolvedValue([setlistWith(SONG_ID_A)]);
+    const res = await authedRequest(`/api/v1/songs/${SONG_ID_A}`, { method: 'DELETE' });
+    expect(res.status).toBe(409);
+    const body = (await res.json()) as { status: string; error: { code: string } };
+    expect(body).toMatchObject({ status: 'error', error: { code: 'SONG_IN_USE' } });
+    expect(deleteSongMock).not.toHaveBeenCalled();
   });
 });

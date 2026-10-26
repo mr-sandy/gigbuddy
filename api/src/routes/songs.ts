@@ -1,6 +1,7 @@
 import { ACTIVE_BAND_ID, type Song, SongPutInputSchema } from '@gigbuddy/shared';
 import { Hono } from 'hono';
-import { getSong, listSongsByBand, putSong } from '../ddb/songs.js';
+import { listSetlistsByBand } from '../ddb/setlists.js';
+import { deleteSong, getSong, listSongsByBand, putSong } from '../ddb/songs.js';
 import { compareLww } from '../lww.js';
 
 function alphabetizeByTitle(songs: Song[]): Song[] {
@@ -92,4 +93,24 @@ export const songsRoute = new Hono()
     const record: Song = { ...parsed.data, serverReceivedAt: new Date().toISOString() };
     await putSong(record);
     return c.json({ status: 'applied' as const, data: record });
+  })
+  .delete('/:songId', async (c) => {
+    const songId = c.req.param('songId');
+    // Story 7.11: a song in any setlist stays, so setlist history never
+    // points at a missing song. Deleting a missing song succeeds quietly.
+    const setlists = await listSetlistsByBand(ACTIVE_BAND_ID);
+    const inUse = setlists.some((setlist) =>
+      setlist.sections.some((section) => section.songs.some((ref) => ref.songId === songId)),
+    );
+    if (inUse) {
+      return c.json(
+        {
+          status: 'error' as const,
+          error: { code: 'SONG_IN_USE', message: 'song is in a setlist' },
+        },
+        409,
+      );
+    }
+    await deleteSong(ACTIVE_BAND_ID, songId);
+    return c.body(null, 204);
   });

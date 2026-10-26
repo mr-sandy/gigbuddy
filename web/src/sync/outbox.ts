@@ -110,6 +110,14 @@ export async function remove(id: string): Promise<void> {
   await del(id, outboxStore);
 }
 
+/** Drop queued (not in-flight) entries for a record that no longer exists (Story 7.11). */
+export async function removePending(recordKey: string): Promise<void> {
+  for (const entry of await all()) {
+    if (entry.recordKey === recordKey && entry.status === 'pending')
+      await del(entry.id, outboxStore);
+  }
+}
+
 export async function listAll(): Promise<OutboxEntry[]> {
   return sortByClientWrittenAt(await all());
 }

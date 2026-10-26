@@ -32,7 +32,7 @@ export function __resetDriftWarningForTests(): void {
 }
 
 export interface ApiFetchOptions<TSchema extends z.ZodTypeAny> {
-  method: 'GET' | 'PUT' | 'POST';
+  method: 'GET' | 'PUT' | 'POST' | 'DELETE';
   body?: unknown;
   schema: TSchema;
   /** Reserved for callers (Story 2.5+) that need non-default status acceptance. */

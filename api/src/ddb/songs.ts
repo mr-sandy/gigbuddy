@@ -1,4 +1,4 @@
-import { GetCommand, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import { DeleteCommand, GetCommand, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { type Song, SongSchema } from '@gigbuddy/shared';
 import { getDocClient, getTableName } from './client.js';
 
@@ -22,6 +22,12 @@ export async function putSong(record: Song): Promise<void> {
       TableName: getTableName(),
       Item: { ...songKey(record.bandId, record.songId), ...record },
     }),
+  );
+}
+
+export async function deleteSong(bandId: string, songId: string): Promise<void> {
+  await getDocClient().send(
+    new DeleteCommand({ TableName: getTableName(), Key: songKey(bandId, songId) }),
   );
 }
 
