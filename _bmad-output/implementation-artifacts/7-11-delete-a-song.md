@@ -48,7 +48,7 @@ can't recreate it; AR-12 note; no soft delete, undo or bulk delete.
   - [x] Tests in `song-edit.test.tsx`: confirm, Keep, success, in-use (cache), in-use (409),
     failure; no delete button when adding.
 - [x] **Task 4: Docs** (AC 8): architecture.md deletion-guardrails note.
-- [ ] **Task 5: Verify, commit, deploy** (AC 11, 12). Verified; commit done; deploy awaits Sandy.
+- [x] **Task 5: Verify, commit, deploy** (AC 11, 12). Verified, committed, deployed; Sandy checked the live app 2026-10-26.
 
 ## Dev Notes
 
@@ -84,3 +84,4 @@ claude-opus-5-5
 
 - 2026-10-26: Implemented story 7.11 (delete a song); status → review.
 - 2026-10-26: Code review (lightweight): clean. Applied one nit: "Yes, delete" is disabled while the request runs. Status → done.
+- 2026-10-26: Deployed; Sandy's live check passed.
