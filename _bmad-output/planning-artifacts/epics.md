@@ -2611,3 +2611,28 @@ Nord doesn't dim or lock mid-song.
    unsupported, hidden when held.
 9. Deployed to gig.cormie.com via the normal pipeline.
 
+
+### Story 7.16: Purge per-gig notes
+
+As Sandy, I want per-gig notes gone from GigBuddy, so that setlists are just songs in order
+and there's one less thing to think about.
+
+**Acceptance criteria**
+1. `perGigAnnotation` is removed from `SongRefSchema` in `shared/`. A song ref is `songId` and
+   `titleSnapshot` only.
+2. Reads never return the field: a stored setlist that still has a note comes back from the
+   API, the gig pages and `GET /api/v1/export` without it.
+3. A setlist PUT whose song refs still carry `perGigAnnotation` (an old cached client) is
+   accepted, and the note is dropped rather than stored. No 400.
+4. Editing a setlist as text no longer carries notes across (the 7.10 carry-over goes).
+5. A one-off script, `api/scripts/purge-per-gig-notes.ts`, removes the field from the stored
+   setlist items. Dry run by default: it lists each gig and each note it would remove, so
+   Sandy sees what goes. `--apply` rewrites only the items that have a note, changing
+   nothing else, then re-reads and confirms none are left. Re-running is harmless.
+6. `architecture.md` no longer describes per-gig annotations as part of the record.
+7. No UI change: notes aren't shown anywhere today. No change to `infra/`.
+8. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass. Tests cover: a stored
+   note is stripped on read; a PUT with a note is accepted and stored without it; the export
+   has no notes; the text editor no longer keeps them.
+9. Deployed to gig.cormie.com via the normal pipeline; the purge runs after Sandy has seen
+   the dry run.

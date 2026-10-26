@@ -128,7 +128,7 @@ PWA (static SPA + small REST API + IaC), TypeScript end-to-end. Two deployables:
 - Same Zod schemas inferred to TypeScript types on both ends
 
 **Shared (`shared/`):**
-- Record schemas (Band, Song, Setlist, Section, PerGigAnnotation, Gig)
+- Record schemas (Band, Song, Setlist, Section, Gig)
 - API request/response types
 - Single Zod source of truth
 
@@ -210,7 +210,7 @@ Then add: Tailwind v4, vite-plugin-pwa, TanStack Query v5, React Router 7, Zod, 
 
 ### 2. Data Store (FR-29)
 
-**Decision:** DynamoDB single-table, on-demand billing, PITR enabled, eu-west-2. **Setlist content (sections + song refs + annotations) embedded in the Setlist record.**
+**Decision:** DynamoDB single-table, on-demand billing, PITR enabled, eu-west-2. **Setlist content (sections + song refs) embedded in the Setlist record.**
 
 **Table:** `gigbuddy-data`
 
@@ -227,10 +227,11 @@ pk = BAND#<bandId>, sk = SONG#<songId>
 pk = BAND#<bandId>, sk = SETLIST#<setlistId>
   { gigMeta: { venue, date, time },
     sections: [
-      { name, songs: [{ songId, titleSnapshot, perGigAnnotation? }, ...] },
+      { name, songs: [{ songId, titleSnapshot }, ...] },
       ...
     ],
     clientWrittenAt, serverReceivedAt, version }                            (setlist — embedded)
+    Per-gig notes removed in Story 7.16 (2026-10-26).
 ```
 
 **Indexes:**
@@ -241,14 +242,14 @@ pk = BAND#<bandId>, sk = SETLIST#<setlistId>
 
 - **V1 read perf:** Setlist overview surface (FR-13) is one item read, not N+1
 - **V2 analytics:** Q1 ("Songs not played in N months"), Q2 ("most-played"), Q4 ("balance"), Q5 ("over-reliance") all collapse to one GSI Query + in-app aggregation — no per-Setlist fan-out
-- **LWW-per-record fits cleanly:** whole-Setlist PUT replaces a single item. Per-gig annotation edit, row reorder, section rename — all rewrite the same item. Atomic by default. No multi-item DDB transactions needed.
+- **LWW-per-record fits cleanly:** whole-Setlist PUT replaces a single item. Row reorder, section rename — all rewrite the same item. Atomic by default. No multi-item DDB transactions needed.
 - **Size:** ~5KB for a 30-song annotated Setlist. DDB 400KB item limit gives ~80× headroom.
 
 **Per-record sync metadata:**
 - `clientWrittenAt` (client-stamped at edit) + `serverReceivedAt` (server-stamped on write)
 - LWW comparison on `clientWrittenAt`
 
-**Setlist history first-class:** every Setlist persists with its songs and annotations as authored at gig time. Each song ref carries `titleSnapshot` — renaming a Song does not rewrite historical Setlists. V2 analytics aggregate on `songId`; display uses `titleSnapshot`. **No migration needed for V2.**
+**Setlist history first-class:** every Setlist persists with its songs as authored at gig time. Each song ref carries `titleSnapshot` — renaming a Song does not rewrite historical Setlists. V2 analytics aggregate on `songId`; display uses `titleSnapshot`. **No migration needed for V2.**
 
 **Access:** IAM-scoped Lambda access; public AWS endpoint (no VPC).
 
@@ -312,7 +313,7 @@ pk = BAND#<bandId>, sk = SETLIST#<setlistId>
   - Incoming ≥ stored → **persist**; response: `{status: 'applied', record}`
   - Incoming < stored → **drop silently**; response: `{status: 'dropped-as-stale', currentState: record}`
 - Client on `dropped-as-stale`: invalidate cache for that record, re-fetch, surface a brief "your earlier edit was superseded" banner on MacBook (silent on iPhone Performance Mode per FR-30)
-- **Whole-record PUT semantics.** Clients always send the complete record on write; LWW is per-record, not per-field, per FR-32. For Setlists this means PUT replaces the entire embedded structure (sections + songs + annotations) atomically — reorders, section renames, and annotation edits are all whole-Setlist PUTs against the single embedded item. Refresh-on-foreground (above) shrinks the cross-device clobber window to "edits since last foreground."
+- **Whole-record PUT semantics.** Clients always send the complete record on write; LWW is per-record, not per-field, per FR-32. For Setlists this means PUT replaces the entire embedded structure (sections + songs) atomically — reorders and section renames are all whole-Setlist PUTs against the single embedded item. Refresh-on-foreground (above) shrinks the cross-device clobber window to "edits since last foreground."
 - **Server includes `serverNow` ISO-8601 in every response header.** Client logs/warns on `|serverNow - Date.now()| > 30s` — diagnostic for clock-skew scenarios that would otherwise corrupt LWW ordering.
 
 **Service worker (Workbox, via vite-plugin-pwa):**
@@ -495,7 +496,7 @@ These patterns lock the choices AI dev agents would otherwise re-invent per stor
 - Test files co-located: `song-detail.tsx` + `song-detail.test.tsx` (same folder)
 
 **JSON over the wire:**
-- `camelCase` keys throughout (`clientWrittenAt`, `perGigAnnotation`, `titleSnapshot`)
+- `camelCase` keys throughout (`clientWrittenAt`, `titleSnapshot`)
 - Never `snake_case` in API request/response bodies
 
 **DynamoDB partition/sort keys:**
@@ -556,7 +557,6 @@ const SongSchema = z.object({
 const SongRefSchema = z.object({
   songId: z.string(),
   titleSnapshot: z.string(),
-  perGigAnnotation: z.string().optional(),
 })
 
 const SectionSchema = z.object({
@@ -600,7 +600,7 @@ async function putSong(input: PutSongInput): Promise<PutSongResponse> {
 }
 ```
 
-**Hard rule:** every write path uses this pattern. No "this one is special" overrides. Same pattern for Setlists (whole-Setlist PUT replaces embedded sections + songs + annotations atomically).
+**Hard rule:** every write path uses this pattern. No "this one is special" overrides. Same pattern for Setlists (whole-Setlist PUT replaces embedded sections + songs atomically).
 
 ### Outbox state machine (client side)
 
@@ -841,7 +841,7 @@ PRD §A.5 + EXPERIENCE.md §Accessibility Floor define the *contract* (WCAG leve
   }
   ```
 - **Tap-target enforcement** via Tailwind utility tokens defined in `tokens.css`: `--size-tap: 44pt` (= 11 × 4pt base unit). Components use `min-w-tap min-h-tap` on every tappable element.
-- **Color-never-alone** enforced by component contract: ParseRowStatus pairs icon (`✓ ? +`) + label + color; per-gig annotation pairs italic weight + position + accent color. Code review catches violations; no automated check.
+- **Color-never-alone** enforced by component contract: ParseRowStatus pairs icon (`✓ ? +`) + label + color. Code review catches violations; no automated check.
 - **Focus order = reading order:** rely on DOM order. No `tabindex` other than `0` (focusable) or `-1` (removed from order). Programmatic focus only via the focus-management rule above.
 
 ### Pattern enforcement

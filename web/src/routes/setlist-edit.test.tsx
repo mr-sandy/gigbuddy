@@ -32,7 +32,7 @@ function renderAt(path: string) {
 }
 
 const sections = [
-  { name: 'Set 1', songs: [{ songId: 's1', titleSnapshot: 'Tune A', perGigAnnotation: 'slow' }] },
+  { name: 'Set 1', songs: [{ songId: 's1', titleSnapshot: 'Tune A' }] },
   { name: 'Set 2', songs: [{ songId: 's2', titleSnapshot: 'Tune B' }] },
 ];
 const fullGig = {
@@ -83,7 +83,7 @@ describe('SetlistEdit', () => {
         name: '',
         songs: [
           { songId: 's3', titleSnapshot: 'Tune C' },
-          { songId: 's1', titleSnapshot: 'Tune A', perGigAnnotation: 'slow' },
+          { songId: 's1', titleSnapshot: 'Tune A' },
         ],
       },
     ]);

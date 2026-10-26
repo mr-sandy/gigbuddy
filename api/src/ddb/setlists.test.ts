@@ -24,11 +24,7 @@ function makeSetlist(overrides: Partial<Setlist> = {}): Setlist {
         name: 'Set 1',
         songs: [
           { songId: 'song0000000001ab', titleSnapshot: 'Round Midnight' },
-          {
-            songId: 'song0000000002cd',
-            titleSnapshot: 'Autumn Leaves',
-            perGigAnnotation: 'start slow',
-          },
+          { songId: 'song0000000002cd', titleSnapshot: 'Autumn Leaves' },
         ],
       },
     ],
@@ -65,6 +61,32 @@ describe('getSetlist', () => {
     const setlist = makeSetlist();
     ddbMock.on(GetCommand).resolves({ Item: rawItem(setlist) });
     expect(await getSetlist(BAND_ID, SETLIST_ID)).toEqual(setlist);
+  });
+
+  it('drops a stored perGigAnnotation on read (get and list)', async () => {
+    const setlist = makeSetlist();
+    const item = rawItem(setlist);
+    const withNote = {
+      ...item,
+      sections: [
+        {
+          name: 'Set 1',
+          songs: [
+            {
+              songId: 'song0000000001ab',
+              titleSnapshot: 'Round Midnight',
+              perGigAnnotation: 'slow',
+            },
+          ],
+        },
+      ],
+    };
+    ddbMock.on(GetCommand).resolves({ Item: withNote });
+    const got = await getSetlist(BAND_ID, SETLIST_ID);
+    expect(got?.sections[0]?.songs[0]).not.toHaveProperty('perGigAnnotation');
+    ddbMock.on(QueryCommand).resolves({ Items: [withNote] });
+    const listed = await listSetlistsByBand(BAND_ID);
+    expect(listed[0]?.sections[0]?.songs[0]).not.toHaveProperty('perGigAnnotation');
   });
 
   it('throws when DDB returns a malformed item (defends against schema drift)', async () => {

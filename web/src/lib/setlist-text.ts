@@ -36,15 +36,11 @@ export function parseSetlistText(text: string, songs: Song[], previous: Section[
   }
 
   const byId = new Map(songs.map((song) => [song.songId, song]));
-  const annotations = new Map<string, string>();
   // A song renamed since the setlist was saved still shows its old title in
   // the text; this lets that old title resolve to the same song.
   const previousIds = new Map<string, Set<string>>();
   for (const section of previous) {
     for (const ref of section.songs) {
-      if (ref.perGigAnnotation && !annotations.has(ref.songId)) {
-        annotations.set(ref.songId, ref.perGigAnnotation);
-      }
       if (!byId.has(ref.songId)) continue;
       const key = matchKey(ref.titleSnapshot);
       previousIds.set(key, (previousIds.get(key) ?? new Set()).add(ref.songId));
@@ -76,12 +72,7 @@ export function parseSetlistText(text: string, songs: Song[], previous: Section[
     }
     const [match] = matches;
     if (matches.length === 1 && match) {
-      const annotation = annotations.get(match.songId);
-      const ref: SongRef = {
-        songId: match.songId,
-        titleSnapshot: match.title,
-        ...(annotation ? { perGigAnnotation: annotation } : {}),
-      };
+      const ref: SongRef = { songId: match.songId, titleSnapshot: match.title };
       current.songs.push(ref);
     } else {
       if (!reported.has(key)) {

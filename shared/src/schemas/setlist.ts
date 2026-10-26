@@ -3,7 +3,7 @@ import { z } from 'zod';
 /*
  * Setlist Zod contract (architecture.md AR-9, AR-11, AR-23). A Setlist is
  * the single DDB item that owns its `sections[]` array, each containing
- * `SongRef[]` (songId + titleSnapshot + optional perGigAnnotation).
+ * `SongRef[]` (songId + titleSnapshot).
  *
  * `titleSnapshot` (AR-11) keeps the rendered title independent of the
  * Songs table — renaming a Song never mutates historical Setlists. The
@@ -16,7 +16,6 @@ import { z } from 'zod';
 export const SongRefSchema = z.object({
   songId: z.string(),
   titleSnapshot: z.string(),
-  perGigAnnotation: z.string().optional(),
 });
 export type SongRef = z.infer<typeof SongRefSchema>;
 

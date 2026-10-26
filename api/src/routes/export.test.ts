@@ -125,8 +125,8 @@ type ExportBody = {
 
 describe('GET /api/v1/export', () => {
   it('returns 200 with a full archive containing all fixture Songs and Setlists', async () => {
-    // Fixture per AC-9: at least 3 Songs and 2 Setlists, one Setlist with a
-    // perGigAnnotation and one with multiple Sections.
+    // Fixture per AC-9: at least 3 Songs and 2 Setlists, one Setlist with
+    // multiple Sections.
     const songs: Song[] = [
       makeSong({ songId: 'song000000000001', title: 'Autumn Leaves' }),
       makeSong({ songId: 'song000000000002', title: 'Blue Bossa', key: 'Cm' }),
@@ -144,11 +144,7 @@ describe('GET /api/v1/export', () => {
           {
             name: 'Set 1',
             songs: [
-              {
-                songId: 'song000000000001',
-                titleSnapshot: 'Autumn Leaves',
-                perGigAnnotation: 'half-time feel',
-              },
+              { songId: 'song000000000001', titleSnapshot: 'Autumn Leaves' },
               { songId: 'song000000000002', titleSnapshot: 'Blue Bossa' },
             ],
           },
@@ -192,9 +188,6 @@ describe('GET /api/v1/export', () => {
     expect(body.bands[0]?.setlists).toEqual(setlists);
     // Structural spot-checks per AC-9.
     expect(body.bands[0]?.setlists[0]?.sections[0]?.songs[0]?.titleSnapshot).toBe('Autumn Leaves');
-    expect(body.bands[0]?.setlists[0]?.sections[0]?.songs[0]?.perGigAnnotation).toBe(
-      'half-time feel',
-    );
     // Shape stability: keys present even when empty.
     expect(Object.keys(body.bands[0] ?? {})).toEqual(
       expect.arrayContaining(['band', 'songs', 'setlists']),

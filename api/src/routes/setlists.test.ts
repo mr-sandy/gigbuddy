@@ -60,11 +60,7 @@ function makeSetlist(overrides: Partial<Setlist> = {}): Setlist {
         name: 'Set 1',
         songs: [
           { songId: 'song0000000001ab', titleSnapshot: 'Round Midnight' },
-          {
-            songId: 'song0000000002cd',
-            titleSnapshot: 'Autumn Leaves',
-            perGigAnnotation: 'start slow',
-          },
+          { songId: 'song0000000002cd', titleSnapshot: 'Autumn Leaves' },
         ],
       },
     ],
@@ -234,7 +230,7 @@ describe('PUT /api/v1/setlists/:setlistId', () => {
     expect(putSetlistMock).not.toHaveBeenCalled();
   });
 
-  it('atomicity: a PUT that reorders + edits sections AND annotation at the same clientWrittenAt is applied verbatim with no merging', async () => {
+  it('atomicity: a PUT that reorders + edits sections at the same clientWrittenAt is applied verbatim with no merging', async () => {
     const existing = makeSetlist({
       clientWrittenAt: '2026-06-19T10:00:00.000Z',
       sections: [
@@ -242,7 +238,7 @@ describe('PUT /api/v1/setlists/:setlistId', () => {
           name: 'Set 1',
           songs: [
             { songId: 'songA', titleSnapshot: 'Song A' },
-            { songId: 'songB', titleSnapshot: 'Song B', perGigAnnotation: 'mellow' },
+            { songId: 'songB', titleSnapshot: 'Song B' },
           ],
         },
       ],
@@ -250,7 +246,7 @@ describe('PUT /api/v1/setlists/:setlistId', () => {
     getSetlistMock.mockResolvedValue(existing);
     putSetlistMock.mockResolvedValue(undefined);
 
-    // Reorder, change annotation, and add a new section — all in one body
+    // Reorder and add a new section — all in one body
     // at the SAME clientWrittenAt. Same-timestamp wins per LWW.
     const replacement = putInput({
       clientWrittenAt: '2026-06-19T10:00:00.000Z',
@@ -258,7 +254,7 @@ describe('PUT /api/v1/setlists/:setlistId', () => {
         {
           name: 'Set 1',
           songs: [
-            { songId: 'songB', titleSnapshot: 'Song B', perGigAnnotation: 'opener — punch' },
+            { songId: 'songB', titleSnapshot: 'Song B' },
             { songId: 'songA', titleSnapshot: 'Song A' },
           ],
         },
@@ -281,6 +277,31 @@ describe('PUT /api/v1/setlists/:setlistId', () => {
     expect(putSetlistMock).toHaveBeenCalledTimes(1);
     const persisted = putSetlistMock.mock.calls[0]?.[0] as Setlist;
     expect(persisted.sections).toEqual(replacement.sections);
+  });
+
+  it('accepts a PUT whose song ref still carries perGigAnnotation and stores it without the note', async () => {
+    getSetlistMock.mockResolvedValue(undefined);
+    putSetlistMock.mockResolvedValue(undefined);
+    const input = putInput({
+      sections: [
+        {
+          name: 'Set 1',
+          songs: [
+            { songId: 'songA', titleSnapshot: 'Song A', perGigAnnotation: 'old note' } as never,
+          ],
+        },
+      ],
+    });
+    const res = await authedRequest(`/api/v1/setlists/${SETLIST_ID_A}`, {
+      method: 'PUT',
+      body: JSON.stringify(input),
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { status: string; data: Setlist };
+    expect(body.status).toBe('applied');
+    const persisted = putSetlistMock.mock.calls[0]?.[0] as Setlist;
+    expect(persisted.sections[0]?.songs[0]).toEqual({ songId: 'songA', titleSnapshot: 'Song A' });
+    expect(body.data.sections[0]?.songs[0]).not.toHaveProperty('perGigAnnotation');
   });
 
   it('returns 400 VALIDATION_FAILED on a malformed body (missing sections)', async () => {

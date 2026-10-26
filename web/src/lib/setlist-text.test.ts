@@ -1,4 +1,4 @@
-import type { Section, Song } from '@gigbuddy/shared';
+import type { Section, Song, SongRef } from '@gigbuddy/shared';
 import { describe, expect, it } from 'vitest';
 import { parseSetlistText, setlistToText } from './setlist-text.js';
 
@@ -80,22 +80,20 @@ describe('parseSetlistText', () => {
     expect(result).toEqual({ ok: false, notInLibrary: ['Nope'], ambiguous: ['Tune A'] });
   });
 
-  it('keeps a stored annotation through a reorder; new songs have none', () => {
+  it('drops a stored note on save', () => {
     const previous: Section[] = [
       {
         name: '',
-        songs: [{ ...ref('s1', 'Tune A'), perGigAnnotation: 'slow' }, ref('s2', 'Tune B')],
+        songs: [
+          { ...ref('s1', 'Tune A'), perGigAnnotation: 'slow' } as SongRef,
+          ref('s2', 'Tune B'),
+        ],
       },
     ];
     const result = parseSetlistText('Tune C\nTune B\nTune A', library, previous);
     if (!result.ok) throw new Error('expected ok');
     const songs = result.sections[0]?.songs ?? [];
-    expect(songs).toEqual([
-      ref('s3', 'Tune C'),
-      ref('s2', 'Tune B'),
-      { ...ref('s1', 'Tune A'), perGigAnnotation: 'slow' },
-    ]);
-    expect(songs[0]).not.toHaveProperty('perGigAnnotation');
+    expect(songs).toEqual([ref('s3', 'Tune C'), ref('s2', 'Tune B'), ref('s1', 'Tune A')]);
   });
 
   it('resolves a renamed song by its stored title and saves the new title', () => {

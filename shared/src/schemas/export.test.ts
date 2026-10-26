@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ExportSchema } from './export.js';
+import { SetlistSchema } from './setlist.js';
 
 function makeSong() {
   return {
@@ -20,13 +21,7 @@ function makeSetlist() {
     sections: [
       {
         name: 'Set 1',
-        songs: [
-          {
-            songId: 'song000000000001',
-            titleSnapshot: 'Autumn Leaves',
-            perGigAnnotation: 'half-time feel',
-          },
-        ],
+        songs: [{ songId: 'song000000000001', titleSnapshot: 'Autumn Leaves' }],
       },
     ],
     clientWrittenAt: '2026-07-19T10:00:00.000Z',
@@ -69,12 +64,21 @@ describe('ExportSchema', () => {
     const parsed = ExportSchema.parse(payload);
     expect(parsed.bands[0]?.songs[0]).toEqual(song);
     expect(parsed.bands[0]?.setlists[0]).toEqual(setlist);
-    expect(parsed.bands[0]?.setlists[0]?.sections[0]?.songs[0]?.perGigAnnotation).toBe(
-      'half-time feel',
-    );
     expect(parsed.bands[0]?.setlists[0]?.sections[0]?.songs[0]?.titleSnapshot).toBe(
       'Autumn Leaves',
     );
+  });
+
+  it('strips a legacy perGigAnnotation from a song ref', () => {
+    const legacy = makeSetlist();
+    const ref = legacy.sections[0]?.songs[0];
+    if (!ref) throw new Error('fixture');
+    const withNote = {
+      ...legacy,
+      sections: [{ name: 'Set 1', songs: [{ ...ref, perGigAnnotation: 'half-time feel' }] }],
+    };
+    const parsed = SetlistSchema.parse(withNote);
+    expect(parsed.sections[0]?.songs[0]).toEqual(ref);
   });
 
   it('rejects a payload whose schemaVersion is not the literal 1', () => {
