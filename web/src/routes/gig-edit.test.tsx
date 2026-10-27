@@ -1,6 +1,6 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes } from 'react-router';
+import { Link, MemoryRouter, Outlet, Route, Routes, useNavigate } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { formatGigDate } from '../lib/gig-date.js';
 import { GIG_DELETE, GIG_FORM, GIGS } from '../lib/microcopy.js';
@@ -19,14 +19,43 @@ vi.mock('../hooks/use-setlist-mutation.js', () => ({
 }));
 vi.mock('../lib/id.js', () => ({ generateId: () => 'newgig0000000001' }));
 
-function renderAt(path: string) {
+function BackButton() {
+  const navigate = useNavigate();
+  return (
+    <button type="button" onClick={() => navigate(-1)}>
+      back
+    </button>
+  );
+}
+
+function renderAt(...history: string[]) {
   return render(
-    <MemoryRouter initialEntries={[path]}>
+    <MemoryRouter initialEntries={history} initialIndex={history.length - 1}>
       <Routes>
-        <Route path="/gigs" element={<p>list page</p>} />
-        <Route path="/gigs/new" element={<GigEdit />} />
-        <Route path="/gigs/:setlistId" element={<p>gig page</p>} />
-        <Route path="/gigs/:setlistId/edit" element={<GigEdit />} />
+        <Route
+          path="/gigs"
+          element={
+            <>
+              <p>list page</p>
+              <Link to="/gigs/new">open add</Link>
+              <Outlet />
+            </>
+          }
+        >
+          <Route path="new" element={<GigEdit />} />
+        </Route>
+        <Route
+          path="/gigs/:setlistId"
+          element={
+            <>
+              <p>gig page</p>
+              <BackButton />
+              <Outlet />
+            </>
+          }
+        >
+          <Route path="edit" element={<GigEdit />} />
+        </Route>
       </Routes>
     </MemoryRouter>,
   );
@@ -54,12 +83,18 @@ beforeEach(() => {
 });
 
 describe('GigEdit', () => {
-  it('has a header back link that goes where Cancel goes', () => {
+  it('opens as a dialog named by its title over the page it came from', () => {
     renderAt('/gigs/new');
-    expect(screen.getByRole('link', { name: 'Back to gigs' })).toHaveAttribute('href', '/gigs');
-    cleanup();
+    expect(screen.getByRole('dialog', { name: GIG_FORM.addHeading })).toBeInTheDocument();
+    expect(screen.getByText('list page')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Back to gigs' })).not.toBeInTheDocument();
+  });
+
+  it('shows Edit gig and Save for an existing gig', () => {
     renderAt('/gigs/g1/edit');
-    expect(screen.getByRole('link', { name: 'Back to gig' })).toHaveAttribute('href', '/gigs/g1');
+    expect(screen.getByRole('dialog', { name: GIG_FORM.editHeading })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: GIG_FORM.save })).toBeInTheDocument();
+    expect(screen.getByText('gig page')).toBeInTheDocument();
   });
 
   it('adds a gig with no sections', async () => {
@@ -68,7 +103,7 @@ describe('GigEdit', () => {
     await user.type(screen.getByLabelText(GIG_FORM.venue), 'Test Venue');
     await user.type(screen.getByLabelText(GIG_FORM.date), '2026-11-07');
     await user.type(screen.getByLabelText(GIG_FORM.time), '20:00');
-    await user.click(screen.getByRole('button', { name: GIG_FORM.save }));
+    await user.click(screen.getByRole('button', { name: GIG_FORM.add }));
 
     expect(saveSetlistMock).toHaveBeenCalledTimes(1);
     const record = saveSetlistMock.mock.calls[0]?.[0];
@@ -104,7 +139,7 @@ describe('GigEdit', () => {
   it('keeps Save disabled until venue and date are filled', async () => {
     const user = userEvent.setup();
     renderAt('/gigs/new');
-    const save = screen.getByRole('button', { name: GIG_FORM.save });
+    const save = screen.getByRole('button', { name: GIG_FORM.add });
     expect(save).toBeDisabled();
     await user.type(screen.getByLabelText(GIG_FORM.venue), 'Test Venue');
     expect(save).toBeDisabled();
@@ -118,20 +153,59 @@ describe('GigEdit', () => {
     expect(saveSetlistMock).toHaveBeenCalledTimes(1);
   });
 
-  it('cancels an edit back to the gig page without saving', async () => {
+  it('cancels an edit opened directly back to the gig page without saving', async () => {
     const user = userEvent.setup();
     renderAt('/gigs/g1/edit');
-    await user.click(screen.getByRole('link', { name: GIG_FORM.cancel }));
+    await user.click(screen.getByRole('button', { name: GIG_FORM.cancel }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(screen.getByText('gig page')).toBeInTheDocument();
     expect(saveSetlistMock).not.toHaveBeenCalled();
   });
 
-  it('cancels an add back to the list', async () => {
+  it('cancels an edit by stepping back when there is history', async () => {
+    const user = userEvent.setup();
+    renderAt('/gigs', '/gigs/g1', '/gigs/g1/edit');
+    await user.click(screen.getByRole('button', { name: GIG_FORM.cancel }));
+    await user.click(screen.getByRole('button', { name: 'back' }));
+    expect(screen.getByText('list page')).toBeInTheDocument();
+  });
+
+  it('closes on Escape, discarding changes', async () => {
+    const user = userEvent.setup();
+    renderAt('/gigs/g1/edit');
+    await user.type(screen.getByLabelText(GIG_FORM.venue), ' more');
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByText('gig page')).toBeInTheDocument();
+    expect(saveSetlistMock).not.toHaveBeenCalled();
+  });
+
+  it('steps back on Escape when there is history, as Cancel does', async () => {
+    const user = userEvent.setup();
+    renderAt('/gigs', '/gigs/g1', '/gigs/g1/edit');
+    await user.keyboard('{Escape}');
+    expect(screen.getByText('gig page')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'back' }));
+    expect(screen.getByText('list page')).toBeInTheDocument();
+  });
+
+  it('cancels an add opened directly back to the list', async () => {
     const user = userEvent.setup();
     renderAt('/gigs/new');
-    await user.click(screen.getByRole('link', { name: GIG_FORM.cancel }));
+    await user.click(screen.getByRole('button', { name: GIG_FORM.cancel }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(screen.getByText('list page')).toBeInTheDocument();
     expect(saveSetlistMock).not.toHaveBeenCalled();
+  });
+
+  it('returns focus to the control that opened it', async () => {
+    const user = userEvent.setup();
+    renderAt('/gigs');
+    const opener = screen.getByRole('link', { name: 'open add' });
+    await user.click(opener);
+    expect(screen.getByRole('dialog', { name: GIG_FORM.addHeading })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: GIG_FORM.cancel }));
+    await waitFor(() => expect(opener).toHaveFocus());
   });
 
   it('shows not found for an unknown gig', () => {
@@ -139,20 +213,21 @@ describe('GigEdit', () => {
     useSetlistsMock.mockReturnValue({ data: [], isPending: false });
     renderAt('/gigs/nope/edit');
     expect(screen.getByText(GIGS.notFound)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: GIGS.backToGigs })).toHaveAttribute('href', '/gigs');
+    expect(screen.getByRole('dialog', { name: GIG_FORM.editHeading })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: GIG_FORM.save })).toBeDisabled();
     expect(screen.queryByLabelText(GIG_FORM.venue)).not.toBeInTheDocument();
   });
 });
 
 describe('GigEdit delete', () => {
-  const confirmLine = `${GIG_DELETE.confirm} Venue A, ${formatGigDate('2026-11-07')}?`;
+  const label = `Venue A, ${formatGigDate('2026-11-07')}`;
 
   it('offers no delete when adding a gig', () => {
     renderAt('/gigs/new');
     expect(screen.queryByRole('button', { name: GIG_DELETE.button })).not.toBeInTheDocument();
   });
 
-  it('asks first, naming the saved gig, and Keep returns to the form', async () => {
+  it('asks in a dialog naming the saved gig, and Keep returns to the form', async () => {
     const user = userEvent.setup();
     renderAt('/gigs/g1/edit');
     await user.clear(screen.getByLabelText(GIG_FORM.venue));
@@ -160,17 +235,29 @@ describe('GigEdit delete', () => {
     const del = screen.getByRole('button', { name: GIG_DELETE.button });
     expect(del).toHaveAttribute('data-variant', 'destructive-outline');
     await user.click(del);
-    expect(screen.getByText(confirmLine)).toBeInTheDocument();
+    const dialog = screen.getByRole('alertdialog', { name: GIG_DELETE.title(label) });
+    expect(dialog).toHaveTextContent(GIG_DELETE.explain);
     expect(screen.getByRole('button', { name: GIG_DELETE.yes })).toHaveAttribute(
       'data-variant',
       'destructive',
     );
     const keep = screen.getByRole('button', { name: GIG_DELETE.keep });
     expect(keep).toHaveAttribute('data-variant', 'outline');
+    expect(keep).toHaveFocus();
     await user.click(keep);
     expect(deleteSetlistMock).not.toHaveBeenCalled();
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
     expect(screen.getByLabelText(GIG_FORM.venue)).toHaveValue('Unsaved');
-    expect(screen.getByRole('button', { name: GIG_DELETE.button })).toBeInTheDocument();
+    await waitFor(() => expect(del).toHaveFocus());
+  });
+
+  it('closes only the confirm dialog on Escape, not the sheet', async () => {
+    const user = userEvent.setup();
+    renderAt('/gigs/g1/edit');
+    await user.click(screen.getByRole('button', { name: GIG_DELETE.button }));
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: GIG_FORM.editHeading })).toBeInTheDocument();
   });
 
   it('names the gig by date alone when it has no venue', async () => {
@@ -181,11 +268,11 @@ describe('GigEdit delete', () => {
     renderAt('/gigs/g1/edit');
     await user.click(screen.getByRole('button', { name: GIG_DELETE.button }));
     expect(
-      screen.getByText(`${GIG_DELETE.confirm} ${formatGigDate('2026-11-07')}?`),
+      screen.getByRole('alertdialog', { name: GIG_DELETE.title(formatGigDate('2026-11-07')) }),
     ).toBeInTheDocument();
   });
 
-  it('deletes on the second tap and goes to the gig list', async () => {
+  it('deletes on Yes, delete and goes to the gig list', async () => {
     const user = userEvent.setup();
     renderAt('/gigs/g1/edit');
     await user.click(screen.getByRole('button', { name: GIG_DELETE.button }));
@@ -210,6 +297,7 @@ describe('GigEdit delete', () => {
     await user.click(screen.getByRole('button', { name: GIG_DELETE.button }));
     await user.click(screen.getByRole('button', { name: GIG_DELETE.yes }));
     expect(await screen.findByRole('alert')).toHaveTextContent(GIG_DELETE.failed);
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
     expect(screen.getByLabelText(GIG_FORM.venue)).toHaveValue('Venue A');
   });
 });

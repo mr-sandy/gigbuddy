@@ -1,9 +1,17 @@
 import { ACTIVE_BAND_ID, type Song, type SongPutInput } from '@gigbuddy/shared';
-import { ChevronLeft } from 'lucide-react';
-import { type FormEvent, type MouseEvent, useState } from 'react';
-import { Link, useLocation, useNavigate, useParams } from 'react-router';
-import { PageHeader } from '../components/page-header.js';
-import { PageTitle } from '../components/page-title.js';
+import { Trash2 } from 'lucide-react';
+import { type FormEvent, useState } from 'react';
+import { useNavigate, useParams } from 'react-router';
+import { EditSheet, SheetFrame, useSheetExit } from '../components/edit-sheet.js';
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '../components/ui/alert-dialog.js';
 import { Button } from '../components/ui/button.js';
 import { Input } from '../components/ui/input.js';
 import { Label } from '../components/ui/label.js';
@@ -13,10 +21,10 @@ import { useSongMutation } from '../hooks/use-song-mutation.js';
 import { useSongOrCached } from '../hooks/use-song-or-cached.js';
 import { formatGigDate } from '../lib/gig-date.js';
 import { generateId } from '../lib/id.js';
-import { SONG_DELETE, SONG_FORM, SONGS } from '../lib/microcopy.js';
+import { SONG_DELETE, SONG_FORM } from '../lib/microcopy.js';
 
 /*
- * Add / edit song form (Story 7.6). `/songs/new` adds, `/songs/:songId/edit`
+ * Add / edit song sheet (Story 7.6, in a sheet since 7.21). `/songs/new` adds, `/songs/:songId/edit`
  * edits. Save writes through `useSongMutation` as a whole-record PUT, so the
  * stored performance and practice notes (not shown here) are copied from the
  * song being edited or the PUT would delete them. The form mounts only once
@@ -24,15 +32,15 @@ import { SONG_DELETE, SONG_FORM, SONGS } from '../lib/microcopy.js';
  * resets what Sandy is typing. Leaving an edit steps back in history when
  * there is history to step back to, so the song page isn't stacked twice.
  *
- * Editing also offers "Delete song" (Story 7.11) behind a second tap. A song
- * in any setlist can't be deleted: the cached setlists name the gigs up front,
- * and the API's 409 covers anything the cache missed.
+ * Both routes are children of the page they open over (`/songs`, `/songs/:songId`),
+ * so the page stays mounted behind the sheet. Editing also offers "Delete song"
+ * (Story 7.11) in a confirm dialog. A song in any setlist can't be deleted: the
+ * cached setlists name the gigs up front, and the API's 409 covers anything the
+ * cache missed.
  */
 
 const PAIR_GAP = 'mt-[calc(var(--spacing-unit)*4)]';
 const FIELD_GAP = 'mt-[var(--spacing-unit)]';
-const BODY_PRIMARY =
-  'text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-foreground';
 
 export function SongEdit() {
   const { songId } = useParams();
@@ -41,34 +49,33 @@ export function SongEdit() {
 
 function EditExisting({ songId }: { songId: string }) {
   const { song, statusLine } = useSongOrCached(songId);
-  if (!song) {
-    return (
-      <>
-        <PageHeader
-          left={
-            <Button asChild variant="ghost" className="text-muted-foreground">
-              <Link to="/songs">
-                <ChevronLeft aria-hidden="true" />
-                {SONGS.backToSongs}
-              </Link>
-            </Button>
-          }
-        />
-        <p
-          aria-live="polite"
-          className="mt-[calc(var(--spacing-unit)*3)] text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-muted-foreground"
+  const { leave } = useSheetExit(`/songs/${songId}`);
+  return (
+    <SheetFrame onCancel={leave} described={false}>
+      {song ? (
+        <SongForm key={song.songId} initial={song} />
+      ) : (
+        <EditSheet
+          title={SONG_FORM.editHeading}
+          cancelLabel={SONG_FORM.cancel}
+          submitLabel={SONG_FORM.save}
+          submitDisabled
+          onCancel={leave}
         >
-          {statusLine}
-        </p>
-      </>
-    );
-  }
-  return <SongForm key={song.songId} initial={song} />;
+          <p
+            aria-live="polite"
+            className="m-0 mt-[calc(var(--spacing-unit)*3)] text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-muted-foreground"
+          >
+            {statusLine}
+          </p>
+        </EditSheet>
+      )}
+    </SheetFrame>
+  );
 }
 
 function SongForm({ initial }: { initial?: Song }) {
   const navigate = useNavigate();
-  const location = useLocation();
   const { saveSong } = useSongMutation();
   const [newId] = useState(() => generateId());
   const songId = initial?.songId ?? newId;
@@ -77,21 +84,18 @@ function SongForm({ initial }: { initial?: Song }) {
   const [key, setKey] = useState(initial?.key ?? '');
   const [patch, setPatch] = useState(initial?.patch ?? '');
   const [chart, setChart] = useState(initial?.chordChart ?? '');
+  const [saving, setSaving] = useState(false);
   const canSave = title.trim() !== '';
   const exitTo = initial ? `/songs/${songId}` : '/songs';
-  // 'default' means this form is the first page in the history stack.
-  const hasHistory = location.key !== 'default';
+  const { leave, hasHistory } = useSheetExit(exitTo);
   // After saving a new record, land on its page rather than stepping back.
   const canStepBack = initial !== undefined && hasHistory;
-  const leave = (e: MouseEvent<HTMLAnchorElement>) => {
-    if (!hasHistory) return;
-    e.preventDefault();
-    navigate(-1);
-  };
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
-    if (!canSave) return;
+    // A second tap while saving would step back twice.
+    if (!canSave || saving) return;
+    setSaving(true);
     const trimmedTitle = title.trim();
     const trimmedKey = key.trim();
     const trimmedPatch = patch.trim();
@@ -116,19 +120,14 @@ function SongForm({ initial }: { initial?: Song }) {
   }
 
   return (
-    <form onSubmit={onSubmit} noValidate>
-      <PageHeader
-        left={
-          <Button asChild variant="ghost" className="text-muted-foreground">
-            <Link replace to={exitTo} onClick={leave}>
-              <ChevronLeft aria-hidden="true" />
-              {initial ? SONGS.backToSong : SONGS.backToSongs}
-            </Link>
-          </Button>
-        }
-      />
-      <PageTitle>{initial ? SONG_FORM.editHeading : SONG_FORM.addHeading}</PageTitle>
-
+    <EditSheet
+      title={initial ? SONG_FORM.editHeading : SONG_FORM.addHeading}
+      cancelLabel={SONG_FORM.cancel}
+      submitLabel={initial ? SONG_FORM.save : SONG_FORM.add}
+      submitDisabled={!canSave || saving}
+      onCancel={leave}
+      onSubmit={onSubmit}
+    >
       <div className={PAIR_GAP}>
         <Label htmlFor="song-title">{SONG_FORM.title}</Label>
         <Input
@@ -174,19 +173,8 @@ function SongForm({ initial }: { initial?: Song }) {
         />
       </div>
 
-      <div className="mt-[calc(var(--spacing-unit)*8)] flex items-center gap-[calc(var(--spacing-unit)*6)]">
-        <Button type="submit" disabled={!canSave}>
-          {SONG_FORM.save}
-        </Button>
-        <Button asChild variant="ghost">
-          <Link replace to={exitTo} onClick={leave}>
-            {SONG_FORM.cancel}
-          </Link>
-        </Button>
-      </div>
-
       {initial ? <DeleteSong song={initial} /> : null}
-    </form>
+    </EditSheet>
   );
 }
 
@@ -194,7 +182,7 @@ function DeleteSong({ song }: { song: Song }) {
   const navigate = useNavigate();
   const { deleteSong } = useSongMutation();
   const { data: setlists } = useSetlists();
-  const [step, setStep] = useState<'idle' | 'confirm'>('idle');
+  const [open, setOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const gigs = (setlists ?? []).filter((setlist) =>
@@ -214,60 +202,68 @@ function DeleteSong({ song }: { song: Song }) {
       setMessage(SONG_DELETE.failed);
     }
     setDeleting(false);
-    setStep('idle');
+    setOpen(false);
   }
 
-  const keep = (
-    <Button
-      type="button"
-      variant="outline"
-      onClick={() => {
-        setStep('idle');
-        setMessage(null);
-      }}
-    >
-      {SONG_DELETE.keep}
-    </Button>
-  );
-
   return (
-    <div className="mt-[calc(var(--spacing-unit)*12)]">
-      {step === 'idle' ? (
-        <Button
-          type="button"
-          variant="destructive-outline"
-          onClick={() => {
-            setMessage(null);
-            setStep('confirm');
-          }}
-        >
-          {SONG_DELETE.button}
-        </Button>
-      ) : gigs.length > 0 ? (
-        <>
-          <p className={BODY_PRIMARY}>{SONG_DELETE.inUse}</p>
-          <ul className={`mt-[var(--spacing-unit)] ${BODY_PRIMARY}`}>
-            {gigs.map((gig) => {
-              const venue = gig.gigMeta.venue.trim();
-              const date = formatGigDate(gig.gigMeta.date);
-              return <li key={gig.setlistId}>{venue ? `${venue}, ${date}` : date}</li>;
-            })}
-          </ul>
-          <div className="mt-[calc(var(--spacing-unit)*4)]">{keep}</div>
-        </>
-      ) : (
-        <>
-          <p className={BODY_PRIMARY}>{`${SONG_DELETE.confirm} ${song.title}?`}</p>
-          <div className="mt-[calc(var(--spacing-unit)*4)] flex flex-wrap items-center gap-[calc(var(--spacing-unit)*6)]">
-            <Button type="button" variant="destructive" onClick={onConfirm} disabled={deleting}>
-              {SONG_DELETE.yes}
-            </Button>
-            {keep}
-          </div>
-        </>
-      )}
+    <div className="mt-[var(--spacing-section-gap)] border-t border-border pt-[var(--spacing-section-gap)]">
+      <AlertDialog
+        open={open}
+        onOpenChange={(next) => {
+          if (!next && deleting) return;
+          if (next) setMessage(null);
+          setOpen(next);
+        }}
+      >
+        <AlertDialogTrigger asChild>
+          <Button type="button" variant="destructive-outline">
+            <Trash2 aria-hidden="true" />
+            {SONG_DELETE.button}
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          {gigs.length > 0 ? (
+            <>
+              <AlertDialogTitle>{SONG_DELETE.inUseTitle(song.title)}</AlertDialogTitle>
+              <AlertDialogDescription>{SONG_DELETE.inUse}</AlertDialogDescription>
+              <ul className="m-0 mt-[var(--spacing-unit)] list-none p-0 text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-foreground">
+                {gigs.map((gig) => {
+                  const venue = gig.gigMeta.venue.trim();
+                  const date = formatGigDate(gig.gigMeta.date);
+                  return <li key={gig.setlistId}>{venue ? `${venue}, ${date}` : date}</li>;
+                })}
+              </ul>
+              <AlertDialogFooter>
+                <AlertDialogCancel asChild>
+                  <Button type="button" variant="outline">
+                    {SONG_DELETE.ok}
+                  </Button>
+                </AlertDialogCancel>
+              </AlertDialogFooter>
+            </>
+          ) : (
+            <>
+              <AlertDialogTitle>{SONG_DELETE.title(song.title)}</AlertDialogTitle>
+              <AlertDialogDescription>{SONG_DELETE.explain}</AlertDialogDescription>
+              <AlertDialogFooter>
+                <AlertDialogCancel asChild>
+                  <Button type="button" variant="outline" disabled={deleting}>
+                    {SONG_DELETE.keep}
+                  </Button>
+                </AlertDialogCancel>
+                <Button type="button" variant="destructive" onClick={onConfirm} disabled={deleting}>
+                  {SONG_DELETE.yes}
+                </Button>
+              </AlertDialogFooter>
+            </>
+          )}
+        </AlertDialogContent>
+      </AlertDialog>
       {message ? (
-        <p role="alert" className={`mt-[var(--spacing-unit)] ${BODY_PRIMARY}`}>
+        <p
+          role="alert"
+          className="m-0 mt-[var(--spacing-unit)] text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-foreground"
+        >
           {message}
         </p>
       ) : null}

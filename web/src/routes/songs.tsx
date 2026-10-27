@@ -1,5 +1,5 @@
 import { ChevronRight, Plus } from 'lucide-react';
-import { Link } from 'react-router';
+import { Link, Outlet } from 'react-router';
 import { BandName, PageHeader } from '../components/page-header.js';
 import { PageTitle } from '../components/page-title.js';
 import { Button } from '../components/ui/button.js';
@@ -69,6 +69,7 @@ export function Songs() {
           <a href="/api/v1/export">{EXPORT.link}</a>
         </Button>
       </footer>
+      <Outlet />
     </>
   );
 }

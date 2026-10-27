@@ -18,7 +18,6 @@ export const SONGS = {
   empty: 'No songs yet.',
   notFound: 'Song not found.',
   backToSongs: 'Back to songs',
-  backToSong: 'Back to song',
 } as const;
 
 /* Story 7.6 — add/edit song. */
@@ -31,6 +30,7 @@ export const SONG_FORM = {
   key: 'Key',
   patch: 'Patch',
   chordChart: 'Chord chart',
+  add: 'Add',
   save: 'Save',
   cancel: 'Cancel',
 } as const;
@@ -61,6 +61,7 @@ export const GIG_FORM = {
   venue: 'Venue',
   date: 'Date',
   time: 'Time',
+  add: 'Add',
   save: 'Save',
   cancel: 'Cancel',
 } as const;
@@ -68,6 +69,7 @@ export const GIG_FORM = {
 /* Story 7.10 — edit the setlist as text. */
 export const SETLIST_TEXT = {
   editLink: 'Edit setlist',
+  heading: 'Edit setlist',
   label: 'Setlist',
   hint: 'One song per line. Start a line with ## to name a section.',
   save: 'Save',
@@ -81,17 +83,21 @@ export const SETLIST_TEXT = {
 /* Story 7.11 — delete a song. */
 export const SONG_DELETE = {
   button: 'Delete song',
-  confirm: 'Delete',
+  title: (name: string) => `Delete ${name}?`,
+  explain: "This can't be undone.",
+  inUseTitle: (name: string) => `${name} is in a setlist`,
+  inUse: 'Take it out of these gigs first:',
   yes: 'Yes, delete',
   keep: 'Keep',
-  inUse: 'This song is in the setlist for these gigs. Take it out of them first:',
+  ok: 'OK',
   inUseUnknown: "This song is in a gig's setlist, so it wasn't deleted.",
   failed: "Couldn't delete the song. Check your connection and try again.",
 } as const;
 
 export const GIG_DELETE = {
   button: 'Delete gig',
-  confirm: 'Delete',
+  title: (label: string) => `Delete ${label}?`,
+  explain: "This can't be undone. The songs stay in your library.",
   yes: 'Yes, delete',
   keep: 'Keep',
   failed: "Couldn't delete the gig. Check your connection and try again.",

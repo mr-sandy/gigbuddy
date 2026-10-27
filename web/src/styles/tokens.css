@@ -21,6 +21,7 @@
   --destructive: #a3341f;
   --destructive-foreground: #ffffff;
   --ring: color-mix(in srgb, var(--primary) 45%, transparent);
+  --scrim: rgba(26, 18, 9, 0.45);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -35,6 +36,7 @@
     --input: #7a6a4d;
     --destructive: #f08a6e;
     --destructive-foreground: #1a1209;
+    --scrim: rgba(0, 0, 0, 0.62);
   }
 }
 
@@ -50,6 +52,7 @@
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-ring: var(--ring);
+  --color-scrim: var(--scrim);
 }
 
 @theme {
@@ -91,6 +94,8 @@
   --spacing-tab-bar: 60px;
   /* Page header minimum height (Story 7.20). */
   --spacing-header: 56px;
+  /* Wide-window sheet and dialog width (Story 7.21). */
+  --spacing-sheet: 460px;
 
   /* ---------- Font families ---------- */
   --font-serif-editorial: "Lora", Georgia, serif;

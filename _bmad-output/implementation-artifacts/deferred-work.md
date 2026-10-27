@@ -106,3 +106,8 @@
 
 - **Tab bar sits inside `<main>`** (`web/src/routes/list-layout.tsx:12`, `web/src/routes/authenticated-shell.tsx:11`): `ListLayout` renders through the shell's `<main>` Outlet, so the "Lists" nav sits inside the main landmark rather than alongside it. This is valid HTML and only affects how screen readers move between landmarks. Revisit if the shell is restructured.
 - **Focused rows can scroll behind fixed bottom chrome** (`web/src/components/tab-bar.tsx:17`): the bottom padding only clears the bar at the end of the page, so a keyboard-focused row can land behind the tab bar or the play bar. Fix: set `scroll-padding-bottom` on `html` to match. This was already true of the play bar.
+
+## Deferred from: code review of 7-21-edit-and-add-in-sheets (2026-10-27)
+
+- **After a delete, Back returns to the deleted record** (`web/src/routes/song-edit.tsx:186`, `web/src/routes/gig-edit.tsx:166`): the delete replaces only the edit entry, so history ends up list → record → list. Back then opens the deleted record's not-found page. The old pages did this too.
+- **Edit from a gig's song page swaps the page behind the sheet** (`web/src/routes/song.tsx:107`): the Edit link points to `/songs/:id/edit`, not to a child of `gigs/:setlistId/songs/:songId`. The gig chrome disappears behind the scrim, and after a reload Cancel lands on the plain song page.

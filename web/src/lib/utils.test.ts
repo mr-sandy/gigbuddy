@@ -22,5 +22,7 @@ describe('cn', () => {
     expect(cn('min-h-tap px-4', 'min-h-play-bar')).toBe('px-4 min-h-play-bar');
     expect(cn('min-h-tap', 'min-h-tab-bar')).toBe('min-h-tab-bar');
     expect(cn('min-h-tap', 'min-h-header')).toBe('min-h-header');
+    expect(cn('w-full', 'md:w-sheet')).toBe('w-full md:w-sheet');
+    expect(cn('w-96', 'w-sheet')).toBe('w-sheet');
   });
 });

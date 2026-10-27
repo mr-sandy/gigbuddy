@@ -36,17 +36,31 @@ export const router = createBrowserRouter([
       {
         element: <ListLayout />,
         children: [
-          { path: 'songs', element: <Songs /> },
-          { path: 'gigs', element: <Gigs /> },
+          {
+            path: 'songs',
+            element: <Songs />,
+            children: [{ path: 'new', element: <SongEdit /> }],
+          },
+          {
+            path: 'gigs',
+            element: <Gigs />,
+            children: [{ path: 'new', element: <GigEdit /> }],
+          },
         ],
       },
-      { path: 'songs/new', element: <SongEdit /> },
-      { path: 'songs/:songId', element: <Song /> },
-      { path: 'songs/:songId/edit', element: <SongEdit /> },
-      { path: 'gigs/new', element: <GigEdit /> },
-      { path: 'gigs/:setlistId', element: <Gig /> },
-      { path: 'gigs/:setlistId/edit', element: <GigEdit /> },
-      { path: 'gigs/:setlistId/setlist', element: <SetlistEdit /> },
+      {
+        path: 'songs/:songId',
+        element: <Song />,
+        children: [{ path: 'edit', element: <SongEdit /> }],
+      },
+      {
+        path: 'gigs/:setlistId',
+        element: <Gig />,
+        children: [
+          { path: 'edit', element: <GigEdit /> },
+          { path: 'setlist', element: <SetlistEdit /> },
+        ],
+      },
       { path: 'gigs/:setlistId/songs/:songId', element: <Song /> },
     ],
   },

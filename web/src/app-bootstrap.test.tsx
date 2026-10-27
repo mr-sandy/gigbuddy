@@ -322,11 +322,6 @@ describe('AppBootstrap', () => {
       ['a song page', '/songs/a1'],
       ['a gig page', '/gigs/g1'],
       ['a gig song page', '/gigs/g1/songs/a1'],
-      ['the add song form', '/songs/new'],
-      ['the edit song form', '/songs/a1/edit'],
-      ['the add gig form', '/gigs/new'],
-      ['the edit gig form', '/gigs/g1/edit'],
-      ['the setlist editor', '/gigs/g1/setlist'],
     ])('signed in: no tab bar on %s', async (_name, path) => {
       mockSignedInWithData();
       window.scrollTo = vi.fn() as unknown as typeof window.scrollTo;
@@ -335,6 +330,56 @@ describe('AppBootstrap', () => {
       renderBootstrap();
       expect(await screen.findByRole('link', { name: /^Back to/ })).toBeInTheDocument();
       expect(tabBar()).toBeNull();
+    });
+  });
+
+  describe('sheets over their page (Story 7.21)', () => {
+    window.scrollTo = vi.fn() as unknown as typeof window.scrollTo;
+
+    async function openDirectly(path: string) {
+      mockSignedInWithData();
+      window.history.replaceState(null, '', path);
+      await router.navigate(path, { replace: true });
+      renderBootstrap();
+    }
+
+    it.each([
+      ['/songs/new', 'Add song', 'Songs'],
+      ['/songs/a1/edit', 'Edit song', 'Alpha Test Tune'],
+      ['/gigs/new', 'Add gig', 'Gigs'],
+      ['/gigs/g1/edit', 'Edit gig', 'Test Venue'],
+      ['/gigs/g1/setlist', 'Edit setlist', 'Test Venue'],
+    ])('deep link %s shows the %s sheet over the right page', async (path, sheet, heading) => {
+      await openDirectly(path);
+      expect(await screen.findByRole('dialog', { name: sheet })).toBeInTheDocument();
+      // Radix aria-hides the page behind a modal, which also blanks accessible names.
+      const h1 = await screen.findByRole('heading', { level: 1, hidden: true });
+      expect(h1).toHaveTextContent(heading);
+    });
+
+    it('keeps the list tab bar behind the add sheets', async () => {
+      await openDirectly('/songs/new');
+      await screen.findByRole('dialog', { name: 'Add song' });
+      const nav = screen.getByRole('navigation', { hidden: true });
+      expect(nav).toHaveAttribute('aria-label', 'Lists');
+      const songsTab = Array.from(nav.querySelectorAll('a')).find((a) => a.textContent === 'Songs');
+      expect(songsTab).toHaveAttribute('aria-current', 'page');
+    });
+
+    it('browser Back from an opened sheet closes it and leaves the page', async () => {
+      mockSignedInWithData();
+      renderBootstrap();
+      await userEvent.click(await screen.findByRole('link', { name: 'Alpha Test Tune' }));
+      await userEvent.click(await screen.findByRole('link', { name: 'Edit' }));
+      expect(await screen.findByRole('dialog', { name: 'Edit song' })).toBeInTheDocument();
+      await act(async () => {
+        await router.navigate(-1);
+      });
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      expect(router.state.location.pathname).toBe('/songs/a1');
+      expect(
+        screen.getByRole('heading', { level: 1, name: 'Alpha Test Tune' }),
+      ).toBeInTheDocument();
     });
   });
 });

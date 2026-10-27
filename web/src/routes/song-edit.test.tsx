@@ -1,6 +1,6 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes, useNavigate } from 'react-router';
+import { Link, MemoryRouter, Outlet, Route, Routes, useNavigate } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SONG_DELETE, SONG_FORM, SONGS } from '../lib/microcopy.js';
 import { SongEdit } from './song-edit.js';
@@ -32,23 +32,43 @@ function BackButton() {
 }
 
 function renderAt(...history: string[]) {
-  return render(
+  const result = render(tree(history));
+  // A fresh tree re-renders with whatever the hook mocks now return; the
+  // router keeps its history.
+  return { ...result, rerenderTree: () => result.rerender(tree(history)) };
+}
+
+function tree(history: string[]) {
+  return (
     <MemoryRouter initialEntries={history} initialIndex={history.length - 1}>
       <Routes>
-        <Route path="/songs" element={<p>list page</p>} />
-        <Route path="/songs/new" element={<SongEdit />} />
+        <Route
+          path="/songs"
+          element={
+            <>
+              <p>list page</p>
+              <Link to="/songs/new">open add</Link>
+              <Outlet />
+            </>
+          }
+        >
+          <Route path="new" element={<SongEdit />} />
+        </Route>
         <Route
           path="/songs/:songId"
           element={
             <>
               <p>song page</p>
               <BackButton />
+              <Link to="/songs/abc/edit">open edit</Link>
+              <Outlet />
             </>
           }
-        />
-        <Route path="/songs/:songId/edit" element={<SongEdit />} />
+        >
+          <Route path="edit" element={<SongEdit />} />
+        </Route>
       </Routes>
-    </MemoryRouter>,
+    </MemoryRouter>
   );
 }
 
@@ -84,7 +104,7 @@ describe('SongEdit', () => {
       screen.getByLabelText(SONG_FORM.chordChart),
       'Cm7 | F7{Enter}Stage: watch Ivan',
     );
-    await user.click(screen.getByRole('button', { name: SONG_FORM.save }));
+    await user.click(screen.getByRole('button', { name: SONG_FORM.add }));
 
     expect(saveSongMock).toHaveBeenCalledTimes(1);
     const record = saveSongMock.mock.calls[0]?.[0];
@@ -120,7 +140,7 @@ describe('SongEdit', () => {
   it('keeps Save disabled until the title has content', async () => {
     const user = userEvent.setup();
     renderAt('/songs/new');
-    const save = screen.getByRole('button', { name: SONG_FORM.save });
+    const save = screen.getByRole('button', { name: SONG_FORM.add });
     expect(save).toBeDisabled();
     await user.type(screen.getByLabelText(SONG_FORM.title), '   ');
     expect(save).toBeDisabled();
@@ -138,30 +158,62 @@ describe('SongEdit', () => {
     expect(screen.getByRole('button', { name: SONG_FORM.save })).toBeDisabled();
   });
 
-  it('has a header back link that goes where Cancel goes', () => {
+  it('opens as a dialog named by its title over the page it came from', () => {
     renderAt('/songs/new');
-    expect(screen.getByRole('link', { name: 'Back to songs' })).toHaveAttribute('href', '/songs');
-    cleanup();
-    renderAt('/songs/abc/edit');
-    expect(screen.getByRole('link', { name: 'Back to song' })).toHaveAttribute(
-      'href',
-      '/songs/abc',
-    );
+    expect(screen.getByRole('dialog', { name: SONG_FORM.addHeading })).toBeInTheDocument();
+    expect(screen.getByText('list page')).toBeInTheDocument();
   });
 
-  it('steps back from the header back link when there is history', async () => {
-    const user = userEvent.setup();
-    renderAt('/songs', '/songs/abc', '/songs/abc/edit');
-    await user.click(screen.getByRole('link', { name: 'Back to song' }));
+  it('shows Edit song and Save for an existing song, with no old page chrome', () => {
+    renderAt('/songs/abc/edit');
+    expect(screen.getByRole('dialog', { name: SONG_FORM.editHeading })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: SONG_FORM.save })).toBeInTheDocument();
     expect(screen.getByText('song page')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Back to song' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: SONG_FORM.cancel })).not.toBeInTheDocument();
   });
 
-  it('cancels an edit back to the song page without saving', async () => {
+  it('cancels an edit opened directly by replacing to the song page, without saving', async () => {
     const user = userEvent.setup();
     renderAt('/songs/abc/edit');
-    await user.click(screen.getByRole('link', { name: SONG_FORM.cancel }));
+    await user.click(screen.getByRole('button', { name: SONG_FORM.cancel }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(screen.getByText('song page')).toBeInTheDocument();
     expect(saveSongMock).not.toHaveBeenCalled();
+  });
+
+  it('closes on Escape, discarding changes', async () => {
+    const user = userEvent.setup();
+    renderAt('/songs/abc/edit');
+    await user.type(screen.getByLabelText(SONG_FORM.title), ' more');
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByText('song page')).toBeInTheDocument();
+    expect(saveSongMock).not.toHaveBeenCalled();
+  });
+
+  it('steps back on Escape when there is history, as Cancel does', async () => {
+    const user = userEvent.setup();
+    renderAt('/songs', '/songs/abc', '/songs/abc/edit');
+    await user.keyboard('{Escape}');
+    expect(screen.getByText('song page')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'back' }));
+    expect(screen.getByText('list page')).toBeInTheDocument();
+  });
+
+  it('saves once when Save is tapped twice', async () => {
+    const user = userEvent.setup();
+    let finish = () => {};
+    saveSongMock.mockReturnValue(new Promise<void>((resolve) => (finish = resolve)));
+    renderAt('/songs', '/songs/abc', '/songs/abc/edit');
+    const save = screen.getByRole('button', { name: SONG_FORM.save });
+    await user.click(save);
+    await user.click(save);
+    expect(saveSongMock).toHaveBeenCalledTimes(1);
+    finish();
+    expect(await screen.findByText('song page')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'back' }));
+    expect(screen.getByText('list page')).toBeInTheDocument();
   });
 
   it('leaves an edit by stepping back, so Back then reaches the list', async () => {
@@ -169,6 +221,7 @@ describe('SongEdit', () => {
     renderAt('/songs', '/songs/abc', '/songs/abc/edit');
     await user.click(screen.getByRole('button', { name: SONG_FORM.save }));
     expect(screen.getByText('song page')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'back' }));
     expect(screen.getByText('list page')).toBeInTheDocument();
   });
@@ -176,26 +229,51 @@ describe('SongEdit', () => {
   it('cancels an edit by stepping back when there is history', async () => {
     const user = userEvent.setup();
     renderAt('/songs', '/songs/abc', '/songs/abc/edit');
-    await user.click(screen.getByRole('link', { name: SONG_FORM.cancel }));
+    await user.click(screen.getByRole('button', { name: SONG_FORM.cancel }));
     await user.click(screen.getByRole('button', { name: 'back' }));
     expect(screen.getByText('list page')).toBeInTheDocument();
     expect(saveSongMock).not.toHaveBeenCalled();
   });
 
-  it('leaves an add by stepping back when there is history', async () => {
+  it('cancels an add by stepping back when there is history', async () => {
     const user = userEvent.setup();
-    renderAt('/songs/abc', '/songs/new');
-    await user.click(screen.getByRole('link', { name: 'Back to songs' }));
-    expect(screen.getByText('song page')).toBeInTheDocument();
+    renderAt('/songs', '/songs/new');
+    await user.click(screen.getByRole('button', { name: SONG_FORM.cancel }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByText('list page')).toBeInTheDocument();
     expect(saveSongMock).not.toHaveBeenCalled();
   });
 
-  it('cancels an add back to the list', async () => {
+  it('cancels an add opened directly back to the list', async () => {
     const user = userEvent.setup();
     renderAt('/songs/new');
-    await user.click(screen.getByRole('link', { name: SONG_FORM.cancel }));
+    await user.click(screen.getByRole('button', { name: SONG_FORM.cancel }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(screen.getByText('list page')).toBeInTheDocument();
-    expect(saveSongMock).not.toHaveBeenCalled();
+  });
+
+  it('returns focus to the control that opened it', async () => {
+    const user = userEvent.setup();
+    renderAt('/songs');
+    const opener = screen.getByRole('link', { name: 'open add' });
+    await user.click(opener);
+    expect(screen.getByRole('dialog', { name: SONG_FORM.addHeading })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: SONG_FORM.cancel }));
+    await waitFor(() => expect(opener).toHaveFocus());
+  });
+
+  it('returns focus to the Edit opener, even when the song loads after opening', async () => {
+    const user = userEvent.setup();
+    useSongMock.mockReturnValue({ data: undefined, isPending: true });
+    const { rerenderTree } = renderAt('/songs/abc');
+    const opener = screen.getByRole('link', { name: 'open edit' });
+    await user.click(opener);
+    expect(screen.getByText(SONGS.loading)).toBeInTheDocument();
+    useSongMock.mockReturnValue({ data: fullSong });
+    rerenderTree();
+    expect(screen.getByLabelText(SONG_FORM.title)).toHaveValue('Alpha Test Tune');
+    await user.click(screen.getByRole('button', { name: SONG_FORM.cancel }));
+    await waitFor(() => expect(opener).toHaveFocus());
   });
 
   it('shows not found for an unknown song', () => {
@@ -203,7 +281,8 @@ describe('SongEdit', () => {
     useSongsMock.mockReturnValue({ data: [], isPending: false });
     renderAt('/songs/nope/edit');
     expect(screen.getByText(SONGS.notFound)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: SONGS.backToSongs })).toHaveAttribute('href', '/songs');
+    expect(screen.getByRole('dialog', { name: SONG_FORM.editHeading })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: SONG_FORM.save })).toBeDisabled();
     expect(screen.queryByLabelText(SONG_FORM.title)).not.toBeInTheDocument();
   });
 });
@@ -220,25 +299,38 @@ describe('SongEdit delete', () => {
     expect(screen.queryByRole('button', { name: SONG_DELETE.button })).not.toBeInTheDocument();
   });
 
-  it('asks first, and Keep leaves the song alone', async () => {
+  it('asks in a dialog first, and Keep leaves the song alone', async () => {
     const user = userEvent.setup();
     renderAt('/songs/abc/edit');
     const del = screen.getByRole('button', { name: SONG_DELETE.button });
     expect(del).toHaveAttribute('data-variant', 'destructive-outline');
     await user.click(del);
-    expect(screen.getByText(`${SONG_DELETE.confirm} Alpha Test Tune?`)).toBeInTheDocument();
+    const dialog = screen.getByRole('alertdialog', { name: SONG_DELETE.title('Alpha Test Tune') });
+    expect(dialog).toHaveTextContent(SONG_DELETE.explain);
     expect(screen.getByRole('button', { name: SONG_DELETE.yes })).toHaveAttribute(
       'data-variant',
       'destructive',
     );
     const keep = screen.getByRole('button', { name: SONG_DELETE.keep });
     expect(keep).toHaveAttribute('data-variant', 'outline');
+    expect(keep).toHaveFocus();
     await user.click(keep);
     expect(deleteSongMock).not.toHaveBeenCalled();
-    expect(screen.getByRole('button', { name: SONG_DELETE.button })).toBeInTheDocument();
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: SONG_FORM.editHeading })).toBeInTheDocument();
+    await waitFor(() => expect(del).toHaveFocus());
   });
 
-  it('deletes on the second tap and goes to the song list', async () => {
+  it('closes only the confirm dialog on Escape, not the sheet', async () => {
+    const user = userEvent.setup();
+    renderAt('/songs/abc/edit');
+    await user.click(screen.getByRole('button', { name: SONG_DELETE.button }));
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: SONG_FORM.editHeading })).toBeInTheDocument();
+  });
+
+  it('deletes on Yes, delete and goes to the song list', async () => {
     const user = userEvent.setup();
     renderAt('/songs/abc/edit');
     await user.click(screen.getByRole('button', { name: SONG_DELETE.button }));
@@ -247,17 +339,23 @@ describe('SongEdit delete', () => {
     expect(await screen.findByText('list page')).toBeInTheDocument();
   });
 
-  it('names the gigs that use the song and offers no delete', async () => {
+  it('names the gigs that use the song and offers only OK', async () => {
     useSetlistsMock.mockReturnValue({
       data: [gigWith('abc'), { ...gigWith('zzz'), setlistId: 'g2' }],
     });
     const user = userEvent.setup();
     renderAt('/songs/abc/edit');
     await user.click(screen.getByRole('button', { name: SONG_DELETE.button }));
-    expect(screen.getByText(SONG_DELETE.inUse)).toBeInTheDocument();
+    const dialog = screen.getByRole('alertdialog', {
+      name: SONG_DELETE.inUseTitle('Alpha Test Tune'),
+    });
+    expect(dialog).toHaveTextContent(SONG_DELETE.inUse);
     expect(screen.getAllByRole('listitem')).toHaveLength(1);
     expect(screen.getByRole('listitem').textContent).toMatch(/^The Venue, /);
     expect(screen.queryByRole('button', { name: SONG_DELETE.yes })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: SONG_DELETE.keep })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: SONG_DELETE.ok }));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });
 
   it('says so when the API reports the song in use', async () => {
@@ -267,6 +365,7 @@ describe('SongEdit delete', () => {
     await user.click(screen.getByRole('button', { name: SONG_DELETE.button }));
     await user.click(screen.getByRole('button', { name: SONG_DELETE.yes }));
     expect(await screen.findByRole('alert')).toHaveTextContent(SONG_DELETE.inUseUnknown);
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });
 
   it('says so when the delete fails', async () => {

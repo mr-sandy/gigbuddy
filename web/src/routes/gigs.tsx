@@ -1,6 +1,6 @@
 import type { Setlist } from '@gigbuddy/shared';
 import { ChevronRight, Plus } from 'lucide-react';
-import { Link } from 'react-router';
+import { Link, Outlet } from 'react-router';
 import { BandName, PageHeader } from '../components/page-header.js';
 import { PageTitle } from '../components/page-title.js';
 import { Button } from '../components/ui/button.js';
@@ -84,6 +84,7 @@ export function Gigs() {
           {statusLine}
         </p>
       )}
+      <Outlet />
     </>
   );
 }

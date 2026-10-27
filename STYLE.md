@@ -42,6 +42,7 @@ Tokens use shadcn's role names and live in `web/src/styles/tokens.css`.
 | `--destructive` | `#a3341f` | `#f08a6e` | Delete |
 | `--destructive-foreground` | `#ffffff` | `#1a1209` | Text on a destructive fill |
 | `--ring` | brass at about 45% | same | Focus ring (follows `--primary`) |
+| `--scrim` | `rgba(26, 18, 9, 0.45)` | `rgba(0, 0, 0, 0.62)` | Dimming behind a sheet or confirm dialog (not text) |
 
 - Brass text is allowed (5.08:1 on the light background) for header actions.
 - Hairlines show in dark mode too.
@@ -56,7 +57,7 @@ Tokens use shadcn's role names and live in `web/src/styles/tokens.css`.
   `--border` hairline underneath that runs edge to edge on a phone, 16px below it before the
   page title. List pages (`/songs`, `/gigs`): band name left (Lora 20px, plain text until the
   settings sheet), Add song / Add gig right. Every other page: back link left, Edit right where
-  it exists. Forms show only the back link, which goes where Cancel goes. In the page flow, not
+  it exists. Add and edit forms are sheets and have no page header. In the page flow, not
   sticky.
 - Tab bar: `/songs` and `/gigs` only. Fixed to the bottom, page background, 1px `--border` top
   line. Two tabs, Songs | Gigs, at least 60px tall (`--spacing-tab-bar`), equal halves on a
@@ -89,9 +90,11 @@ All buttons and button-like links use `Button` (`web/src/components/ui/button.ts
 | Edit, Add song, Add gig | `ghost`, brass text (`text-primary`), Lucide pencil or plus |
 | Edit setlist (beside the first set) | `secondary`, size `sm`, Lucide pencil |
 | Back links | `ghost`, quiet text (`text-muted-foreground`), Lucide chevron-left |
-| Save, Add, Sign in | `default` (brass) |
-| Cancel | `ghost` |
-| Delete song, Delete gig | `destructive-outline`; confirm step: "Yes, delete" `destructive`, "Keep" `outline` |
+| Save, Add (sheet header), Sign in | `default` (brass) |
+| Cancel (sheet header) | `ghost` |
+| Delete song, Delete gig | `destructive-outline`, Lucide trash |
+| "Yes, delete" (confirm dialog) | `destructive` |
+| "Keep", "OK" (confirm dialog) | `outline` |
 | Export all data | `link`, quiet text |
 | Play-bar regions (previous, next song) | `ghost`, full-height, square corners, brass chevron only |
 
@@ -106,6 +109,35 @@ Ghost buttons use 10px side padding so their text lines up near the page gutter;
   8px radius, at least 44px high, full width.
 - Save stays disabled until the required fields are filled (song: title; gig: venue and date).
   There are no submit-time error messages for required fields.
+
+## Sheet
+
+All adding and editing (add and edit song, add and edit gig, edit setlist) happens in a sheet
+over the page it was opened from, built from `ui/sheet.tsx` and `EditSheet`.
+
+- Header: Cancel (`ghost`) left, title centre (Lora, 20px), Save or Add (`default`) right,
+  56px high with a hairline under it. Save and Add stay disabled until the required fields are
+  filled.
+- Narrow windows: the sheet comes up from the bottom with 44px of the page visible above it,
+  rounded top corners, and the page dimmed by `--scrim`. Wide windows (48rem and up): a 460px
+  panel from the right (`--spacing-sheet`). The choice is made by window width, never by device.
+- No swipe-to-close and no tap-outside close. Cancel and Escape close it and discard changes.
+  Focus moves in when it opens and returns to the opener when it closes.
+- The body scrolls; the header doesn't. Delete sits at the foot of the body, after a hairline
+  and 32px of space.
+- The URLs stay real: opened directly, an edit URL shows the sheet over the right page, and
+  browser Back closes it.
+
+## Confirm dialog
+
+For destructive actions only (`ui/alert-dialog.tsx`).
+
+- A title, one line of explanation, and two buttons: "Keep" (`outline`) and "Yes, delete"
+  (`destructive`). On a phone they are full width and stacked, "Yes, delete" on top; on wide
+  windows they sit side by side on the right, Keep first.
+- When the action is blocked (a song that is in a setlist), the dialog says why, lists the
+  gigs, and offers only "OK".
+- Focus starts on the safe button. Escape closes the dialog only, not the sheet under it.
 
 ## Rows
 

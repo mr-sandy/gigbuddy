@@ -758,7 +758,9 @@ Single source of truth: `performanceActive` boolean in a `PerformanceModeContext
 - Copied by hand: no shadcn CLI, no `components.json`.
 - The generated `@/` imports are rewritten to relative `.js` imports, and there is no path alias, so the codebase keeps one import style and there is no tsconfig, Vite or Vitest alias to keep in step.
 - `cn` (`clsx` + `tailwind-merge`) lives in `web/src/lib/utils.ts`, shadcn's own file name, so future copies change only the import path. Write custom sizes as `text-[length:var(--text-…)]` so `tailwind-merge` reads them as font sizes, not colours.
-- Radix packages are added individually (`@radix-ui/react-slot`, `@radix-ui/react-label`), not through the `radix-ui` umbrella package.
+- Radix packages are added individually (`@radix-ui/react-slot`, `@radix-ui/react-label`, `@radix-ui/react-dialog`, `@radix-ui/react-alert-dialog`), not through the `radix-ui` umbrella package.
+- Sheet (`ui/sheet.tsx`, on Radix Dialog) and AlertDialog (`ui/alert-dialog.tsx`) arrived in Story 7.21. One responsive placement chosen by window width (`md`), no animation library, no outside-tap dismiss. Radix Dialog only restores focus to a `Trigger`, so `SheetContent` remembers the opener itself.
+- Add and edit routes are nested children of the page they open over (`/songs/new` under `/songs`, `/songs/:songId/edit` under `/songs/:songId`, and so on). The page stays mounted behind the sheet, the route is the sheet's open state, and closing is navigating.
 - GigBuddy sizes override shadcn's stock sizes: 44px tap targets, 18px button text, 22px field text.
 - Lucide is the only icon set. Icons are `aria-hidden` beside visible text.
 - Every button and button-like link uses `Button` (`asChild` for router `Link`s and plain `<a>`s).
@@ -895,7 +897,7 @@ gigbuddy/
 │   │   │   ├── performance-card.tsx        # Performance card (FR-15–FR-22)
 │   │   │   └── install-prompt.tsx          # iPhone non-installed gate
 │   │   ├── components/                     # reusable components
-│   │   │   ├── ui/                         # shadcn/ui copies: button, input, textarea, label
+│   │   │   ├── ui/                         # shadcn/ui copies: button, input, textarea, label, sheet, alert-dialog
 │   │   │   ├── gig-card.tsx
 │   │   │   ├── song-row.tsx
 │   │   │   ├── section-heading.tsx

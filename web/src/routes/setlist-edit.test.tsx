@@ -1,7 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes } from 'react-router';
+import { MemoryRouter, Outlet, Route, Routes, useNavigate } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { formatGigDate } from '../lib/gig-date.js';
 import { GIGS, SETLIST_TEXT } from '../lib/microcopy.js';
 import { setlistToText } from '../lib/setlist-text.js';
 import { SetlistEdit } from './setlist-edit.js';
@@ -19,13 +20,32 @@ vi.mock('../hooks/use-setlist-mutation.js', () => ({
   useSetlistMutation: () => ({ saveSetlist: saveSetlistMock }),
 }));
 
-function renderAt(path: string) {
+function BackButton() {
+  const navigate = useNavigate();
+  return (
+    <button type="button" onClick={() => navigate(-1)}>
+      back
+    </button>
+  );
+}
+
+function renderAt(...history: string[]) {
   return render(
-    <MemoryRouter initialEntries={[path]}>
+    <MemoryRouter initialEntries={history} initialIndex={history.length - 1}>
       <Routes>
         <Route path="/gigs" element={<p>list page</p>} />
-        <Route path="/gigs/:setlistId" element={<p>gig page</p>} />
-        <Route path="/gigs/:setlistId/setlist" element={<SetlistEdit />} />
+        <Route
+          path="/gigs/:setlistId"
+          element={
+            <>
+              <p>gig page</p>
+              <BackButton />
+              <Outlet />
+            </>
+          }
+        >
+          <Route path="setlist" element={<SetlistEdit />} />
+        </Route>
       </Routes>
     </MemoryRouter>,
   );
@@ -58,15 +78,22 @@ beforeEach(() => {
 });
 
 describe('SetlistEdit', () => {
-  it('has a header back link to the gig', () => {
+  it('opens as a dialog over the gig page, with the gig line as its description', () => {
     renderAt('/gigs/g1/setlist');
-    expect(screen.getByRole('link', { name: 'Back to gig' })).toHaveAttribute('href', '/gigs/g1');
+    const dialog = screen.getByRole('dialog', { name: SETLIST_TEXT.heading });
+    expect(dialog).toHaveAccessibleDescription(`Venue A · ${formatGigDate('2026-11-07')}`);
+    expect(screen.getByText('gig page')).toBeInTheDocument();
+    expect(screen.getByLabelText(SETLIST_TEXT.label)).toHaveValue(setlistToText(sections));
   });
 
-  it('pre-fills the text box and titles the page with the venue', () => {
+  it('describes the gig by date alone when it has no venue', () => {
+    useSetlistMock.mockReturnValue({
+      data: { ...fullGig, gigMeta: { venue: '', date: '2026-11-07' } },
+    });
     renderAt('/gigs/g1/setlist');
-    expect(screen.getByRole('heading', { level: 1, name: 'Venue A' })).toBeInTheDocument();
-    expect(screen.getByLabelText(SETLIST_TEXT.label)).toHaveValue(setlistToText(sections));
+    expect(screen.getByRole('dialog', { name: SETLIST_TEXT.heading })).toHaveAccessibleDescription(
+      formatGigDate('2026-11-07'),
+    );
   });
 
   it('saves edited text as a whole record, keeping gig details and annotations', async () => {
@@ -122,12 +149,39 @@ describe('SetlistEdit', () => {
     expect(screen.getByText(SETLIST_TEXT.songsError)).toBeInTheDocument();
   });
 
-  it('cancels back to the gig page without saving', async () => {
+  it('cancels back to the gig page without saving when opened directly', async () => {
     const user = userEvent.setup();
     renderAt('/gigs/g1/setlist');
-    await user.click(screen.getByRole('link', { name: SETLIST_TEXT.cancel }));
+    await user.click(screen.getByRole('button', { name: SETLIST_TEXT.cancel }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(screen.getByText('gig page')).toBeInTheDocument();
     expect(saveSetlistMock).not.toHaveBeenCalled();
+  });
+
+  it('cancels by stepping back when there is history', async () => {
+    const user = userEvent.setup();
+    renderAt('/gigs', '/gigs/g1', '/gigs/g1/setlist');
+    await user.click(screen.getByRole('button', { name: SETLIST_TEXT.cancel }));
+    await user.click(screen.getByRole('button', { name: 'back' }));
+    expect(screen.getByText('list page')).toBeInTheDocument();
+  });
+
+  it('closes on Escape without saving', async () => {
+    const user = userEvent.setup();
+    renderAt('/gigs/g1/setlist');
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByText('gig page')).toBeInTheDocument();
+    expect(saveSetlistMock).not.toHaveBeenCalled();
+  });
+
+  it('steps back on Escape when there is history, as Cancel does', async () => {
+    const user = userEvent.setup();
+    renderAt('/gigs', '/gigs/g1', '/gigs/g1/setlist');
+    await user.keyboard('{Escape}');
+    expect(screen.getByText('gig page')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'back' }));
+    expect(screen.getByText('list page')).toBeInTheDocument();
   });
 
   it('shows not found for an unknown gig', () => {
@@ -135,7 +189,8 @@ describe('SetlistEdit', () => {
     useSetlistsMock.mockReturnValue({ data: [], isPending: false });
     renderAt('/gigs/nope/setlist');
     expect(screen.getByText(GIGS.notFound)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: GIGS.backToGigs })).toHaveAttribute('href', '/gigs');
+    expect(screen.getByRole('dialog', { name: SETLIST_TEXT.heading })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: SETLIST_TEXT.save })).toBeDisabled();
     expect(screen.queryByLabelText(SETLIST_TEXT.label)).not.toBeInTheDocument();
   });
 });

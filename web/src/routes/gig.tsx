@@ -1,6 +1,6 @@
 import type { Setlist } from '@gigbuddy/shared';
 import { ChevronLeft, ChevronRight, Pencil } from 'lucide-react';
-import { Link, useParams } from 'react-router';
+import { Link, Outlet, useParams } from 'react-router';
 import { PageHeader } from '../components/page-header.js';
 import { PageTitle } from '../components/page-title.js';
 import { Button } from '../components/ui/button.js';
@@ -144,6 +144,7 @@ export function Gig() {
           {statusLine}
         </p>
       )}
+      <Outlet />
     </>
   );
 }
