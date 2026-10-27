@@ -7,7 +7,9 @@
  *
  * `html` picks up the light palette by default (from tokens.css `:root`);
  * the `@media (prefers-color-scheme: dark)` block in tokens.css flips the
- * palette when the OS is in dark mode. No JS theme provider, no attribute.
+ * palette when the OS is in dark mode. No JS theme provider; a Light or Dark
+ * choice from the settings sheet (Story 7.22) sets `data-theme` on `html`,
+ * which overrides the device.
  */
 html {
   color-scheme: light dark;
@@ -16,6 +18,14 @@ html {
   font-family: var(--font-serif-editorial);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 body {

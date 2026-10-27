@@ -2197,8 +2197,8 @@ saves tokens.)
   from the right on wide windows). No swipe-to-close.
 - Gig footer: two tap regions with chevrons only, split in half; inert at either end.
 - Add and Save stay disabled until the required fields are filled.
-- The band name, on the left of the list headers, opens a settings sheet holding Export
-  (and, later, the band list).
+- The band name, on the left of the list headers, opens a settings sheet holding Export,
+  a light/dark appearance control (added 2026-10-27) and, later, the band list.
 - Rejected: floating buttons, badges on the gigs list, songs as cards over the gig, autosave.
 - Chord-chart polish is not part of this review; it waits for a later story.
 - Queue: 7.18 → 7.22, one at a time. Switching bands is a later, larger piece of work.
@@ -2804,8 +2804,9 @@ the middle of a task and get straight back to where I was.
 
 ### Story 7.22: Settings sheet
 
-As Sandy, I want a settings sheet behind the band name, so that Export has a proper home and
-there's a place for picking a band later.
+As Sandy, I want a settings sheet behind the band name, so that Export has a proper home,
+I can choose light or dark regardless of the device's setting, and there's a place for
+picking a band later.
 
 **Acceptance criteria**
 1. On `/songs` and `/gigs`, the band name in the header becomes a button with a Lucide
@@ -2816,9 +2817,20 @@ there's a place for picking a band later.
    `<a href="/api/v1/export">`, as in 7.17) and a help line: "Downloads every band's songs
    and gigs as one file."
 4. The Export link is removed from the foot of the songs page.
-5. The sheet can't be reached from song, gig, gig song or form pages.
-6. No change to `api/`, `shared/` or `infra/`. `STYLE.md` notes the settings sheet.
-7. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass. Tests cover opening and
-   closing the sheet from both list pages, the export link's href, and that the songs page no
-   longer has the link.
-8. Deployed to gig.cormie.com via the normal pipeline.
+5. The sheet has an "Appearance" section with a three-way segmented control: System, Light,
+   Dark. System (the default) follows the device's setting, as the app does now; Light and
+   Dark override it. The choice applies at once, without closing the sheet.
+6. The choice is remembered on that device only (browser storage), so the laptop and the
+   phone can differ. It doesn't sync and isn't sent to the API.
+7. A saved Light or Dark choice applies before first paint (a small inline script in
+   `index.html`), so there's no flash of the other theme on load, and the browser
+   `theme-color` follows the chosen theme. If storage can't be read, the app falls back to
+   System.
+8. The sheet can't be reached from song, gig, gig song or form pages.
+9. No change to `api/`, `shared/` or `infra/`. `STYLE.md` notes the settings sheet and the
+   appearance override. `architecture.md` "Theme" was amended on 2026-10-27 to allow this.
+10. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass. Tests cover opening and
+    closing the sheet from both list pages, the export link's href, that the songs page no
+    longer has the link, and that choosing Light, Dark or System sets the theme and is
+    remembered.
+11. Deployed to gig.cormie.com via the normal pipeline.

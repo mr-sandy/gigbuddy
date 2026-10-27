@@ -6,7 +6,7 @@ The source of truth for how GigBuddy looks. Tokens in `web/src/styles/tokens.css
 
 - Generous type everywhere. Fit less content rather than shrink it.
 - One responsive app, 360px to 1680px, no horizontal scroll. No device detection.
-- Light for daytime prep, dark for dim gigs, via `prefers-color-scheme` only.
+- Light for daytime prep, dark for dim gigs, via `prefers-color-scheme` by default; the settings sheet can override it per device.
 - Every page uses the roles below; page titles come from the `PageTitle` component. No one-off sizes in a route file.
 
 ## Type roles
@@ -28,6 +28,10 @@ Rules:
 ## Colour
 
 Tokens use shadcn's role names and live in `web/src/styles/tokens.css`.
+
+System follows the device. Light or Dark sets `data-theme` on `<html>` and overrides it, remembered
+per device in browser storage (`gigbuddy-theme`) and applied before first paint by the inline
+script in `index.html`, which also sets `theme-color`.
 
 | Token | Light | Dark | Job |
 |---|---|---|---|
@@ -55,8 +59,8 @@ Tokens use shadcn's role names and live in `web/src/styles/tokens.css`.
 - List rows: 12px vertical padding, 1px hairline underneath.
 - Header: every signed-in page starts with it. At least 56px high (`--spacing-header`), 1px
   `--border` hairline underneath that runs edge to edge on a phone, 16px below it before the
-  page title. List pages (`/songs`, `/gigs`): band name left (Lora 20px, plain text until the
-  settings sheet), Add song / Add gig right. Every other page: back link left, Edit right where
+  page title. List pages (`/songs`, `/gigs`): band name left (a `ghost` button, Lora 20px, brass
+  chevron-down, opens the settings sheet), Add song / Add gig right. Every other page: back link left, Edit right where
   it exists. Add and edit forms are sheets and have no page header. In the page flow, not
   sticky.
 - Tab bar: `/songs` and `/gigs` only. Fixed to the bottom, page background, 1px `--border` top
@@ -77,8 +81,6 @@ Tokens use shadcn's role names and live in `web/src/styles/tokens.css`.
   with the chevrons kept above the home indicator. Content is padded so nothing hides under the bar.
 - "Screen may sleep" line on song pages: Body size, secondary text, under the back link; shown
   only when the screen can't be kept awake. No token changes.
-- Export link at the foot of the songs page: a `link` variant `Button` rendered as a plain
-  `<a>` (the router would swallow the download), 32px section gap above.
 
 ## Buttons
 
@@ -95,7 +97,10 @@ All buttons and button-like links use `Button` (`web/src/components/ui/button.ts
 | Delete song, Delete gig | `destructive-outline`, Lucide trash |
 | "Yes, delete" (confirm dialog) | `destructive` |
 | "Keep", "OK" (confirm dialog) | `outline` |
-| Export all data | `link`, quiet text |
+| Band name (list header) | `ghost`, Lora 20px, brass Lucide chevron-down |
+| Done (settings sheet) | `ghost`, brass text |
+| Appearance segments | `default` when chosen, `ghost` otherwise, `aria-pressed` |
+| Export all data (settings sheet) | `link`, quiet text, Lucide download; a plain `<a>` (the router would swallow the download) |
 | Play-bar regions (previous, next song) | `ghost`, full-height, square corners, brass chevron only |
 
 Size `sm` means 16px text and 12px side padding; it keeps the 44px tap height.
@@ -127,6 +132,16 @@ over the page it was opened from, built from `ui/sheet.tsx` and `EditSheet`.
   and 32px of space.
 - The URLs stay real: opened directly, an edit URL shows the sheet over the right page, and
   browser Back closes it.
+
+## Settings sheet
+
+Opened only from the band name on `/songs` and `/gigs`. Same sheet as editing, but the header is
+empty · "GigBuddy" · Done, and it has no URL: Done and Escape close it.
+
+- Band: the current band with a brass tick (V1 has one band).
+- Appearance: a System / Light / Dark segmented control; the choice applies at once and the
+  sheet stays open.
+- Your data: "Export all data" and a help line.
 
 ## Confirm dialog
 

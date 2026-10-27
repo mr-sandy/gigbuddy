@@ -382,4 +382,38 @@ describe('AppBootstrap', () => {
       ).toBeInTheDocument();
     });
   });
+
+  describe('settings sheet (Story 7.22)', () => {
+    window.scrollTo = vi.fn() as unknown as typeof window.scrollTo;
+    const bandButton = () => screen.queryByRole('button', { name: 'The Jack Ruby 5' });
+
+    it.each([
+      ['/songs', 'Alpha Test Tune'],
+      ['/gigs', /Test Venue/],
+    ])('opens and closes from %s, staying on the list', async (path, row) => {
+      mockSignedInWithData();
+      window.history.replaceState(null, '', path);
+      await router.navigate(path, { replace: true });
+      renderBootstrap();
+      await screen.findByRole('link', { name: row });
+      await userEvent.click(screen.getByRole('button', { name: 'The Jack Ruby 5' }));
+      expect(await screen.findByRole('dialog', { name: 'GigBuddy' })).toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: 'Done' }));
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      expect(router.state.location.pathname).toBe(path);
+    });
+
+    it.each([
+      ['a song page', '/songs/a1'],
+      ['a gig page', '/gigs/g1'],
+      ['a gig song page', '/gigs/g1/songs/a1'],
+    ])('has no band button on %s', async (_name, path) => {
+      mockSignedInWithData();
+      window.history.replaceState(null, '', path);
+      await router.navigate(path, { replace: true });
+      renderBootstrap();
+      expect(await screen.findByRole('link', { name: /^Back to/ })).toBeInTheDocument();
+      expect(bandButton()).toBeNull();
+    });
+  });
 });

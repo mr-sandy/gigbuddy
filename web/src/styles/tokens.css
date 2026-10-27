@@ -3,7 +3,9 @@
  *
  * One responsive app (Story 7.1 reset): a single light token set on `:root`,
  * with a dark variant applied via `@media (prefers-color-scheme: dark)` — no
- * JS theme provider, no device detection. Colours use shadcn's role names
+ * JS theme provider, no device detection. A saved Light or Dark choice sets
+ * `data-theme` on `<html>` and overrides the device (Story 7.22); the dark
+ * values therefore appear twice and tokens.test.ts keeps the copies in step. Colours use shadcn's role names
  * (Story 7.18) and are exposed to Tailwind through `@theme inline`; `--ring`
  * follows `--primary`. Type scale and spacing live in `@theme` and are shared
  * by both variants. Tokens are named by role (see STYLE.md).
@@ -25,7 +27,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --background: #1a1209;
     --foreground: #f1e6cf;
     --muted: #251a0e;
@@ -38,6 +40,21 @@
     --destructive-foreground: #1a1209;
     --scrim: rgba(0, 0, 0, 0.62);
   }
+}
+
+/* Forced dark (Story 7.22): the same values as above, for Dark chosen on a light device. */
+:root[data-theme="dark"] {
+  --background: #1a1209;
+  --foreground: #f1e6cf;
+  --muted: #251a0e;
+  --muted-foreground: #c9b486;
+  --primary: #e6b855;
+  --primary-foreground: #1a1209;
+  --border: #3a2e1f;
+  --input: #7a6a4d;
+  --destructive: #f08a6e;
+  --destructive-foreground: #1a1209;
+  --scrim: rgba(0, 0, 0, 0.62);
 }
 
 @theme inline {

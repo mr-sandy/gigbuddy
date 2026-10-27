@@ -1,4 +1,3 @@
-import { ACTIVE_BAND_NAME } from '@gigbuddy/shared';
 import type { ReactNode } from 'react';
 
 /*
@@ -14,14 +13,5 @@ export function PageHeader({ left, right }: { left?: ReactNode; right?: ReactNod
       <div>{left}</div>
       <div>{right}</div>
     </header>
-  );
-}
-
-/* The band name on the list pages: plain text until the settings sheet (7.22). */
-export function BandName() {
-  return (
-    <p className="m-0 px-2.5 text-[length:var(--text-nav)] leading-[var(--text-nav--line-height)] text-foreground [font-family:var(--font-serif-editorial)]">
-      {ACTIVE_BAND_NAME}
-    </p>
   );
 }

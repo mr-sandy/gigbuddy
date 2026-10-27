@@ -80,7 +80,7 @@ GigBuddy is a single-user, two-surface PWA with one canonical AWS-hosted store. 
 - LWW per record, not per field
 - ≤24h data loss / ≤2h restore-to-operational
 - MacBook web (current Safari/Chrome/Firefox) + iPhone 13 PWA only
-- No theme toggle, no Settings surface
+- ~~No theme toggle, no Settings surface~~ — superseded 2026-10-27: Story 7.22 adds a settings sheet with a per-device System / Light / Dark choice
 - No user analytics; CloudWatch only
 
 ### Cross-Cutting Concerns
@@ -747,8 +747,9 @@ Single source of truth: `performanceActive` boolean in a `PerformanceModeContext
 ### Theme (amended 2026-10-19)
 
 - One token set in `web/src/styles/tokens.css` with a light and a dark variant.
-- Variant chosen by `@media (prefers-color-scheme: dark)` — the device's system setting.
-- No `data-atmosphere`, no device detection, no JS theme provider, no user toggle.
+- Variant chosen by `@media (prefers-color-scheme: dark)` — the device's system setting — unless overridden (amended 2026-10-27, Story 7.22).
+- Override: a System / Light / Dark choice in the settings sheet, stored in `localStorage` on that device only (never synced, never sent to the API). Light or Dark sets `data-theme="light"` / `"dark"` on `<html>`; System removes it. The dark values apply under `@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) }` and under `:root[data-theme="dark"]`. A small inline script in `index.html` sets the attribute before first paint; storage errors fall back to System.
+- No `data-atmosphere`, no device detection, no JS theme provider.
 - Light values may be lifted from the DESIGN.md Practice palette and dark from Club Warm, as raw material — not as a device-bound contract.
 - Colours use shadcn's role names (`--background`, `--foreground`, `--muted`, `--muted-foreground`, `--primary`, `--primary-foreground`, `--border`, `--input`, `--destructive`, `--destructive-foreground`, `--ring`) on `:root`, with a dark override in the media query, exposed to Tailwind through `@theme inline`. `--ring` follows `--primary`. Type, spacing and tap tokens stay in `@theme` (2026-10-27, Story 7.18).
 

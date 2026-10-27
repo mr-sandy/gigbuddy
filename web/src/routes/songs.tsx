@@ -1,15 +1,16 @@
 import { ChevronRight, Plus } from 'lucide-react';
 import { Link, Outlet } from 'react-router';
-import { BandName, PageHeader } from '../components/page-header.js';
+import { PageHeader } from '../components/page-header.js';
 import { PageTitle } from '../components/page-title.js';
+import { BandMenu } from '../components/settings-sheet.js';
 import { Button } from '../components/ui/button.js';
 import { useSongs } from '../hooks/use-songs.js';
-import { EXPORT, SONG_FORM, SONGS } from '../lib/microcopy.js';
+import { SONG_FORM, SONGS } from '../lib/microcopy.js';
 
 /*
  * Song list (Story 7.3). Rendered in the order received: the API already
  * sorts A–Z case-insensitively. Cached data wins over a background error.
- * Story 7.17: export link at the foot.
+ * The export link (7.17) moved to the settings sheet in 7.22.
  */
 export function Songs() {
   const songs = useSongs();
@@ -27,7 +28,7 @@ export function Songs() {
   return (
     <>
       <PageHeader
-        left={<BandName />}
+        left={<BandMenu />}
         right={
           <Button asChild variant="ghost" className="text-primary">
             <Link to="/songs/new">
@@ -63,12 +64,6 @@ export function Songs() {
           {statusLine}
         </p>
       )}
-      <footer className="mt-[var(--spacing-section-gap)]">
-        {/* Plain <a>, not Link: the router would swallow the click and the download would never fire. */}
-        <Button asChild variant="link">
-          <a href="/api/v1/export">{EXPORT.link}</a>
-        </Button>
-      </footer>
       <Outlet />
     </>
   );

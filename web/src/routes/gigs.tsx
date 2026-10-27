@@ -1,8 +1,9 @@
 import type { Setlist } from '@gigbuddy/shared';
 import { ChevronRight, Plus } from 'lucide-react';
 import { Link, Outlet } from 'react-router';
-import { BandName, PageHeader } from '../components/page-header.js';
+import { PageHeader } from '../components/page-header.js';
 import { PageTitle } from '../components/page-title.js';
+import { BandMenu } from '../components/settings-sheet.js';
 import { Button } from '../components/ui/button.js';
 import { useSetlists } from '../hooks/use-setlists.js';
 import { formatGigDate, orderGigs, todayLondon } from '../lib/gig-date.js';
@@ -53,7 +54,7 @@ export function Gigs() {
   return (
     <>
       <PageHeader
-        left={<BandName />}
+        left={<BandMenu />}
         right={
           <Button asChild variant="ghost" className="text-primary">
             <Link to="/gigs/new">

@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
-import { EXPORT, SONG_FORM, SONGS } from '../lib/microcopy.js';
+import { SONG_FORM, SONGS } from '../lib/microcopy.js';
 import { Songs } from './songs.js';
 
 const { useSongsMock } = vi.hoisted(() => ({ useSongsMock: vi.fn() }));
@@ -78,7 +78,7 @@ describe('Songs (list)', () => {
   it('shows the band name in the header, with no Home link', () => {
     useSongsMock.mockReturnValue({ data: [], isPending: false });
     renderSongs();
-    expect(screen.getByText('The Jack Ruby 5')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'The Jack Ruby 5' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Home' })).toBeNull();
   });
 
@@ -91,24 +91,16 @@ describe('Songs (list)', () => {
     );
   });
 
-  it('ends a loaded list with a plain export link', () => {
-    useSongsMock.mockReturnValue({
-      data: [{ songId: 'a1', title: 'Alpha Test Tune' }],
-      isPending: false,
-    });
-    renderSongs();
-    const link = screen.getByRole('link', { name: EXPORT.link });
-    expect(link).toHaveAttribute('href', '/api/v1/export');
-    expect(link).toHaveAttribute('data-variant', 'link');
-  });
-
-  it('shows the export link when the list is empty or errored', () => {
-    useSongsMock.mockReturnValue({ data: [], isPending: false });
-    const { unmount } = renderSongs();
-    expect(screen.getByRole('link', { name: EXPORT.link })).toBeInTheDocument();
-    unmount();
-    useSongsMock.mockReturnValue({ data: undefined, isPending: false, isError: true });
-    renderSongs();
-    expect(screen.getByRole('link', { name: EXPORT.link })).toBeInTheDocument();
+  it('has no export link on the page (it lives in the settings sheet)', () => {
+    for (const value of [
+      { data: [{ songId: 'a1', title: 'Alpha Test Tune' }], isPending: false },
+      { data: [], isPending: false },
+      { data: undefined, isPending: false, isError: true },
+    ]) {
+      useSongsMock.mockReturnValue(value);
+      const { unmount } = renderSongs();
+      expect(screen.queryByRole('link', { name: 'Export all data' })).toBeNull();
+      unmount();
+    }
   });
 });

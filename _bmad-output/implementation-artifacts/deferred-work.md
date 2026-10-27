@@ -111,3 +111,7 @@
 
 - **After a delete, Back returns to the deleted record** (`web/src/routes/song-edit.tsx:186`, `web/src/routes/gig-edit.tsx:166`): the delete replaces only the edit entry, so history ends up list → record → list. Back then opens the deleted record's not-found page. The old pages did this too.
 - **Edit from a gig's song page swaps the page behind the sheet** (`web/src/routes/song.tsx:107`): the Edit link points to `/songs/:id/edit`, not to a child of `gigs/:setlistId/songs/:songId`. The gig chrome disappears behind the scrim, and after a reload Cancel lands on the plain song page.
+
+## Deferred from: code review of 7-22-settings-sheet (2026-10-27)
+
+- **`SheetContent` opener is stale for controlled sheets** (`web/src/components/ui/sheet.tsx:19`): `useState(() => document.activeElement)` runs when the component first renders. Route-driven sheets mount on open, so they're fine, but a controlled sheet like the settings sheet renders `SheetContent` from page load, so the remembered opener is whatever had focus then. 7.22 works around it with a ref in `onCloseAutoFocus`; the next controlled sheet should fix it at the source instead (for example, capture the opener in `onOpenAutoFocus`).

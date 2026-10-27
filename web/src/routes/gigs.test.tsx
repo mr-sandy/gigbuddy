@@ -110,7 +110,7 @@ describe('Gigs (list)', () => {
   it('shows the band name in the header, with no Home link', () => {
     useSetlistsMock.mockReturnValue({ data: [], isPending: false });
     renderGigs();
-    expect(screen.getByText('The Jack Ruby 5')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'The Jack Ruby 5' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Home' })).toBeNull();
   });
 

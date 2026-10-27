@@ -115,5 +115,16 @@ export const WAKE_LOCK = {
   maySleep: 'Screen may sleep',
 } as const;
 
-/* Story 7.17 — export link on the songs page. */
-export const EXPORT = { link: 'Export all data' } as const;
+/* Story 7.22 — settings sheet behind the band name. */
+export const SETTINGS = {
+  title: 'GigBuddy',
+  done: 'Done',
+  band: 'Band',
+  yourData: 'Your data',
+  exportLink: 'Export all data',
+  exportHelp: "Downloads every band's songs and gigs as one file.",
+  appearance: 'Appearance',
+  system: 'System',
+  light: 'Light',
+  dark: 'Dark',
+} as const;
