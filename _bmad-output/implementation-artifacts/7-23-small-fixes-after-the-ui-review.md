@@ -4,7 +4,7 @@ baseline_commit: 3e197f4
 
 # Story 7.23: Small fixes after the UI review
 
-Status: review
+Status: done
 
 <!-- Source: deferred-work.md items still open after the 2026-10-27 check (7.20 and 7.21 reviews,
      7.1 manifest colours). Sandy chose 2026-10-27 to switch the manifest to light.
@@ -129,10 +129,10 @@ so that the small rough edges left by the UI review are gone.
         delete, Back returns to the deleted record", the 7.20 "Focused rows can scroll behind
         fixed bottom chrome" and the 7.1 "Manifest colours still dark", each with
         `**Resolved in Story 7.23**` and a few words, as earlier resolved items do.
-- [ ] Task 6 (commit, push, deploy and Sandy's look follow code review): Verify and ship (AC: 4, 5, 6)
+- [x] Task 6: Verify and ship (AC: 4, 5, 6)
   - [x] `git diff --stat 3e197f4 -- api shared infra` is empty.
   - [x] `rm -rf web/dist`, then `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`.
-  - [ ] Commit `Implement story 7.23: Small fixes after the UI review` (after code review),
+  - [x] Commit `Implement story 7.23: Small fixes after the UI review` (after code review),
         push (this also carries the two unpushed commits `1faa9c5` and `3e197f4`), deploy,
         then Sandy's quick look.
 
@@ -244,3 +244,5 @@ Claude Sonnet 5.5
 
 - 2026-10-27: Story created (ready-for-dev).
 - 2026-10-27: Implemented; status → review.
+- 2026-10-27: Code review (lightweight): two minor Back-history edge cases found and dropped by Sandy.
+- 2026-10-27: Committed 70e9802; CI and deploy run 40590262584 green. Sandy's live check (phone and laptop): OK. Status → done.
