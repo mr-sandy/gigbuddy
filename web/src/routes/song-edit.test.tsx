@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Link, MemoryRouter, Outlet, Route, Routes, useNavigate } from 'react-router';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { Link, MemoryRouter, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SONG_DELETE, SONG_FORM, SONGS } from '../lib/microcopy.js';
 import { SongEdit } from './song-edit.js';
 
@@ -21,6 +21,10 @@ vi.mock('../hooks/use-song-mutation.js', () => ({
   useSongMutation: () => ({ saveSong: saveSongMock, deleteSong: deleteSongMock }),
 }));
 vi.mock('../lib/id.js', () => ({ generateId: () => 'newsong000000001' }));
+
+function Pathname() {
+  return <output data-testid="pathname">{useLocation().pathname}</output>;
+}
 
 function BackButton() {
   const navigate = useNavigate();
@@ -47,6 +51,8 @@ function tree(history: string[]) {
           element={
             <>
               <p>list page</p>
+              <Pathname />
+              <BackButton />
               <Link to="/songs/new">open add</Link>
               <Outlet />
             </>
@@ -59,6 +65,7 @@ function tree(history: string[]) {
           element={
             <>
               <p>song page</p>
+              <Pathname />
               <BackButton />
               <Link to="/songs/abc/edit">open edit</Link>
               <Outlet />
@@ -339,6 +346,34 @@ describe('SongEdit delete', () => {
     await user.click(screen.getByRole('button', { name: SONG_DELETE.yes }));
     expect(deleteSongMock).toHaveBeenCalledWith('abc');
     expect(await screen.findByText('list page')).toBeInTheDocument();
+  });
+
+  describe('Back after delete (Story 7.23)', () => {
+    afterEach(() => {
+      window.history.replaceState(null, '', '/');
+    });
+
+    it('steps back past the song page when there is history', async () => {
+      window.history.replaceState({ idx: 2 }, '');
+      const user = userEvent.setup();
+      renderAt('/songs/other', '/songs', '/songs/abc', '/songs/abc/edit');
+      await user.click(screen.getByRole('button', { name: SONG_DELETE.button }));
+      await user.click(screen.getByRole('button', { name: SONG_DELETE.yes }));
+      await waitFor(() => expect(screen.getByTestId('pathname')).toHaveTextContent('/songs'));
+      await user.click(screen.getByRole('button', { name: 'back' }));
+      expect(screen.getByTestId('pathname')).toHaveTextContent('/songs/other');
+    });
+
+    it('replaces the sheet with the list when the history is too short', async () => {
+      window.history.replaceState({ idx: 1 }, '');
+      const user = userEvent.setup();
+      renderAt('/songs/other', '/songs', '/songs/abc', '/songs/abc/edit');
+      await user.click(screen.getByRole('button', { name: SONG_DELETE.button }));
+      await user.click(screen.getByRole('button', { name: SONG_DELETE.yes }));
+      await waitFor(() => expect(screen.getByTestId('pathname')).toHaveTextContent('/songs'));
+      await user.click(screen.getByRole('button', { name: 'back' }));
+      expect(screen.getByTestId('pathname')).toHaveTextContent('/songs/abc');
+    });
   });
 
   it('names the gigs that use the song and offers only OK', async () => {

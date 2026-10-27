@@ -31,7 +31,8 @@ Tokens use shadcn's role names and live in `web/src/styles/tokens.css`.
 
 System follows the device. Light or Dark sets `data-theme` on `<html>` and overrides it, remembered
 per device in browser storage (`gigbuddy-theme`) and applied before first paint by the inline
-script in `index.html`, which also sets `theme-color`.
+script in `index.html`, which also sets `theme-color`. The installed app's manifest colour is
+the light background (`#faf9f5`); it can't follow the theme.
 
 | Token | Light | Dark | Job |
 |---|---|---|---|
@@ -67,8 +68,9 @@ script in `index.html`, which also sets `theme-color`.
   line. Two tabs, Songs | Gigs, at least 60px tall (`--spacing-tab-bar`), equal halves on a
   phone and 12rem each, centred, on wide windows. 20px quiet text; the current tab is
   foreground text, semibold, with a 3px brass line along its top. Tabs are nav links, not
-  `Button`s. Content is padded so nothing hides under the bar, and the bar runs down to the
-  home indicator like the play bar.
+  `Button`s. Content is padded so nothing hides under the bar, keyboard focus scrolls clear of
+  it (`scroll-padding-bottom` on `html`, set while the bar is on the page), and the bar runs
+  down to the home indicator like the play bar.
 - A group label inside a list (e.g. "Past") is Body, secondary text, with the 32px section
   gap above it.
 - Bottom bar (gig song page): fixed to the bottom, page background, 1px `--border` top line.
@@ -78,7 +80,8 @@ script in `index.html`, which also sets `theme-color`.
   `--border` dividers either side. A pressed region gets a brief brass tint (`primary` at 15%).
   An unavailable end is an inert `aria-disabled` span with a faded chevron, never a disabled
   button or another action. On the iPhone the regions and dividers run down to the screen edge,
-  with the chevrons kept above the home indicator. Content is padded so nothing hides under the bar.
+  with the chevrons kept above the home indicator. Content is padded so nothing hides under the bar, and keyboard focus scrolls clear of it
+  (scroll padding, as for the tab bar).
 - "Screen may sleep" line on song pages: Body size, secondary text, under the back link; shown
   only when the screen can't be kept awake. No token changes.
 

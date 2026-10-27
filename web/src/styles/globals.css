@@ -20,6 +20,28 @@ html {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Story 7.23: keyboard focus scrolls clear of a fixed bottom bar. Same sums as the
+   page padding in list-layout.tsx and song.tsx. */
+html:has([data-bottom-bar="tab"]) {
+  scroll-padding-bottom: calc(
+    var(--spacing-tab-bar) +
+    1px +
+    var(--spacing-unit) *
+    4 +
+    env(safe-area-inset-bottom)
+  );
+}
+
+html:has([data-bottom-bar="play"]) {
+  scroll-padding-bottom: calc(
+    var(--spacing-play-bar) +
+    1px +
+    var(--spacing-unit) *
+    4 +
+    env(safe-area-inset-bottom)
+  );
+}
+
 :root[data-theme="light"] {
   color-scheme: light;
 }

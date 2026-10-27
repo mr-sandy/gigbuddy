@@ -18,6 +18,7 @@ import { Label } from '../components/ui/label.js';
 import { useSetlistMutation } from '../hooks/use-setlist-mutation.js';
 import { useSetlistOrCached } from '../hooks/use-setlist-or-cached.js';
 import { formatGigDate } from '../lib/gig-date.js';
+import { historyIndex } from '../lib/history-depth.js';
 import { generateId } from '../lib/id.js';
 import { GIG_DELETE, GIG_FORM } from '../lib/microcopy.js';
 
@@ -151,12 +152,12 @@ function GigForm({ initial }: { initial?: Setlist }) {
         />
       </div>
 
-      {initial ? <DeleteGig gig={initial} /> : null}
+      {initial ? <DeleteGig gig={initial} canStepBack={canStepBack} /> : null}
     </EditSheet>
   );
 }
 
-function DeleteGig({ gig }: { gig: Setlist }) {
+function DeleteGig({ gig, canStepBack }: { gig: Setlist; canStepBack: boolean }) {
   const navigate = useNavigate();
   const { deleteSetlist } = useSetlistMutation();
   const [open, setOpen] = useState(false);
@@ -170,7 +171,9 @@ function DeleteGig({ gig }: { gig: Setlist }) {
     setDeleting(true);
     try {
       await deleteSetlist(gig.setlistId);
-      navigate('/gigs', { replace: true });
+      // Story 7.23: step back past the record page when there is history to step into.
+      if (canStepBack && historyIndex() >= 2) navigate(-2);
+      else navigate('/gigs', { replace: true });
       return;
     } catch {
       setFailed(true);

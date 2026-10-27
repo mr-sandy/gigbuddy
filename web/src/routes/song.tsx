@@ -48,7 +48,10 @@ function GigPlayBar({ setlist, place }: { setlist: Setlist; place: number }) {
       </span>
     );
   return (
-    <nav className="fixed inset-x-0 bottom-0 border-t border-border bg-background">
+    <nav
+      data-bottom-bar="play"
+      className="fixed inset-x-0 bottom-0 border-t border-border bg-background"
+    >
       <div className="flex items-stretch justify-center">
         {step(place - 1, GIG_PLAY.previousSong, ChevronLeft)}
         <span className="flex items-center whitespace-nowrap border-x border-border px-3.5 pb-[env(safe-area-inset-bottom)] text-[length:var(--text-body)] leading-[var(--text-body--line-height)] tabular-nums text-muted-foreground">

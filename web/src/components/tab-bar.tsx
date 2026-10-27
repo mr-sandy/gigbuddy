@@ -16,6 +16,7 @@ export function TabBar() {
   return (
     <nav
       aria-label="Lists"
+      data-bottom-bar="tab"
       className="fixed inset-x-0 bottom-0 border-t border-border bg-background"
     >
       <div className="flex justify-center">

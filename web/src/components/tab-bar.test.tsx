@@ -15,6 +15,10 @@ describe('TabBar', () => {
   it('links to Songs and Gigs and marks Songs current at /songs', () => {
     renderAt('/songs');
     expect(screen.getByRole('navigation', { name: 'Lists' })).toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: 'Lists' })).toHaveAttribute(
+      'data-bottom-bar',
+      'tab',
+    );
     expect(screen.getByRole('link', { name: 'Songs' })).toHaveAttribute('href', '/songs');
     expect(screen.getByRole('link', { name: 'Gigs' })).toHaveAttribute('href', '/gigs');
     expect(screen.getByRole('link', { name: 'Songs' })).toHaveAttribute('aria-current', 'page');

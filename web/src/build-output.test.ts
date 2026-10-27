@@ -48,8 +48,8 @@ describe('PWA build output', () => {
     expect(manifest.display).toBe('standalone');
     expect(manifest.start_url).toBe('/');
     expect(manifest.scope).toBe('/');
-    expect(manifest.theme_color).toBe('#1a1209');
-    expect(manifest.background_color).toBe('#1a1209');
+    expect(manifest.theme_color).toBe('#faf9f5');
+    expect(manifest.background_color).toBe('#faf9f5');
     expect(manifest.orientation).toBe('portrait');
     expect(manifest.icons).toHaveLength(3);
     const purposes = manifest.icons.map((i: { purpose?: string }) => i.purpose ?? 'any');

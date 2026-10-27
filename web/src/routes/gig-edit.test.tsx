@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Link, MemoryRouter, Outlet, Route, Routes, useNavigate } from 'react-router';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { Link, MemoryRouter, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { formatGigDate } from '../lib/gig-date.js';
 import { GIG_DELETE, GIG_FORM, GIGS } from '../lib/microcopy.js';
 import { GigEdit } from './gig-edit.js';
@@ -18,6 +18,10 @@ vi.mock('../hooks/use-setlist-mutation.js', () => ({
   useSetlistMutation: () => ({ saveSetlist: saveSetlistMock, deleteSetlist: deleteSetlistMock }),
 }));
 vi.mock('../lib/id.js', () => ({ generateId: () => 'newgig0000000001' }));
+
+function Pathname() {
+  return <output data-testid="pathname">{useLocation().pathname}</output>;
+}
 
 function BackButton() {
   const navigate = useNavigate();
@@ -37,6 +41,8 @@ function renderAt(...history: string[]) {
           element={
             <>
               <p>list page</p>
+              <Pathname />
+              <BackButton />
               <Link to="/gigs/new">open add</Link>
               <Outlet />
             </>
@@ -49,6 +55,7 @@ function renderAt(...history: string[]) {
           element={
             <>
               <p>gig page</p>
+              <Pathname />
               <BackButton />
               <Outlet />
             </>
@@ -279,6 +286,34 @@ describe('GigEdit delete', () => {
     await user.click(screen.getByRole('button', { name: GIG_DELETE.yes }));
     expect(deleteSetlistMock).toHaveBeenCalledWith('g1');
     expect(await screen.findByText('list page')).toBeInTheDocument();
+  });
+
+  describe('Back after delete (Story 7.23)', () => {
+    afterEach(() => {
+      window.history.replaceState(null, '', '/');
+    });
+
+    it('steps back past the gig page when there is history', async () => {
+      window.history.replaceState({ idx: 2 }, '');
+      const user = userEvent.setup();
+      renderAt('/gigs/other', '/gigs', '/gigs/g1', '/gigs/g1/edit');
+      await user.click(screen.getByRole('button', { name: GIG_DELETE.button }));
+      await user.click(screen.getByRole('button', { name: GIG_DELETE.yes }));
+      await waitFor(() => expect(screen.getByTestId('pathname')).toHaveTextContent('/gigs'));
+      await user.click(screen.getByRole('button', { name: 'back' }));
+      expect(screen.getByTestId('pathname')).toHaveTextContent('/gigs/other');
+    });
+
+    it('replaces the sheet with the list when the history is too short', async () => {
+      window.history.replaceState({ idx: 1 }, '');
+      const user = userEvent.setup();
+      renderAt('/gigs/other', '/gigs', '/gigs/g1', '/gigs/g1/edit');
+      await user.click(screen.getByRole('button', { name: GIG_DELETE.button }));
+      await user.click(screen.getByRole('button', { name: GIG_DELETE.yes }));
+      await waitFor(() => expect(screen.getByTestId('pathname')).toHaveTextContent('/gigs'));
+      await user.click(screen.getByRole('button', { name: 'back' }));
+      expect(screen.getByTestId('pathname')).toHaveTextContent('/gigs/g1');
+    });
   });
 
   it('disables "Yes, delete" while the request runs', async () => {

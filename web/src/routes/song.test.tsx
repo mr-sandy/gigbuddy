@@ -223,6 +223,11 @@ describe('Song', () => {
       expect(screen.queryByText('Next')).not.toBeInTheDocument();
     });
 
+    it('carries the scroll-padding hook', () => {
+      setup('b');
+      expect(screen.getByText('2 of 3').closest('nav')).toHaveAttribute('data-bottom-bar', 'play');
+    });
+
     it('steps both ways and ignores the inert end', () => {
       setup('b', '?at=2');
       fireEvent.click(screen.getByLabelText(GIG_PLAY.nextSong));

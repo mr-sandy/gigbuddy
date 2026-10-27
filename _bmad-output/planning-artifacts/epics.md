@@ -2834,3 +2834,21 @@ picking a band later.
     longer has the link, and that choosing Light, Dark or System sets the theme and is
     remembered.
 11. Deployed to gig.cormie.com via the normal pipeline.
+
+### Story 7.23: Small fixes after the UI review
+
+As Sandy, I want deleting to leave Back sensible, focus to stay clear of the bottom bars, and
+the installed app's launch colour to be light, so that the small rough edges left by the UI
+review are gone. (From the deferred list, checked 2026-10-27.)
+
+**Acceptance criteria**
+1. Deleting a song or gig from its edit sheet still lands on the list; with enough history,
+   the deleted record's page is gone from it, so Back on the list doesn't reach the deleted
+   record. With short history, the current replace behaviour stays.
+2. Keyboard focus scrolls clear of the tab bar on `/songs` and `/gigs` and of the play bar on
+   a gig's song page.
+3. The PWA manifest's `theme_color` and `background_color` are the light background
+   `#faf9f5` (Sandy, 2026-10-27). The in-app theme colour still follows the chosen theme.
+4. No change to `api/`, `shared/` or `infra/`. `STYLE.md` and `deferred-work.md` updated.
+5. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass, with tests for each fix.
+6. Deployed to gig.cormie.com via the normal pipeline.

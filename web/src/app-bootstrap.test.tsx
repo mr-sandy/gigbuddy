@@ -383,6 +383,53 @@ describe('AppBootstrap', () => {
     });
   });
 
+  describe('delete and Back (Story 7.23)', () => {
+    window.scrollTo = vi.fn() as unknown as typeof window.scrollTo;
+
+    // The router counts history from window.history.state.idx, which the
+    // beforeEach reset wipes. Start with a real depth: `before` is idx 0, the list
+    // idx 1, the record idx 2 and its sheet idx 3.
+    async function startAt(before: string, list: string, emptyGigList: boolean) {
+      mockSignedInWithData();
+      withDelete(emptyGigList);
+      window.history.replaceState({ idx: 0 }, '', before);
+      await router.navigate(before, { replace: true });
+      await router.navigate(list);
+      renderBootstrap();
+    }
+
+    // The fixture gig uses the fixture song, which would make the song's delete
+    // an "in use" refusal; the gig list is empty for the song case.
+    function withDelete(emptyGigList: boolean) {
+      const base = fetchMock.getMockImplementation();
+      fetchMock.mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+        if (init?.method === 'DELETE') return Promise.resolve(new Response(null, { status: 204 }));
+        if (emptyGigList && String(input).endsWith('/setlists')) {
+          return Promise.resolve(jsonResponse(200, { status: 'ok', data: [] }));
+        }
+        return base?.(input, init) as Promise<Response>;
+      });
+    }
+
+    it.each([
+      ['song', '/gigs', '/songs', 'Alpha Test Tune', 'Edit song', 'Delete song', '/songs/a1'],
+      ['gig', '/songs', '/gigs', /Test Venue/, 'Edit gig', 'Delete gig', '/gigs/g1'],
+    ] as const)('deleting a %s leaves Back clear of it', async (_k, before, list, linkName, sheet, del, recordPath) => {
+      await startAt(before, list, list === '/songs');
+      await userEvent.click(await screen.findByRole('link', { name: linkName }));
+      await userEvent.click(await screen.findByRole('link', { name: 'Edit' }));
+      await screen.findByRole('dialog', { name: sheet });
+      await userEvent.click(screen.getByRole('button', { name: new RegExp(del, 'i') }));
+      await userEvent.click(await screen.findByRole('button', { name: /^Yes, delete/ }));
+      await waitFor(() => expect(router.state.location.pathname).toBe(list));
+      await act(async () => {
+        await router.navigate(-1);
+      });
+      expect(router.state.location.pathname).not.toBe(recordPath);
+      expect(router.state.location.pathname).toBe(before);
+    });
+  });
+
   describe('settings sheet (Story 7.22)', () => {
     window.scrollTo = vi.fn() as unknown as typeof window.scrollTo;
     const bandButton = () => screen.queryByRole('button', { name: 'The Jack Ruby 5' });

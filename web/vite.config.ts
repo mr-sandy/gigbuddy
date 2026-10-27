@@ -77,8 +77,8 @@ export default defineConfig({
         display: 'standalone',
         start_url: '/',
         scope: '/',
-        theme_color: '#1a1209',
-        background_color: '#1a1209',
+        theme_color: '#faf9f5',
+        background_color: '#faf9f5',
         orientation: 'portrait',
         icons: [
           { src: 'icons/pwa-192x192.png', sizes: '192x192', type: 'image/png' },

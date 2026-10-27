@@ -20,6 +20,7 @@ import { useSetlists } from '../hooks/use-setlists.js';
 import { useSongMutation } from '../hooks/use-song-mutation.js';
 import { useSongOrCached } from '../hooks/use-song-or-cached.js';
 import { formatGigDate } from '../lib/gig-date.js';
+import { historyIndex } from '../lib/history-depth.js';
 import { generateId } from '../lib/id.js';
 import { SONG_DELETE, SONG_FORM } from '../lib/microcopy.js';
 
@@ -173,12 +174,12 @@ function SongForm({ initial }: { initial?: Song }) {
         />
       </div>
 
-      {initial ? <DeleteSong song={initial} /> : null}
+      {initial ? <DeleteSong song={initial} canStepBack={canStepBack} /> : null}
     </EditSheet>
   );
 }
 
-function DeleteSong({ song }: { song: Song }) {
+function DeleteSong({ song, canStepBack }: { song: Song; canStepBack: boolean }) {
   const navigate = useNavigate();
   const { deleteSong } = useSongMutation();
   const { data: setlists } = useSetlists();
@@ -194,7 +195,9 @@ function DeleteSong({ song }: { song: Song }) {
     try {
       const result = await deleteSong(song.songId);
       if (result === 'deleted') {
-        navigate('/songs', { replace: true });
+        // Story 7.23: step back past the record page when there is history to step into.
+        if (canStepBack && historyIndex() >= 2) navigate(-2);
+        else navigate('/songs', { replace: true });
         return;
       }
       setMessage(SONG_DELETE.inUseUnknown);
