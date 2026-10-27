@@ -217,8 +217,9 @@ describe('SetlistEdit', () => {
     const user = await typeAndSave('Tune A');
     const select = screen.getByRole('combobox', { name: '“Tune A”' });
     expect(select).toHaveValue('song:s1');
-    // Once as a candidate, once in the whole-library group.
-    expect(screen.getAllByRole('option', { name: 'Tune A · E♭' })).toHaveLength(2);
+    // The key shows on the shared-title candidates only, not in the whole-library group.
+    expect(screen.getAllByRole('option', { name: 'Tune A · E♭' })).toHaveLength(1);
+    expect(screen.getAllByRole('option', { name: 'Tune A' })).toHaveLength(3);
     await user.click(screen.getByRole('button', { name: SETLIST_TEXT.save }));
     await vi.waitFor(() => expect(saveSetlistMock).toHaveBeenCalledTimes(1));
     expect(saveSetlistMock.mock.calls[0]?.[0].sections[0].songs).toEqual([

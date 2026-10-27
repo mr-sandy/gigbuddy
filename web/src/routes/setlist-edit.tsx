@@ -226,7 +226,7 @@ function SetlistTextForm({ initial }: { initial: Setlist }) {
                   <optgroup label={SETLIST_TEXT.wholeLibrary}>
                     {library.map((song) => (
                       <option key={song.songId} value={`song:${song.songId}`}>
-                        {SETLIST_TEXT.songWithKey(song.title, song.key)}
+                        {song.title}
                       </option>
                     ))}
                   </optgroup>
