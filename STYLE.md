@@ -17,6 +17,8 @@ The source of truth for how GigBuddy looks. Tokens in `web/src/styles/tokens.css
 | Row (`--text-row`) | 22px | system | Tappable rows (song titles), text links |
 | Reading (`--text-reading`) | 22px | system | Song content: key/patch line, chord chart |
 | Body (`--text-body`) | 18px | system | Status lines, plain text |
+| Nav (`--text-nav`) | 20px | Lora for the band name, system for tab labels | Band name in the header, tab labels |
+| Small (`--text-small`) | 16px | system | Small buttons only |
 
 Rules:
 - Exactly one Page title per page, always an `<h1>`, always the same size.
@@ -50,7 +52,18 @@ Tokens use shadcn's role names and live in `web/src/styles/tokens.css`.
 - Base unit 4px. Page gutter 16px. Gap between sections 32px.
 - Anything tappable is at least 44px high.
 - List rows: 12px vertical padding, 1px hairline underneath.
-- Back link at the top of a page, then the page title 4px below it.
+- Header: every signed-in page starts with it. At least 56px high (`--spacing-header`), 1px
+  `--border` hairline underneath that runs edge to edge on a phone, 16px below it before the
+  page title. List pages (`/songs`, `/gigs`): band name left (Lora 20px, plain text until the
+  settings sheet), Add song / Add gig right. Every other page: back link left, Edit right where
+  it exists. Forms show only the back link, which goes where Cancel goes. In the page flow, not
+  sticky.
+- Tab bar: `/songs` and `/gigs` only. Fixed to the bottom, page background, 1px `--border` top
+  line. Two tabs, Songs | Gigs, at least 60px tall (`--spacing-tab-bar`), equal halves on a
+  phone and 12rem each, centred, on wide windows. 20px quiet text; the current tab is
+  foreground text, semibold, with a 3px brass line along its top. Tabs are nav links, not
+  `Button`s. Content is padded so nothing hides under the bar, and the bar runs down to the
+  home indicator like the play bar.
 - A group label inside a list (e.g. "Past") is Body, secondary text, with the 32px section
   gap above it.
 - Bottom bar (gig song page): fixed to the bottom, page background, 1px `--border` top line.
@@ -74,12 +87,15 @@ All buttons and button-like links use `Button` (`web/src/components/ui/button.ts
 | Job | Variant |
 |---|---|
 | Edit, Add song, Add gig | `ghost`, brass text (`text-primary`), Lucide pencil or plus |
+| Edit setlist (beside the first set) | `secondary`, size `sm`, Lucide pencil |
 | Back links | `ghost`, quiet text (`text-muted-foreground`), Lucide chevron-left |
 | Save, Add, Sign in | `default` (brass) |
 | Cancel | `ghost` |
 | Delete song, Delete gig | `destructive-outline`; confirm step: "Yes, delete" `destructive`, "Keep" `outline` |
 | Export all data | `link`, quiet text |
 | Play-bar regions (previous, next song) | `ghost`, full-height, square corners, brass chevron only |
+
+Size `sm` means 16px text and 12px side padding; it keeps the 44px tap height.
 
 Ghost buttons use 10px side padding so their text lines up near the page gutter; `link` has none.
 

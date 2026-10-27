@@ -1,5 +1,6 @@
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { ChevronRight, Plus } from 'lucide-react';
 import { Link } from 'react-router';
+import { BandName, PageHeader } from '../components/page-header.js';
 import { PageTitle } from '../components/page-title.js';
 import { Button } from '../components/ui/button.js';
 import { useSongs } from '../hooks/use-songs.js';
@@ -25,21 +26,18 @@ export function Songs() {
 
   return (
     <>
-      <div className="flex items-center justify-between gap-[calc(var(--spacing-unit)*4)]">
-        <Button asChild variant="ghost" className="text-muted-foreground">
-          <Link to="/">
-            <ChevronLeft aria-hidden="true" />
-            {SONGS.backToHome}
-          </Link>
-        </Button>
-        <Button asChild variant="ghost" className="text-primary">
-          <Link to="/songs/new">
-            <Plus aria-hidden="true" />
-            {SONG_FORM.addLink}
-          </Link>
-        </Button>
-      </div>
-      <PageTitle afterBackLink>{SONGS.heading}</PageTitle>
+      <PageHeader
+        left={<BandName />}
+        right={
+          <Button asChild variant="ghost" className="text-primary">
+            <Link to="/songs/new">
+              <Plus aria-hidden="true" />
+              {SONG_FORM.addLink}
+            </Link>
+          </Button>
+        }
+      />
+      <PageTitle>{SONGS.heading}</PageTitle>
       {data !== undefined && data.length > 0 ? (
         <ul className="m-0 mt-[calc(var(--spacing-unit)*2)] list-none p-0">
           {data.map((song) => (

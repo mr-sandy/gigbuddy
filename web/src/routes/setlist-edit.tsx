@@ -1,7 +1,8 @@
 import { ACTIVE_BAND_ID, type Setlist, type SetlistPutInput } from '@gigbuddy/shared';
 import { ChevronLeft } from 'lucide-react';
-import { type FormEvent, useRef, useState } from 'react';
+import { type FormEvent, type MouseEvent, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
+import { PageHeader } from '../components/page-header.js';
 import { PageTitle } from '../components/page-title.js';
 import { Button } from '../components/ui/button.js';
 import { Label } from '../components/ui/label.js';
@@ -10,7 +11,7 @@ import { useSetlistMutation } from '../hooks/use-setlist-mutation.js';
 import { useSetlistOrCached } from '../hooks/use-setlist-or-cached.js';
 import { useSongs } from '../hooks/use-songs.js';
 import { formatGigDate } from '../lib/gig-date.js';
-import { GIGS, SETLIST_TEXT } from '../lib/microcopy.js';
+import { GIG_SETLIST, GIGS, SETLIST_TEXT } from '../lib/microcopy.js';
 import { parseSetlistText, setlistToText } from '../lib/setlist-text.js';
 
 /*
@@ -31,12 +32,16 @@ export function SetlistEdit() {
   if (!setlist) {
     return (
       <>
-        <Button asChild variant="ghost" className="text-muted-foreground">
-          <Link to="/gigs">
-            <ChevronLeft aria-hidden="true" />
-            {GIGS.backToGigs}
-          </Link>
-        </Button>
+        <PageHeader
+          left={
+            <Button asChild variant="ghost" className="text-muted-foreground">
+              <Link to="/gigs">
+                <ChevronLeft aria-hidden="true" />
+                {GIGS.backToGigs}
+              </Link>
+            </Button>
+          }
+        />
         <p
           aria-live="polite"
           className="mt-[calc(var(--spacing-unit)*3)] text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-muted-foreground"
@@ -61,6 +66,11 @@ function SetlistTextForm({ initial }: { initial: Setlist }) {
   const exitTo = `/gigs/${setlistId}`;
   // 'default' means this form is the first page in the history stack.
   const canStepBack = location.key !== 'default';
+  const leave = (e: MouseEvent<HTMLAnchorElement>) => {
+    if (!canStepBack) return;
+    e.preventDefault();
+    navigate(-1);
+  };
   const venue = initial.gigMeta.venue.trim();
 
   async function onSubmit(event: FormEvent) {
@@ -92,6 +102,16 @@ function SetlistTextForm({ initial }: { initial: Setlist }) {
 
   return (
     <form onSubmit={onSubmit} noValidate>
+      <PageHeader
+        left={
+          <Button asChild variant="ghost" className="text-muted-foreground">
+            <Link replace to={exitTo} onClick={leave}>
+              <ChevronLeft aria-hidden="true" />
+              {GIG_SETLIST.backToGig}
+            </Link>
+          </Button>
+        }
+      />
       <PageTitle>{venue || formatGigDate(initial.gigMeta.date)}</PageTitle>
 
       <div className="mt-[calc(var(--spacing-unit)*4)]">
@@ -136,15 +156,7 @@ function SetlistTextForm({ initial }: { initial: Setlist }) {
           {SETLIST_TEXT.save}
         </Button>
         <Button asChild variant="ghost">
-          <Link
-            replace
-            to={exitTo}
-            onClick={(e) => {
-              if (!canStepBack) return;
-              e.preventDefault();
-              navigate(-1);
-            }}
-          >
+          <Link replace to={exitTo} onClick={leave}>
             {SETLIST_TEXT.cancel}
           </Link>
         </Button>

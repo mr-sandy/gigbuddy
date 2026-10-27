@@ -107,10 +107,11 @@ describe('Gigs (list)', () => {
     expect(screen.queryByText(GIGS.error)).not.toBeInTheDocument();
   });
 
-  it('links Home to /', () => {
+  it('shows the band name in the header, with no Home link', () => {
     useSetlistsMock.mockReturnValue({ data: [], isPending: false });
     renderGigs();
-    expect(screen.getByRole('link', { name: GIGS.backToHome })).toHaveAttribute('href', '/');
+    expect(screen.getByText('The Jack Ruby 5')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Home' })).toBeNull();
   });
 
   it('links to the add gig form', () => {

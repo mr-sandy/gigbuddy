@@ -6,7 +6,7 @@ import { AuthenticatedShell } from './routes/authenticated-shell.js';
 import { Gig } from './routes/gig.js';
 import { GigEdit } from './routes/gig-edit.js';
 import { Gigs } from './routes/gigs.js';
-import { Home } from './routes/home.js';
+import { ListLayout } from './routes/list-layout.js';
 import { Login } from './routes/login.js';
 import { SetlistEdit } from './routes/setlist-edit.js';
 import { Song } from './routes/song.js';
@@ -32,12 +32,17 @@ export const router = createBrowserRouter([
       </RequireAuth>
     ),
     children: [
-      { index: true, element: <Home /> },
-      { path: 'songs', element: <Songs /> },
+      { index: true, element: <Navigate to="/songs" replace /> },
+      {
+        element: <ListLayout />,
+        children: [
+          { path: 'songs', element: <Songs /> },
+          { path: 'gigs', element: <Gigs /> },
+        ],
+      },
       { path: 'songs/new', element: <SongEdit /> },
       { path: 'songs/:songId', element: <Song /> },
       { path: 'songs/:songId/edit', element: <SongEdit /> },
-      { path: 'gigs', element: <Gigs /> },
       { path: 'gigs/new', element: <GigEdit /> },
       { path: 'gigs/:setlistId', element: <Gig /> },
       { path: 'gigs/:setlistId/edit', element: <GigEdit /> },
@@ -45,5 +50,5 @@ export const router = createBrowserRouter([
       { path: 'gigs/:setlistId/songs/:songId', element: <Song /> },
     ],
   },
-  { path: '*', element: <Navigate to="/" replace /> },
+  { path: '*', element: <Navigate to="/songs" replace /> },
 ]);

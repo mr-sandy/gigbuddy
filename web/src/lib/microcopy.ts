@@ -10,12 +10,6 @@ export const BANNERS = {
   errorBoundary: 'Something went wrong. Try refreshing.',
 } as const;
 
-/* Story 7.1 — landing-page state copy (home.tsx). */
-export const HOME = {
-  loading: 'Loading…',
-  error: "Couldn't load your songs and gigs.",
-} as const;
-
 /* Story 7.3 — song list and song page copy. */
 export const SONGS = {
   heading: 'Songs',
@@ -23,8 +17,8 @@ export const SONGS = {
   error: "Couldn't load your songs.",
   empty: 'No songs yet.',
   notFound: 'Song not found.',
-  backToHome: 'Home',
   backToSongs: 'Back to songs',
+  backToSong: 'Back to song',
 } as const;
 
 /* Story 7.6 — add/edit song. */
@@ -49,7 +43,6 @@ export const GIGS = {
   empty: 'No gigs yet.',
   past: 'Past',
   notFound: 'Gig not found.',
-  backToHome: 'Home',
   backToGigs: 'Back to gigs',
 } as const;
 

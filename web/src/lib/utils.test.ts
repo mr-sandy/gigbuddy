@@ -20,5 +20,7 @@ describe('cn', () => {
 
   it('lets a custom spacing token replace another', () => {
     expect(cn('min-h-tap px-4', 'min-h-play-bar')).toBe('px-4 min-h-play-bar');
+    expect(cn('min-h-tap', 'min-h-tab-bar')).toBe('min-h-tab-bar');
+    expect(cn('min-h-tap', 'min-h-header')).toBe('min-h-header');
   });
 });

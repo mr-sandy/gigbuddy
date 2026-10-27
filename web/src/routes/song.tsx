@@ -2,6 +2,7 @@ import type { Setlist } from '@gigbuddy/shared';
 import { ChevronLeft, ChevronRight, Pencil } from 'lucide-react';
 import { useEffect } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router';
+import { PageHeader } from '../components/page-header.js';
 import { PageTitle } from '../components/page-title.js';
 import { Button } from '../components/ui/button.js';
 import { useSetlistOrCached } from '../hooks/use-setlist-or-cached.js';
@@ -91,22 +92,26 @@ export function Song() {
           : undefined
       }
     >
-      <div className="flex items-center justify-between gap-[calc(var(--spacing-unit)*4)]">
-        <Button asChild variant="ghost" className="text-muted-foreground">
-          <Link to={setlistId ? `/gigs/${setlistId}` : '/songs'}>
-            <ChevronLeft aria-hidden="true" />
-            {setlistId ? GIG_SETLIST.backToGig : SONGS.backToSongs}
-          </Link>
-        </Button>
-        {song && !setlistId ? (
-          <Button asChild variant="ghost" className="text-primary">
-            <Link to={`/songs/${song.songId}/edit`}>
-              <Pencil aria-hidden="true" />
-              {SONG_FORM.editLink}
+      <PageHeader
+        left={
+          <Button asChild variant="ghost" className="text-muted-foreground">
+            <Link to={setlistId ? `/gigs/${setlistId}` : '/songs'}>
+              <ChevronLeft aria-hidden="true" />
+              {setlistId ? GIG_SETLIST.backToGig : SONGS.backToSongs}
             </Link>
           </Button>
-        ) : null}
-      </div>
+        }
+        right={
+          song && !setlistId ? (
+            <Button asChild variant="ghost" className="text-primary">
+              <Link to={`/songs/${song.songId}/edit`}>
+                <Pencil aria-hidden="true" />
+                {SONG_FORM.editLink}
+              </Link>
+            </Button>
+          ) : null
+        }
+      />
       {wakeLock.failed ? (
         <p className="mt-[calc(var(--spacing-unit)*2)] text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-muted-foreground">
           {WAKE_LOCK.maySleep}
@@ -114,7 +119,7 @@ export function Song() {
       ) : null}
       {song ? (
         <>
-          <PageTitle afterBackLink>{song.title}</PageTitle>
+          <PageTitle>{song.title}</PageTitle>
           {keyAndPatch ? (
             <p className="mt-[calc(var(--spacing-unit)*4)] text-[length:var(--text-reading)] leading-[var(--text-reading--line-height)] text-muted-foreground">
               {keyAndPatch}

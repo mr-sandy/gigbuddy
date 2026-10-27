@@ -126,6 +126,33 @@ describe('Gig', () => {
       ]);
     });
 
+    it('puts Edit setlist beside the first set heading, not in the header', () => {
+      setup([
+        { name: 'Set 1', songs: [song('s1', 'Tune A')] },
+        { name: 'Set 2', songs: [song('s2', 'Tune B')] },
+      ]);
+      const edit = screen.getByRole('link', { name: SETLIST_TEXT.editLink });
+      expect(edit).toHaveAttribute('href', '/gigs/g1/setlist');
+      expect(edit).toHaveAttribute('data-variant', 'secondary');
+      const heading = screen.getByRole('heading', { level: 2, name: 'Set 1' });
+      expect(heading.parentElement).toContainElement(edit);
+      expect(screen.getAllByRole('link', { name: SETLIST_TEXT.editLink })).toHaveLength(1);
+      const header = screen.getByRole('link', { name: GIG_FORM.editLink }).closest('header');
+      expect(header).not.toContainElement(edit);
+    });
+
+    it('keeps Edit setlist on an unnamed first section', () => {
+      setup([{ name: '', songs: [song('s1', 'Tune A')] }]);
+      expect(screen.getByRole('link', { name: SETLIST_TEXT.editLink })).toBeInTheDocument();
+    });
+
+    it('keeps Edit setlist reachable on an empty setlist', () => {
+      setup([]);
+      const edit = screen.getByRole('link', { name: SETLIST_TEXT.editLink });
+      expect(edit).toHaveAttribute('href', '/gigs/g1/setlist');
+      expect(edit.parentElement).toContainElement(screen.getByText(GIG_SETLIST.empty));
+    });
+
     it('shows songs of a blank-named section without a heading', () => {
       setup([
         { name: '  ', songs: [song('s1', 'Tune A')] },

@@ -1,7 +1,8 @@
 import { ACTIVE_BAND_ID, type Setlist, type SetlistPutInput } from '@gigbuddy/shared';
 import { ChevronLeft } from 'lucide-react';
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, type MouseEvent, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
+import { PageHeader } from '../components/page-header.js';
 import { PageTitle } from '../components/page-title.js';
 import { Button } from '../components/ui/button.js';
 import { Input } from '../components/ui/input.js';
@@ -10,7 +11,7 @@ import { useSetlistMutation } from '../hooks/use-setlist-mutation.js';
 import { useSetlistOrCached } from '../hooks/use-setlist-or-cached.js';
 import { formatGigDate } from '../lib/gig-date.js';
 import { generateId } from '../lib/id.js';
-import { GIG_DELETE, GIG_FORM, GIGS } from '../lib/microcopy.js';
+import { GIG_DELETE, GIG_FORM, GIG_SETLIST, GIGS } from '../lib/microcopy.js';
 
 /*
  * Add / edit gig form (Story 7.9). `/gigs/new` adds, `/gigs/:setlistId/edit`
@@ -40,12 +41,16 @@ function EditExisting({ setlistId }: { setlistId: string }) {
   if (!setlist) {
     return (
       <>
-        <Button asChild variant="ghost" className="text-muted-foreground">
-          <Link to="/gigs">
-            <ChevronLeft aria-hidden="true" />
-            {GIGS.backToGigs}
-          </Link>
-        </Button>
+        <PageHeader
+          left={
+            <Button asChild variant="ghost" className="text-muted-foreground">
+              <Link to="/gigs">
+                <ChevronLeft aria-hidden="true" />
+                {GIGS.backToGigs}
+              </Link>
+            </Button>
+          }
+        />
         <p
           aria-live="polite"
           className="mt-[calc(var(--spacing-unit)*3)] text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-muted-foreground"
@@ -70,7 +75,14 @@ function GigForm({ initial }: { initial?: Setlist }) {
   const [time, setTime] = useState(initial?.gigMeta.time ?? '');
   const exitTo = initial ? `/gigs/${setlistId}` : '/gigs';
   // 'default' means this form is the first page in the history stack.
-  const canStepBack = initial !== undefined && location.key !== 'default';
+  const hasHistory = location.key !== 'default';
+  // After saving a new record, land on its page rather than stepping back.
+  const canStepBack = initial !== undefined && hasHistory;
+  const leave = (e: MouseEvent<HTMLAnchorElement>) => {
+    if (!hasHistory) return;
+    e.preventDefault();
+    navigate(-1);
+  };
   const venueBlank = venue.trim() === '';
   const dateBlank = date === '';
   const canSave = !venueBlank && !dateBlank;
@@ -94,6 +106,16 @@ function GigForm({ initial }: { initial?: Setlist }) {
 
   return (
     <form onSubmit={onSubmit} noValidate>
+      <PageHeader
+        left={
+          <Button asChild variant="ghost" className="text-muted-foreground">
+            <Link replace to={exitTo} onClick={leave}>
+              <ChevronLeft aria-hidden="true" />
+              {initial ? GIG_SETLIST.backToGig : GIGS.backToGigs}
+            </Link>
+          </Button>
+        }
+      />
       <PageTitle>{initial ? GIG_FORM.editHeading : GIG_FORM.addHeading}</PageTitle>
 
       <div className={PAIR_GAP}>
@@ -136,15 +158,7 @@ function GigForm({ initial }: { initial?: Setlist }) {
           {GIG_FORM.save}
         </Button>
         <Button asChild variant="ghost">
-          <Link
-            replace
-            to={exitTo}
-            onClick={(e) => {
-              if (!canStepBack) return;
-              e.preventDefault();
-              navigate(-1);
-            }}
-          >
+          <Link replace to={exitTo} onClick={leave}>
             {GIG_FORM.cancel}
           </Link>
         </Button>

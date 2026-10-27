@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -54,6 +54,14 @@ beforeEach(() => {
 });
 
 describe('GigEdit', () => {
+  it('has a header back link that goes where Cancel goes', () => {
+    renderAt('/gigs/new');
+    expect(screen.getByRole('link', { name: 'Back to gigs' })).toHaveAttribute('href', '/gigs');
+    cleanup();
+    renderAt('/gigs/g1/edit');
+    expect(screen.getByRole('link', { name: 'Back to gig' })).toHaveAttribute('href', '/gigs/g1');
+  });
+
   it('adds a gig with no sections', async () => {
     const user = userEvent.setup();
     renderAt('/gigs/new');

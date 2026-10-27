@@ -93,7 +93,7 @@
 
 - **Home "Loading…" indefinitely on offline first launch** (`web/src/routes/home.tsx:19`) — with no persisted cache and `navigator.onLine === false`, TanStack v5's default `networkMode: 'online'` pauses both queries with `status: 'pending'`, so the line never reaches the error message. Would need a `fetchStatus === 'paused'` branch. Spec-mandated state order; only bites a device with no cache.
 - **One failed query hides the other's count** (`web/src/routes/home.tsx:16`) — counts render only when both songs and setlists have data; one errored endpoint with no cache replaces the whole line with the error. Spec-mandated; revisit if counts become separate elements.
-- **`/login` reachable while signed in; Back returns to it** (`web/src/routes/login.tsx:29`, `web/src/router.tsx:19`) — no authenticated → `/` guard on `/login`, and post-login `navigate('/')` lacks `{ replace: true }`. Pre-existing.
+- **`/login` reachable while signed in; Back returns to it** (post-login `replace` fixed in the 7.20 review, 2026-10-27; the guard is still open) (`web/src/routes/login.tsx:29`, `web/src/router.tsx:19`) — no authenticated → `/` guard on `/login`, and post-login `navigate('/')` lacks `{ replace: true }`. Pre-existing.
 - **Manifest colours still dark** (`web/vite.config.ts:80-81`) — `theme_color`/`background_color` `#1a1209`, so installed-PWA splash/task switcher is dark in light mode. Out of scope for 7.1 (`build-output.test.ts` asserts the values).
 - **Orphaned persisted query keys** (`web/src/sync/query-client.tsx:22`) — keys for removed screens (tonight-gig prefetch, per-song/per-setlist detail) restore with `gcTime: Infinity` under unchanged `buster: 'v1'` and are re-persisted forever. Harmless; clear on next buster bump.
 - **Restore-drill spec drives deleted UI** (`e2e/restore/verified-restore.spec.ts:42-56`) — expects `Setlists` heading, `/library` song links and setlist-card buttons, all removed in 7.1. Not in CI (own config). Reason: rewrite when the deferred Story 5.2 Task 4 drill is next due, against the screens that exist then; prerequisite noted on 5.2 Task 4.
@@ -101,3 +101,8 @@
 ## Deferred from: code review of story-7.12 (2026-10-26)
 
 - **Delete-a-gig races a queued/in-flight edit** (`web/src/hooks/use-setlist-mutation.ts:60`, `api/src/ddb/setlists.ts:63`) — a flush in flight, or a put landing mid-delete, can recreate the gig after the server delete. Spec-accepted gap, same as 7.11; single user.
+
+## Deferred from: code review of 7-20-header-and-tab-bar (2026-10-27)
+
+- **Tab bar sits inside `<main>`** (`web/src/routes/list-layout.tsx:12`, `web/src/routes/authenticated-shell.tsx:11`): `ListLayout` renders through the shell's `<main>` Outlet, so the "Lists" nav sits inside the main landmark rather than alongside it. This is valid HTML and only affects how screen readers move between landmarks. Revisit if the shell is restructured.
+- **Focused rows can scroll behind fixed bottom chrome** (`web/src/components/tab-bar.tsx:17`): the bottom padding only clears the bar at the end of the page, so a keyboard-focused row can land behind the tab bar or the play bar. Fix: set `scroll-padding-bottom` on `html` to match. This was already true of the play bar.

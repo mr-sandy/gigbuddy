@@ -58,6 +58,11 @@ beforeEach(() => {
 });
 
 describe('SetlistEdit', () => {
+  it('has a header back link to the gig', () => {
+    renderAt('/gigs/g1/setlist');
+    expect(screen.getByRole('link', { name: 'Back to gig' })).toHaveAttribute('href', '/gigs/g1');
+  });
+
   it('pre-fills the text box and titles the page with the venue', () => {
     renderAt('/gigs/g1/setlist');
     expect(screen.getByRole('heading', { level: 1, name: 'Venue A' })).toBeInTheDocument();

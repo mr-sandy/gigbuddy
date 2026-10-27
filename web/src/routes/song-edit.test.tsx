@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useNavigate } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -138,6 +138,24 @@ describe('SongEdit', () => {
     expect(screen.getByRole('button', { name: SONG_FORM.save })).toBeDisabled();
   });
 
+  it('has a header back link that goes where Cancel goes', () => {
+    renderAt('/songs/new');
+    expect(screen.getByRole('link', { name: 'Back to songs' })).toHaveAttribute('href', '/songs');
+    cleanup();
+    renderAt('/songs/abc/edit');
+    expect(screen.getByRole('link', { name: 'Back to song' })).toHaveAttribute(
+      'href',
+      '/songs/abc',
+    );
+  });
+
+  it('steps back from the header back link when there is history', async () => {
+    const user = userEvent.setup();
+    renderAt('/songs', '/songs/abc', '/songs/abc/edit');
+    await user.click(screen.getByRole('link', { name: 'Back to song' }));
+    expect(screen.getByText('song page')).toBeInTheDocument();
+  });
+
   it('cancels an edit back to the song page without saving', async () => {
     const user = userEvent.setup();
     renderAt('/songs/abc/edit');
@@ -161,6 +179,14 @@ describe('SongEdit', () => {
     await user.click(screen.getByRole('link', { name: SONG_FORM.cancel }));
     await user.click(screen.getByRole('button', { name: 'back' }));
     expect(screen.getByText('list page')).toBeInTheDocument();
+    expect(saveSongMock).not.toHaveBeenCalled();
+  });
+
+  it('leaves an add by stepping back when there is history', async () => {
+    const user = userEvent.setup();
+    renderAt('/songs/abc', '/songs/new');
+    await user.click(screen.getByRole('link', { name: 'Back to songs' }));
+    expect(screen.getByText('song page')).toBeInTheDocument();
     expect(saveSongMock).not.toHaveBeenCalled();
   });
 

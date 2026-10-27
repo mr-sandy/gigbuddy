@@ -29,7 +29,7 @@ function renderLogin() {
       <MemoryRouter initialEntries={['/login']}>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/" element={<h1>Home</h1>} />
+          <Route path="/songs" element={<h1>Songs</h1>} />
         </Routes>
       </MemoryRouter>
     </AuthProvider>,
@@ -37,7 +37,7 @@ function renderLogin() {
 }
 
 describe('Login route', () => {
-  it('navigates to / after a successful login and follow-up /me probe', async () => {
+  it('navigates to /songs after a successful login and follow-up /me probe', async () => {
     fetchMock
       .mockResolvedValueOnce(jsonResponse(200, { status: 'applied' }))
       .mockResolvedValueOnce(
@@ -51,7 +51,7 @@ describe('Login route', () => {
     await user.click(screen.getByRole('button', { name: /sign in/i }));
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'Home' })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Songs' })).toBeInTheDocument();
     });
 
     expect(fetchMock).toHaveBeenNthCalledWith(
@@ -76,7 +76,7 @@ describe('Login route', () => {
     await user.click(screen.getByRole('button', { name: /sign in/i }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Wrong password.');
-    expect(screen.queryByRole('heading', { name: 'Home' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Songs' })).toBeNull();
   });
 
   it('renders "Service unavailable." when fetch rejects (offline)', async () => {
@@ -103,6 +103,6 @@ describe('Login route', () => {
     await user.click(screen.getByRole('button', { name: /sign in/i }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Service unavailable.');
-    expect(screen.queryByRole('heading', { name: 'Home' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Songs' })).toBeNull();
   });
 });

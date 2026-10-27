@@ -46,6 +46,46 @@ function jsonResponse(status: number, body: unknown): Response {
   });
 }
 
+const authedOk = () =>
+  jsonResponse(200, { status: 'ok', data: { authenticated: true, daysUntilExpiry: 365 } });
+
+const songFixture = {
+  bandId: 'jack-ruby-5',
+  songId: 'a1',
+  title: 'Alpha Test Tune',
+  clientWrittenAt: '2026-10-19T10:00:00.000Z',
+  serverReceivedAt: '2026-10-19T10:00:00.000Z',
+  version: 1,
+};
+const gigFixture = {
+  bandId: 'jack-ruby-5',
+  setlistId: 'g1',
+  gigMeta: { venue: 'Test Venue', date: '2026-11-07' },
+  sections: [{ name: 'Set 1', songs: [{ songId: 'a1', titleSnapshot: 'Alpha Test Tune' }] }],
+  clientWrittenAt: '2026-10-19T10:00:00.000Z',
+  serverReceivedAt: '2026-10-19T10:00:00.000Z',
+  version: 1,
+};
+
+function mockSignedInWithData() {
+  fetchMock.mockImplementation((input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.includes('/auth/me') || url.endsWith('/me')) return Promise.resolve(authedOk());
+    if (url.includes('/songs/a1')) {
+      return Promise.resolve(jsonResponse(200, { status: 'ok', data: songFixture }));
+    }
+    if (url.includes('/setlists/g1')) {
+      return Promise.resolve(jsonResponse(200, { status: 'ok', data: gigFixture }));
+    }
+    const data = url.includes('/songs')
+      ? [songFixture]
+      : url.includes('/setlists')
+        ? [gigFixture]
+        : [];
+    return Promise.resolve(jsonResponse(200, { status: 'ok', data }));
+  });
+}
+
 describe('AppBootstrap', () => {
   it('renders the GigBuddy shell heading while the /me probe is in-flight', () => {
     fetchMock.mockReturnValueOnce(new Promise(() => undefined)); // never resolves
@@ -61,8 +101,8 @@ describe('AppBootstrap', () => {
       // Fresh Response per call — useSongs and useSetlists each read the body.
       .mockImplementation(() => Promise.resolve(jsonResponse(200, { status: 'ok', data: [] })));
     renderBootstrap();
-    // Both the pre-ready boot shell and the authenticated landing page render
-    // an `<h1>GigBuddy</h1>` — the band name only appears once signed in.
+    // Both the pre-ready boot shell and the authenticated landing page (the
+    // Songs list) render an `<h1>` — the band name only appears once signed in.
     await waitFor(() => {
       expect(screen.getByText('The Jack Ruby 5')).toBeInTheDocument();
     });
@@ -106,8 +146,8 @@ describe('AppBootstrap', () => {
       // Fresh Response per call — useSongs and useSetlists each read the body.
       .mockImplementation(() => Promise.resolve(jsonResponse(200, { status: 'ok', data: [] })));
     renderBootstrap();
-    // Wait for the authenticated landing page (not just the ambiguous
-    // "GigBuddy" boot-shell heading) so SyncWiring has definitely mounted.
+    // Wait for the authenticated landing page (the band name in the Songs
+    // header, not just the ambiguous "GigBuddy" boot-shell heading) so SyncWiring has definitely mounted.
     await waitFor(() => {
       expect(screen.getByText('The Jack Ruby 5')).toBeInTheDocument();
     });
@@ -131,7 +171,7 @@ describe('AppBootstrap', () => {
     });
   });
 
-  it('signed in: home → Songs → a song page', async () => {
+  it('signed in: / → Songs → a song page', async () => {
     const song = {
       bandId: 'jack-ruby-5',
       songId: 'a1',
@@ -161,7 +201,7 @@ describe('AppBootstrap', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Alpha Test Tune' })).toBeInTheDocument();
   });
 
-  it('signed in: home → Gigs → a gig', async () => {
+  it('signed in: / → Gigs → a gig', async () => {
     const setlist = {
       bandId: 'jack-ruby-5',
       setlistId: 'g1',
@@ -243,6 +283,58 @@ describe('AppBootstrap', () => {
     renderBootstrap();
     await waitFor(() => {
       expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
+    });
+  });
+
+  describe('header and tab bar (Story 7.20)', () => {
+    const tabBar = () => screen.queryByRole('navigation', { name: 'Lists' });
+
+    it('signed in: / redirects to /songs and shows the tab bar with Songs current', async () => {
+      mockSignedInWithData();
+      renderBootstrap();
+      expect(await screen.findByRole('link', { name: 'Alpha Test Tune' })).toBeInTheDocument();
+      expect(router.state.location.pathname).toBe('/songs');
+      expect(tabBar()).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Songs' })).toHaveAttribute('aria-current', 'page');
+    });
+
+    it('signed in: an unknown path also lands on /songs', async () => {
+      mockSignedInWithData();
+      window.history.replaceState(null, '', '/library');
+      await router.navigate('/library', { replace: true });
+      renderBootstrap();
+      expect(await screen.findByRole('link', { name: 'Alpha Test Tune' })).toBeInTheDocument();
+      expect(router.state.location.pathname).toBe('/songs');
+    });
+
+    it('signed in: the tabs switch between the two lists', async () => {
+      mockSignedInWithData();
+      renderBootstrap();
+      await userEvent.click(await screen.findByRole('link', { name: 'Gigs' }));
+      expect(await screen.findByRole('link', { name: /Test Venue/ })).toBeInTheDocument();
+      expect(router.state.location.pathname).toBe('/gigs');
+      expect(tabBar()).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Gigs' })).toHaveAttribute('aria-current', 'page');
+      expect(screen.getByRole('link', { name: 'Songs' })).not.toHaveAttribute('aria-current');
+    });
+
+    it.each([
+      ['a song page', '/songs/a1'],
+      ['a gig page', '/gigs/g1'],
+      ['a gig song page', '/gigs/g1/songs/a1'],
+      ['the add song form', '/songs/new'],
+      ['the edit song form', '/songs/a1/edit'],
+      ['the add gig form', '/gigs/new'],
+      ['the edit gig form', '/gigs/g1/edit'],
+      ['the setlist editor', '/gigs/g1/setlist'],
+    ])('signed in: no tab bar on %s', async (_name, path) => {
+      mockSignedInWithData();
+      window.scrollTo = vi.fn() as unknown as typeof window.scrollTo;
+      window.history.replaceState(null, '', path);
+      await router.navigate(path, { replace: true });
+      renderBootstrap();
+      expect(await screen.findByRole('link', { name: /^Back to/ })).toBeInTheDocument();
+      expect(tabBar()).toBeNull();
     });
   });
 });

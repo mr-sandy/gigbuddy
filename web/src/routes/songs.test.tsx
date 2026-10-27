@@ -75,10 +75,11 @@ describe('Songs (list)', () => {
     expect(screen.queryByText(SONGS.error)).toBeNull();
   });
 
-  it('links back home to /', () => {
+  it('shows the band name in the header, with no Home link', () => {
     useSongsMock.mockReturnValue({ data: [], isPending: false });
     renderSongs();
-    expect(screen.getByRole('link', { name: SONGS.backToHome })).toHaveAttribute('href', '/');
+    expect(screen.getByText('The Jack Ruby 5')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Home' })).toBeNull();
   });
 
   it('links to the add song form', () => {

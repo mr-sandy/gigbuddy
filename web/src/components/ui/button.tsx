@@ -16,9 +16,11 @@ const buttonVariants = cva(
         outline: 'border border-input bg-background text-foreground hover:bg-muted',
         ghost: 'text-foreground hover:bg-muted',
         link: 'text-muted-foreground underline underline-offset-4',
+        secondary: 'bg-muted text-foreground hover:bg-muted/70',
       },
       size: {
         default: 'min-h-tap px-4',
+        sm: "min-h-tap px-3 text-[length:var(--text-small)] leading-[var(--text-small--line-height)] [&_svg:not([class*='size-'])]:size-4",
       },
     },
     compoundVariants: [

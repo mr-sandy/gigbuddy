@@ -68,6 +68,14 @@
   --text-body: 18px;
   --text-body--line-height: 1.5;
 
+  /* Band name and tab labels (Story 7.20). */
+  --text-nav: 20px;
+  --text-nav--line-height: 1.2;
+
+  /* Small buttons only (Story 7.20). */
+  --text-small: 16px;
+  --text-small--line-height: 1.5;
+
   /* ---------- Spacing (4pt base) ---------- */
   --spacing-unit: 4px;
   --spacing-gutter: 16px;
@@ -79,6 +87,10 @@
   --spacing-tap: 44px;
   /* Gig song page bottom bar: two big tap regions (Story 7.19). */
   --spacing-play-bar: 64px;
+  /* Songs | Gigs tab bar (Story 7.20). */
+  --spacing-tab-bar: 60px;
+  /* Page header minimum height (Story 7.20). */
+  --spacing-header: 56px;
 
   /* ---------- Font families ---------- */
   --font-serif-editorial: "Lora", Georgia, serif;

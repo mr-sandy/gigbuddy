@@ -1,6 +1,7 @@
 import type { Setlist } from '@gigbuddy/shared';
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { ChevronRight, Plus } from 'lucide-react';
 import { Link } from 'react-router';
+import { BandName, PageHeader } from '../components/page-header.js';
 import { PageTitle } from '../components/page-title.js';
 import { Button } from '../components/ui/button.js';
 import { useSetlists } from '../hooks/use-setlists.js';
@@ -51,21 +52,18 @@ export function Gigs() {
 
   return (
     <>
-      <div className="flex items-center justify-between gap-[calc(var(--spacing-unit)*4)]">
-        <Button asChild variant="ghost" className="text-muted-foreground">
-          <Link to="/">
-            <ChevronLeft aria-hidden="true" />
-            {GIGS.backToHome}
-          </Link>
-        </Button>
-        <Button asChild variant="ghost" className="text-primary">
-          <Link to="/gigs/new">
-            <Plus aria-hidden="true" />
-            {GIG_FORM.addLink}
-          </Link>
-        </Button>
-      </div>
-      <PageTitle afterBackLink>{GIGS.heading}</PageTitle>
+      <PageHeader
+        left={<BandName />}
+        right={
+          <Button asChild variant="ghost" className="text-primary">
+            <Link to="/gigs/new">
+              <Plus aria-hidden="true" />
+              {GIG_FORM.addLink}
+            </Link>
+          </Button>
+        }
+      />
+      <PageTitle>{GIGS.heading}</PageTitle>
       {data !== undefined && data.length > 0 ? (
         <>
           {upcoming.length > 0 ? <GigRows gigs={upcoming} /> : null}

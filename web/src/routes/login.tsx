@@ -27,7 +27,7 @@ export function Login() {
       const next = await fetchMe();
       if (next.status === 'authenticated') {
         setAuth(next);
-        navigate('/');
+        navigate('/songs', { replace: true });
       } else {
         setError('Service unavailable.');
         setSubmitting(false);

@@ -1,7 +1,8 @@
 import { ACTIVE_BAND_ID, type Song, type SongPutInput } from '@gigbuddy/shared';
 import { ChevronLeft } from 'lucide-react';
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, type MouseEvent, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
+import { PageHeader } from '../components/page-header.js';
 import { PageTitle } from '../components/page-title.js';
 import { Button } from '../components/ui/button.js';
 import { Input } from '../components/ui/input.js';
@@ -43,12 +44,16 @@ function EditExisting({ songId }: { songId: string }) {
   if (!song) {
     return (
       <>
-        <Button asChild variant="ghost" className="text-muted-foreground">
-          <Link to="/songs">
-            <ChevronLeft aria-hidden="true" />
-            {SONGS.backToSongs}
-          </Link>
-        </Button>
+        <PageHeader
+          left={
+            <Button asChild variant="ghost" className="text-muted-foreground">
+              <Link to="/songs">
+                <ChevronLeft aria-hidden="true" />
+                {SONGS.backToSongs}
+              </Link>
+            </Button>
+          }
+        />
         <p
           aria-live="polite"
           className="mt-[calc(var(--spacing-unit)*3)] text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-muted-foreground"
@@ -75,7 +80,14 @@ function SongForm({ initial }: { initial?: Song }) {
   const canSave = title.trim() !== '';
   const exitTo = initial ? `/songs/${songId}` : '/songs';
   // 'default' means this form is the first page in the history stack.
-  const canStepBack = initial !== undefined && location.key !== 'default';
+  const hasHistory = location.key !== 'default';
+  // After saving a new record, land on its page rather than stepping back.
+  const canStepBack = initial !== undefined && hasHistory;
+  const leave = (e: MouseEvent<HTMLAnchorElement>) => {
+    if (!hasHistory) return;
+    e.preventDefault();
+    navigate(-1);
+  };
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -105,6 +117,16 @@ function SongForm({ initial }: { initial?: Song }) {
 
   return (
     <form onSubmit={onSubmit} noValidate>
+      <PageHeader
+        left={
+          <Button asChild variant="ghost" className="text-muted-foreground">
+            <Link replace to={exitTo} onClick={leave}>
+              <ChevronLeft aria-hidden="true" />
+              {initial ? SONGS.backToSong : SONGS.backToSongs}
+            </Link>
+          </Button>
+        }
+      />
       <PageTitle>{initial ? SONG_FORM.editHeading : SONG_FORM.addHeading}</PageTitle>
 
       <div className={PAIR_GAP}>
@@ -157,15 +179,7 @@ function SongForm({ initial }: { initial?: Song }) {
           {SONG_FORM.save}
         </Button>
         <Button asChild variant="ghost">
-          <Link
-            replace
-            to={exitTo}
-            onClick={(e) => {
-              if (!canStepBack) return;
-              e.preventDefault();
-              navigate(-1);
-            }}
-          >
+          <Link replace to={exitTo} onClick={leave}>
             {SONG_FORM.cancel}
           </Link>
         </Button>
