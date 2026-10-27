@@ -18,3 +18,10 @@ describe('globals.css bottom-bar scroll padding (Story 7.23)', () => {
     expect(rule?.[1]).toContain(`var(${token})`);
   });
 });
+
+describe('globals.css sheet animations (Story 7.24)', () => {
+  it.each(['sheet-up', 'sheet-in', 'scrim-in'])('defines the %s animation', (name) => {
+    expect(css).toMatch(new RegExp(`--animate-${name}:\\s*${name}\\s`));
+    expect(css).toContain(`@keyframes ${name}`);
+  });
+});

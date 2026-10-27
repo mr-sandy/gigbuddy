@@ -2852,3 +2852,19 @@ review are gone. (From the deferred list, checked 2026-10-27.)
 4. No change to `api/`, `shared/` or `infra/`. `STYLE.md` and `deferred-work.md` updated.
 5. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass, with tests for each fix.
 6. Deployed to gig.cormie.com via the normal pipeline.
+
+### Story 7.24: Sheets slide in
+
+As Sandy, I want sheets to slide in when they open, so that opening a form feels connected to
+the page it came from instead of popping up. (Sandy, 2026-10-27; opening only.)
+
+**Acceptance criteria**
+1. Narrow windows: the sheet slides up from the bottom; wide windows (`md`): the panel slides
+   in from the right. The scrim fades in. About 250ms, ease-out. Every sheet gets it.
+2. Closing stays instant; no exit animation.
+3. Reduce Motion: the sheet appears at once (existing global rule).
+4. Plain CSS, no new package. No change to `api/`, `shared/` or `infra/`. `STYLE.md` and
+   `architecture.md` note the slide.
+5. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass, with tests for the
+   classes and keyframes.
+6. Deployed to gig.cormie.com via the normal pipeline.

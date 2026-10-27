@@ -129,6 +129,8 @@ over the page it was opened from, built from `ui/sheet.tsx` and `EditSheet`.
 - Narrow windows: the sheet comes up from the bottom with 44px of the page visible above it,
   rounded top corners, and the page dimmed by `--scrim`. Wide windows (48rem and up): a 460px
   panel from the right (`--spacing-sheet`). The choice is made by window width, never by device.
+- It slides in when it opens (up from the bottom, or in from the right on wide windows; 250ms,
+  ease-out) while the scrim fades in. Closing is instant. Reduce Motion turns the slide off.
 - No swipe-to-close and no tap-outside close. Cancel and Escape close it and discard changes.
   Focus moves in when it opens and returns to the opener when it closes.
 - The body scrolls; the header doesn't. Delete sits at the foot of the body, after a hairline

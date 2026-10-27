@@ -1,6 +1,7 @@
 // shadcn/ui Sheet (Story 7.21), adapted: one responsive placement chosen by
 // window width (bottom sheet on narrow, right panel from `md`), no animation
-// library, no built-in close button, and no dismiss by tapping outside.
+// library (it slides in on open with CSS keyframes from globals.css, Story 7.24;
+// no exit animation), no built-in close button, and no dismiss by tapping outside.
 import * as SheetPrimitive from '@radix-ui/react-dialog';
 import { type ComponentProps, useState } from 'react';
 import { cn } from '../../lib/utils.js';
@@ -22,7 +23,10 @@ function SheetContent({
   const [opener] = useState(() => document.activeElement);
   return (
     <SheetPrimitive.Portal>
-      <SheetPrimitive.Overlay data-slot="sheet-overlay" className="fixed inset-0 z-50 bg-scrim" />
+      <SheetPrimitive.Overlay
+        data-slot="sheet-overlay"
+        className="fixed inset-0 z-50 bg-scrim data-[state=open]:animate-scrim-in"
+      />
       <SheetPrimitive.Content
         data-slot="sheet-content"
         onInteractOutside={(event) => {
@@ -36,7 +40,7 @@ function SheetContent({
           onCloseAutoFocus?.(event);
         }}
         className={cn(
-          'fixed inset-x-0 bottom-0 top-[calc(var(--spacing-unit)*11+env(safe-area-inset-top))] z-50 flex flex-col rounded-t-2xl bg-background shadow-lg outline-none md:inset-y-0 md:left-auto md:right-0 md:top-0 md:w-sheet md:rounded-none md:border-l md:border-border',
+          'fixed inset-x-0 bottom-0 top-[calc(var(--spacing-unit)*11+env(safe-area-inset-top))] z-50 flex flex-col rounded-t-2xl bg-background shadow-lg outline-none md:inset-y-0 md:left-auto md:right-0 md:top-0 md:w-sheet md:rounded-none md:border-l md:border-border data-[state=open]:animate-sheet-up md:data-[state=open]:animate-sheet-in',
           className,
         )}
         {...props}

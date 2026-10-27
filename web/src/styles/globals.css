@@ -42,6 +42,32 @@ html:has([data-bottom-bar="play"]) {
   );
 }
 
+/* Story 7.24: sheets slide in when they open. No exit animation: route sheets unmount
+   on navigation. The reduced-motion rule below zeroes these. */
+@theme {
+  --animate-sheet-up: sheet-up 250ms ease-out;
+  --animate-sheet-in: sheet-in 250ms ease-out;
+  --animate-scrim-in: scrim-in 250ms ease-out;
+
+  @keyframes sheet-up {
+    from {
+      transform: translateY(100%);
+    }
+  }
+
+  @keyframes sheet-in {
+    from {
+      transform: translateX(100%);
+    }
+  }
+
+  @keyframes scrim-in {
+    from {
+      opacity: 0;
+    }
+  }
+}
+
 :root[data-theme="light"] {
   color-scheme: light;
 }

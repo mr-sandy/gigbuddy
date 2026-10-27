@@ -42,4 +42,13 @@ describe('Sheet', () => {
     await userEvent.pointer([{ keys: '[MouseLeft]', target: overlay }]);
     expect(onOpenChange).not.toHaveBeenCalled();
   });
+
+  it('slides in when it opens (Story 7.24)', () => {
+    renderSheet();
+    const content = document.querySelector('[data-slot="sheet-content"]') as HTMLElement;
+    const overlay = document.querySelector('[data-slot="sheet-overlay"]') as HTMLElement;
+    expect(content.classList).toContain('data-[state=open]:animate-sheet-up');
+    expect(content.classList).toContain('md:data-[state=open]:animate-sheet-in');
+    expect(overlay.classList).toContain('data-[state=open]:animate-scrim-in');
+  });
 });
