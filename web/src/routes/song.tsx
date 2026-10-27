@@ -23,7 +23,7 @@ import { cn } from '../lib/utils.js';
 function GigPlayBar({ setlist, place }: { setlist: Setlist; place: number }) {
   const order = playOrder(setlist);
   const region =
-    'flex min-h-play-bar max-w-[18rem] flex-1 items-center justify-center [-webkit-tap-highlight-color:transparent]';
+    'box-content flex min-h-play-bar max-w-[18rem] flex-1 items-center justify-center pb-[env(safe-area-inset-bottom)] [-webkit-tap-highlight-color:transparent]';
   const step = (index: number, label: string, Icon: typeof ChevronLeft) =>
     index >= 0 && index < order.length ? (
       <Button
@@ -47,10 +47,10 @@ function GigPlayBar({ setlist, place }: { setlist: Setlist; place: number }) {
       </span>
     );
   return (
-    <nav className="fixed inset-x-0 bottom-0 border-t border-border bg-background pb-[env(safe-area-inset-bottom)]">
+    <nav className="fixed inset-x-0 bottom-0 border-t border-border bg-background">
       <div className="flex items-stretch justify-center">
         {step(place - 1, GIG_PLAY.previousSong, ChevronLeft)}
-        <span className="flex items-center whitespace-nowrap border-x border-border px-3.5 text-[length:var(--text-body)] leading-[var(--text-body--line-height)] tabular-nums text-muted-foreground">
+        <span className="flex items-center whitespace-nowrap border-x border-border px-3.5 pb-[env(safe-area-inset-bottom)] text-[length:var(--text-body)] leading-[var(--text-body--line-height)] tabular-nums text-muted-foreground">
           {GIG_PLAY.position(place + 1, order.length)}
         </span>
         {step(place + 1, GIG_PLAY.nextSong, ChevronRight)}

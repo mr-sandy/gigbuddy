@@ -59,7 +59,8 @@ Tokens use shadcn's role names and live in `web/src/styles/tokens.css`.
   position ("3 of 12") sits in a narrow middle column (Body, quiet text, tabular figures) with
   `--border` dividers either side. A pressed region gets a brief brass tint (`primary` at 15%).
   An unavailable end is an inert `aria-disabled` span with a faded chevron, never a disabled
-  button or another action. Content is padded so nothing hides under the bar.
+  button or another action. On the iPhone the regions and dividers run down to the screen edge,
+  with the chevrons kept above the home indicator. Content is padded so nothing hides under the bar.
 - "Screen may sleep" line on song pages: Body size, secondary text, under the back link; shown
   only when the screen can't be kept awake. No token changes.
 - Export link at the foot of the songs page: a `link` variant `Button` rendered as a plain

@@ -231,6 +231,8 @@ Claude Sonnet 5.5
 - web/src/routes/song.tsx
 - web/src/routes/song.test.tsx
 - web/src/app-bootstrap.test.tsx
+- web/src/lib/utils.ts
+- web/src/lib/utils.test.ts
 - STYLE.md
 - _bmad-output/implementation-artifacts/7-19-split-gig-footer.md
 - _bmad-output/implementation-artifacts/sprint-status.yaml
@@ -239,3 +241,5 @@ Claude Sonnet 5.5
 
 - 2026-10-27: Story created; status → ready-for-dev.
 - 2026-10-27: Implemented; status → review.
+- 2026-10-27: Code review clean; committed d709d29; CI and deploy run 40550103680 green.
+- 2026-10-27: Sandy's live check found two faults. (1) The bar was 44px mid-set and 64px at either end: `cn` kept both Button's `min-h-tap` and the region's `min-h-play-bar`, and 44px won. Fixed by teaching tailwind-merge the custom spacing tokens (`web/src/lib/utils.ts`). (2) On the phone there was an empty strip below the bar. The home-indicator padding moved from the `<nav>` into each column, so the regions and dividers run to the screen edge.

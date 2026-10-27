@@ -17,4 +17,8 @@ describe('cn', () => {
     expect(result).not.toContain('text-primary');
     expect(result.endsWith('text-muted-foreground')).toBe(true);
   });
+
+  it('lets a custom spacing token replace another', () => {
+    expect(cn('min-h-tap px-4', 'min-h-play-bar')).toBe('px-4 min-h-play-bar');
+  });
 });
