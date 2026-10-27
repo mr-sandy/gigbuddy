@@ -63,6 +63,7 @@ export function SheetFrame({
 export function EditSheet({
   title,
   cancelLabel,
+  cancelIcon,
   submitLabel,
   submitDisabled,
   onCancel,
@@ -72,6 +73,8 @@ export function EditSheet({
 }: {
   title: string;
   cancelLabel: string;
+  /** Shown before the Cancel label, e.g. a chevron for a Back button. */
+  cancelIcon?: ReactNode;
   submitLabel: string;
   submitDisabled: boolean;
   onCancel: () => void;
@@ -88,6 +91,7 @@ export function EditSheet({
     >
       <SheetHeader>
         <Button type="button" variant="ghost" onClick={onCancel}>
+          {cancelIcon}
           {cancelLabel}
         </Button>
         <SheetTitle>{title}</SheetTitle>

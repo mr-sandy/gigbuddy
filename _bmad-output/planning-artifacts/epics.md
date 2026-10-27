@@ -2868,3 +2868,60 @@ the page it came from instead of popping up. (Sandy, 2026-10-27; opening only.)
 5. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass, with tests for the
    classes and keyframes.
 6. Deployed to gig.cormie.com via the normal pipeline.
+
+### Story 7.25: Sort out unmatched songs when saving a setlist
+
+As Sandy, I want Save to list the lines that don't match a song and let me add each as a new
+song or leave it out, so that a pasted setlist (from a text message or an OCR'd photo of a
+written note) can be saved without renaming lines and adding songs in another tab. (Sandy,
+2026-10-27; mockup https://claude.ai/artifact/58WYNgCTKzEVeX67hdCxnr.)
+
+**Acceptance criteria**
+1. Before matching, each line is tidied: leading numbering and bullets (`1.`, `3)`, `-`, `•`),
+   trailing durations (`4:30`), accents, extra spaces and punctuation, and a leading "The" are
+   ignored. A line that then matches one song exactly is matched without asking; failing that,
+   the same check with bracketed text removed (`[first dance]`) also counts.
+2. If any lines are still unmatched or match more than one song, Save moves the same sheet to
+   a second step, "Check songs" (not a sheet on a sheet). Its header has "‹ Back" on the left,
+   which returns to the text with nothing lost, and Save on the right; Cancel lives only on
+   the first step. The step has no URL of its own. When every line matches, Save saves and
+   closes as today. Each line shows in full with one dropdown (a native `select`, labelled by
+   the line) beneath it. Its options: "Add as a new song: <tidied title>" (chosen by default)
+   and "Leave it out", then the whole library A to Z under "Whole library". For a title shared
+   by several songs, those songs come first, each with its key to tell them apart.
+3. Choices take effect only when the second step's Save is pressed: new songs (title only)
+   are created first, then the setlist is saved. Cancel creates nothing.
+3a. A new song's title is tidied from the line: numbering, durations and bracketed text
+   (`[first dance]`, `(Herbie)`) dropped, and an all-capitals line put into title case
+   ("INTO THE MYSTIC [first dance]" → "Into the Mystic"). The option shows the tidied title.
+3b. Simple set headings start a section without `##`: a line that is just "Set 1" / "set 2" /
+   "1st set" / "Encore" (any case), and a line of three or more dashes, which starts the next
+   set. `##` still works.
+4. Saved lines show the library title the next time the setlist text is opened.
+5. Works the same on phone and laptop. No change to `infra/`. Microcopy in `microcopy.ts`.
+6. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass, with tests for the
+   tidying, the sort-out choices and the save order.
+7. Deployed to gig.cormie.com via the normal pipeline.
+
+### Story 7.26: Close-match guesses for setlist lines
+
+As Sandy, I want lines that nearly match a song to be matched for me, and less certain ones
+offered as a best guess, so that typos and OCR mistakes don't need fixing by hand. (Sandy,
+2026-10-27: very close matches go ahead without confirmation; remembering past choices is not
+wanted.)
+
+**Acceptance criteria**
+1. A line that is very close to exactly one song (for example a single-letter typo or a common
+   OCR slip like `rn`/`m` or `l`/`1`), with no other song nearly as close, is matched without
+   asking. When the second step is showing, a "Matched for you" list at its foot shows these
+   ("C1ssy Strut → Cissy Strut"); lines that matched exactly after tidying aren't listed.
+2. A less certain line appears in the second step with a "Best guess" group at the top of
+   its dropdown, chosen by default, plus up to two other guesses; "Add as a new song", "Leave
+   it out" and the whole library follow as in 7.25. Extra words or bracketed text
+   ("(Herbie)") count towards a guess, not against it.
+3. No separate library picker: the dropdown's "Whole library" group (7.25) covers it.
+4. No new package unless the matching can't be done simply in a few dozen lines; if one is
+   added, `architecture.md` records why.
+5. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass, with tests covering the
+   auto-match threshold, near-ties staying unmatched, and the guess order.
+6. Deployed to gig.cormie.com via the normal pipeline.

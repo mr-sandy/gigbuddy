@@ -74,8 +74,19 @@ export const SETLIST_TEXT = {
   hint: 'One song per line. Start a line with ## to name a section.',
   save: 'Save',
   cancel: 'Cancel',
-  notInLibrary: 'Not in the library:',
-  ambiguous: 'More than one song is called:',
+  checkHeading: 'Check songs',
+  back: 'Back',
+  checkIntro: (pending: number, matched: number) => {
+    const need = pending === 1 ? '1 line needs a decision.' : `${pending} lines need a decision.`;
+    if (matched === 0) return need;
+    return matched === 1
+      ? `${need} The other song is matched.`
+      : `${need} The other ${matched} songs are matched.`;
+  },
+  addNew: (title: string) => `Add as a new song: ${title}`,
+  leaveOut: 'Leave it out',
+  wholeLibrary: 'Whole library',
+  songWithKey: (title: string, key?: string) => (key ? `${title} · ${key}` : title),
   songsLoading: 'Loading songs…',
   songsError: "Couldn't load your songs, so the setlist can't be saved yet.",
 } as const;

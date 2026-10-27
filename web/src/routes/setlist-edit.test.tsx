@@ -7,17 +7,23 @@ import { GIGS, SETLIST_TEXT } from '../lib/microcopy.js';
 import { setlistToText } from '../lib/setlist-text.js';
 import { SetlistEdit } from './setlist-edit.js';
 
-const { useSetlistMock, useSetlistsMock, useSongsMock, saveSetlistMock } = vi.hoisted(() => ({
-  useSetlistMock: vi.fn(),
-  useSetlistsMock: vi.fn(),
-  useSongsMock: vi.fn(),
-  saveSetlistMock: vi.fn(),
-}));
+const { useSetlistMock, useSetlistsMock, useSongsMock, saveSetlistMock, saveSongMock } = vi.hoisted(
+  () => ({
+    useSetlistMock: vi.fn(),
+    useSetlistsMock: vi.fn(),
+    useSongsMock: vi.fn(),
+    saveSetlistMock: vi.fn(),
+    saveSongMock: vi.fn(),
+  }),
+);
 vi.mock('../hooks/use-setlist.js', () => ({ useSetlist: useSetlistMock }));
 vi.mock('../hooks/use-setlists.js', () => ({ useSetlists: useSetlistsMock }));
 vi.mock('../hooks/use-songs.js', () => ({ useSongs: useSongsMock }));
 vi.mock('../hooks/use-setlist-mutation.js', () => ({
   useSetlistMutation: () => ({ saveSetlist: saveSetlistMock }),
+}));
+vi.mock('../hooks/use-song-mutation.js', () => ({
+  useSongMutation: () => ({ saveSong: saveSongMock }),
 }));
 
 function BackButton() {
@@ -72,6 +78,7 @@ const songs = [
 
 beforeEach(() => {
   saveSetlistMock.mockReset().mockResolvedValue(undefined);
+  saveSongMock.mockReset().mockResolvedValue(undefined);
   useSetlistMock.mockReturnValue({ data: fullGig });
   useSetlistsMock.mockReturnValue({ data: undefined, isPending: true });
   useSongsMock.mockReturnValue({ data: songs, isPending: false });
@@ -122,17 +129,118 @@ describe('SetlistEdit', () => {
     expect(await screen.findByText('gig page')).toBeInTheDocument();
   });
 
-  it('lists unmatched lines, does not save and keeps the typed text', async () => {
+  async function typeAndSave(text: string) {
     const user = userEvent.setup();
     renderAt('/gigs/g1/setlist');
     const box = screen.getByLabelText(SETLIST_TEXT.label);
     await user.clear(box);
-    await user.type(box, 'Tune A\nMystery');
+    await user.type(box, text);
     await user.click(screen.getByRole('button', { name: SETLIST_TEXT.save }));
+    return user;
+  }
 
-    expect(screen.getByRole('alert')).toHaveTextContent(`${SETLIST_TEXT.notInLibrary} Mystery`);
+  it('asks about an unknown line on a second step, defaulting to a new song, and saves nothing', async () => {
+    await typeAndSave('Tune A\nMYSTERY SONG');
+    expect(screen.getByRole('dialog', { name: SETLIST_TEXT.checkHeading })).toBeInTheDocument();
+    expect(screen.getByText(SETLIST_TEXT.checkIntro(1, 1))).toBeInTheDocument();
+    const select = screen.getByRole('combobox', { name: '“MYSTERY SONG”' });
+    expect(select).toHaveValue('new');
+    expect(
+      screen.getByRole('option', { name: SETLIST_TEXT.addNew('Mystery Song') }),
+    ).toBeInTheDocument();
+    expect(select).toHaveFocus();
+    expect(screen.queryByRole('button', { name: SETLIST_TEXT.cancel })).not.toBeInTheDocument();
     expect(saveSetlistMock).not.toHaveBeenCalled();
-    expect(box).toHaveValue('Tune A\nMystery');
+    expect(saveSongMock).not.toHaveBeenCalled();
+  });
+
+  it('Back returns to the text exactly as it was', async () => {
+    const user = await typeAndSave('Tune A\nMystery');
+    await user.click(screen.getByRole('button', { name: SETLIST_TEXT.back }));
+    expect(screen.getByLabelText(SETLIST_TEXT.label)).toHaveValue('Tune A\nMystery');
+    expect(saveSetlistMock).not.toHaveBeenCalled();
+  });
+
+  it('saves a new song before the setlist and uses its id', async () => {
+    const user = await typeAndSave('Tune A\nMYSTERY SONG\nmystery song');
+    await user.click(screen.getByRole('button', { name: SETLIST_TEXT.save }));
+    await vi.waitFor(() => expect(saveSetlistMock).toHaveBeenCalledTimes(1));
+    expect(saveSongMock).toHaveBeenCalledTimes(1);
+    const song = saveSongMock.mock.calls[0]?.[0];
+    expect(Object.keys(song).sort()).toEqual(
+      ['bandId', 'songId', 'title', 'clientWrittenAt', 'version'].sort(),
+    );
+    expect(song.title).toBe('Mystery Song');
+    expect(saveSongMock.mock.invocationCallOrder[0]).toBeLessThan(
+      saveSetlistMock.mock.invocationCallOrder[0] ?? 0,
+    );
+    expect(saveSetlistMock.mock.calls[0]?.[0].sections).toEqual([
+      {
+        name: '',
+        songs: [
+          { songId: 's1', titleSnapshot: 'Tune A' },
+          { songId: song.songId, titleSnapshot: 'Mystery Song' },
+          { songId: song.songId, titleSnapshot: 'Mystery Song' },
+        ],
+      },
+    ]);
+    expect(await screen.findByText('gig page')).toBeInTheDocument();
+  });
+
+  it('leaves a line out without creating a song', async () => {
+    const user = await typeAndSave('Tune A\nMystery');
+    await user.selectOptions(screen.getByRole('combobox'), SETLIST_TEXT.leaveOut);
+    await user.click(screen.getByRole('button', { name: SETLIST_TEXT.save }));
+    await vi.waitFor(() => expect(saveSetlistMock).toHaveBeenCalledTimes(1));
+    expect(saveSongMock).not.toHaveBeenCalled();
+    expect(saveSetlistMock.mock.calls[0]?.[0].sections).toEqual([
+      { name: '', songs: [{ songId: 's1', titleSnapshot: 'Tune A' }] },
+    ]);
+  });
+
+  it('saves a library song picked from the whole library', async () => {
+    const user = await typeAndSave('Mystery');
+    await user.selectOptions(screen.getByRole('combobox'), 'Tune C');
+    await user.click(screen.getByRole('button', { name: SETLIST_TEXT.save }));
+    await vi.waitFor(() => expect(saveSetlistMock).toHaveBeenCalledTimes(1));
+    expect(saveSongMock).not.toHaveBeenCalled();
+    expect(saveSetlistMock.mock.calls[0]?.[0].sections).toEqual([
+      { name: '', songs: [{ songId: 's3', titleSnapshot: 'Tune C' }] },
+    ]);
+  });
+
+  it('defaults a shared title to its first song, shown with its key', async () => {
+    useSongsMock.mockReturnValue({
+      data: [...songs, { songId: 's4', title: 'Tune A', key: 'E♭' }],
+      isPending: false,
+    });
+    const user = await typeAndSave('Tune A');
+    const select = screen.getByRole('combobox', { name: '“Tune A”' });
+    expect(select).toHaveValue('song:s1');
+    // Once as a candidate, once in the whole-library group.
+    expect(screen.getAllByRole('option', { name: 'Tune A · E♭' })).toHaveLength(2);
+    await user.click(screen.getByRole('button', { name: SETLIST_TEXT.save }));
+    await vi.waitFor(() => expect(saveSetlistMock).toHaveBeenCalledTimes(1));
+    expect(saveSetlistMock.mock.calls[0]?.[0].sections[0].songs).toEqual([
+      { songId: 's1', titleSnapshot: 'Tune A' },
+    ]);
+  });
+
+  it('saves in one step when every line matches, tidied', async () => {
+    await typeAndSave('1. tune b 4:30');
+    await vi.waitFor(() => expect(saveSetlistMock).toHaveBeenCalledTimes(1));
+    expect(saveSetlistMock.mock.calls[0]?.[0].sections).toEqual([
+      { name: '', songs: [{ songId: 's2', titleSnapshot: 'Tune B' }] },
+    ]);
+  });
+
+  it('closes on Escape from the second step without saving anything', async () => {
+    const user = await typeAndSave('Mystery');
+    await user.keyboard('{Escape}');
+    await vi.waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(screen.getByText('gig page')).toBeInTheDocument();
+    expect(saveSongMock).not.toHaveBeenCalled();
+    expect(saveSetlistMock).not.toHaveBeenCalled();
   });
 
   it('disables Save while the library loads', () => {

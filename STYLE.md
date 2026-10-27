@@ -137,6 +137,9 @@ over the page it was opened from, built from `ui/sheet.tsx` and `EditSheet`.
   and 32px of space.
 - The URLs stay real: opened directly, an edit URL shows the sheet over the right page, and
   browser Back closes it.
+- Edit setlist has a second step, Check songs, shown only when lines don't match: the same
+  sheet, header ‹ Back · Check songs · Save, one native dropdown per line (`NativeSelect`, Body
+  size). Cancel is on the first step only.
 
 ## Settings sheet
 
