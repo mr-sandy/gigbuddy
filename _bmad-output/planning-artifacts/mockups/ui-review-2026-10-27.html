@@ -1,0 +1,435 @@
+<title>GigBuddy Design Review</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600&display=swap">
+<style>
+/* Layout: the agreed design on every screen, grouped by area; phone screens at 360px wrap, laptop frames at 1024px scroll sideways in their own containers. */
+:root {
+  --bg: #f2efe7;
+  --fg: #1a1209;
+  --fg2: #5a4a35;
+  --rule: #ddd5c4;
+  --serif: "Lora", Georgia, serif;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #120c06; --fg: #f1e6cf; --fg2: #c9b486; --rule: #3a2e1f; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --bg: #120c06; --fg: #f1e6cf; --fg2: #c9b486; --rule: #3a2e1f; color-scheme: dark; }
+
+body { background: var(--bg); color: var(--fg); font-family: var(--sans); font-size: 17px; line-height: 1.5; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.page { max-width: 1560px; margin: 0 auto; padding-block: 32px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1 { font-family: var(--serif); font-weight: 500; font-size: 34px; line-height: 1.15; margin: 0; text-wrap: balance; }
+.intro { color: var(--fg2); max-width: 74ch; margin: 8px 0 0; }
+.agreed { margin: 14px 0 0; padding-left: 20px; max-width: 80ch; columns: 2 340px; column-gap: 40px; }
+.agreed li { break-inside: avoid; margin-bottom: 4px; }
+.controls { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--bg); display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; padding-block: 12px; margin-top: 18px; border-bottom: 1px solid var(--rule); }
+.ctl { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ctl > span { color: var(--fg2); }
+.seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--fg2); border-radius: 6px; overflow: hidden; }
+.seg button { font: inherit; color: var(--fg); background: transparent; border: 0; padding: 8px 14px; min-height: 44px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+.seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+.seg button:focus-visible { outline: 2px solid #b3892f; outline-offset: -3px; }
+.sw { width: 14px; height: 14px; border-radius: 50%; display: inline-block; border: 1px solid rgba(255,255,255,.4); }
+.jump { display: flex; flex-wrap: wrap; gap: 0 18px; }
+.jump a { color: var(--fg); text-underline-offset: 4px; min-height: 44px; display: inline-flex; align-items: center; }
+.accnote { color: var(--fg2); font-size: 15px; margin: 6px 0 0; min-height: 1.5em; }
+
+section { border-top: 1px solid var(--rule); margin-top: 40px; padding-top: 28px; scroll-margin-top: 150px; }
+section h2 { font-family: var(--serif); font-weight: 500; font-size: 26px; margin: 0; }
+.notes { margin: 8px 0 0; max-width: 74ch; color: var(--fg2); }
+.screens { display: flex; flex-wrap: wrap; gap: 24px; margin-top: 22px; align-items: flex-start; }
+figure { margin: 0; width: 360px; max-width: 100%; }
+figure.wide { width: auto; max-width: 100%; }
+.scroller { overflow-x: auto; max-width: 100%; padding-bottom: 6px; }
+figcaption { color: var(--fg2); font-size: 15px; margin-top: 8px; max-width: 360px; }
+.foot { margin-top: 48px; color: var(--fg2); font-size: 15px; max-width: 74ch; }
+
+/* ---------- Mock tokens: shadcn role names, GigBuddy values ---------- */
+.mocks { --acc-l: #8a6420; --acc-d: #e6b855; }
+.mocks[data-a="neutral"] { --acc-l: #1a1209; --acc-d: #f1e6cf; }
+.mocks[data-a="oxblood"] { --acc-l: #8c2f39; --acc-d: #eb9aa2; }
+.mocks[data-a="ink"] { --acc-l: #2f5a8a; --acc-d: #93b9e8; }
+.mocks[data-a="green"] { --acc-l: #2e6a4e; --acc-d: #8ccbab; }
+.mocks {
+  --background: #faf9f5; --foreground: #1a1209; --muted-foreground: #5a4a35;
+  --primary: var(--acc-l); --primary-foreground: #faf9f5;
+  --muted: #f0ebe0; --border: #e2dacb; --input: #8f7f66; --frame: #cfc6b4;
+  --destructive: #a3341f; --destructive-foreground: #ffffff;
+  --scrim: rgba(26, 18, 9, .45); --shadow: 0 10px 30px rgba(60, 40, 10, .25);
+}
+.mocks[data-m="dark"] {
+  --background: #1a1209; --foreground: #f1e6cf; --muted-foreground: #c9b486;
+  --primary: var(--acc-d); --primary-foreground: #1a1209;
+  --muted: #251a0e; --border: #3a2e1f; --input: #7a6a4d; --frame: #3a2e1f;
+  --destructive: #f08a6e; --destructive-foreground: #1a1209;
+  --scrim: rgba(0, 0, 0, .62); --shadow: 0 10px 30px rgba(0, 0, 0, .7);
+}
+.mocks { --link: var(--primary); --ring: color-mix(in srgb, var(--primary) 45%, transparent); --press: color-mix(in srgb, var(--primary) 16%, var(--background)); }
+.mocks[data-a="neutral"] { --link: var(--foreground); }
+
+.scr { background: var(--background); color: var(--foreground); border: 1px solid var(--frame); border-radius: 22px; height: 680px; display: flex; flex-direction: column; overflow: hidden; font-family: var(--sans); position: relative; isolation: isolate; }
+.lap { width: 1024px; height: 640px; border-radius: 12px; }
+.scr .body { padding: 8px 16px 16px; flex: 1; overflow: hidden; }
+.lap .body { width: 100%; max-width: 40rem; margin: 0 auto; padding-top: 20px; }
+.scr a, .scr button { color: inherit; font: inherit; text-decoration: none; }
+.ic { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.ptitle { font-family: var(--serif); font-size: 28px; line-height: 1.15; font-weight: 400; margin: 8px 0 0; }
+.sub { font-size: 22px; line-height: 1.5; color: var(--muted-foreground); margin: 6px 0 0; }
+.note { font-size: 18px; color: var(--muted-foreground); margin: 6px 0 0; }
+.chart { font-size: 22px; line-height: 1.5; white-space: pre-wrap; margin: 12px 0 0; }
+.group { font-size: 18px; color: var(--muted-foreground); margin: 20px 0 0; font-weight: 400; display: flex; justify-content: space-between; align-items: center; min-height: 44px; }
+
+ul.rows { list-style: none; margin: 4px 0 0; padding: 0; }
+ul.rows li { border-bottom: 1px solid var(--border); }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 44px; padding: 10px 0; font-size: 22px; line-height: 1.2; }
+.row small { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 18px; color: var(--muted-foreground); margin-top: 2px; }
+.row .ic { color: var(--muted-foreground); }
+
+/* Button (shadcn/ui variants at GigBuddy sizes) */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 16px; font-size: 18px !important; font-weight: 500; border-radius: 8px; white-space: nowrap; border: 1px solid transparent; cursor: pointer; }
+.btn-default { background: var(--primary); color: var(--primary-foreground) !important; box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+.btn-default.off { opacity: .5; }
+.btn-outline { background: var(--background); border-color: var(--input); }
+.btn-secondary { background: var(--muted); }
+.btn-ghost { background: transparent; padding: 0 10px; }
+.btn-ghost.accent { color: var(--link) !important; }
+.btn-ghost.quiet { color: var(--muted-foreground) !important; }
+.btn-destructive { background: var(--destructive); color: var(--destructive-foreground) !important; }
+.btn-destructive-outline { border-color: var(--destructive); color: var(--destructive) !important; background: var(--background); }
+.btn-link { color: var(--muted-foreground) !important; padding: 0; text-decoration: underline !important; text-underline-offset: 4px; }
+.btn-lg { min-height: 52px; font-size: 20px !important; }
+.btn-block { width: 100%; }
+.btn-sm { font-size: 16px !important; }
+
+.badge { display: inline-flex; align-items: center; border-radius: 6px; padding: 1px 8px; font-size: 14px; font-weight: 500; line-height: 1.5; }
+.badge-default { background: var(--primary); color: var(--primary-foreground); }
+.badge-secondary { background: var(--muted); color: var(--foreground); }
+.lbl { display: block; font-size: 18px; font-weight: 500; margin: 14px 0 6px; }
+.inp { display: block; border: 1px solid var(--input); border-radius: 8px; background: var(--background); padding: 9px 12px; font-size: 22px; line-height: 1.3; min-height: 48px; }
+.inp.area { white-space: pre-wrap; line-height: 1.45; }
+.inp.focus { box-shadow: 0 0 0 3px var(--ring); border-color: var(--primary); }
+.inp .ph { color: var(--muted-foreground); }
+.help { font-size: 16px; color: var(--muted-foreground); margin: 6px 0 0; }
+.err { font-size: 18px; color: var(--destructive); margin: 8px 0 0; }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.sep { border: 0; border-top: 1px solid var(--border); margin: 24px 0 16px; }
+
+/* Chrome */
+.hdr { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; padding: 6px 8px; min-height: 56px; border-bottom: 1px solid var(--border); background: var(--background); }
+.hdr > :last-child { justify-self: end; }
+.hmid { font-family: var(--serif); font-size: 18px; color: var(--muted-foreground); }
+.tabs { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--border); background: var(--background); }
+.lap .tabs { grid-template-columns: repeat(2, 12rem); justify-content: center; }
+.tab { display: flex; align-items: center; justify-content: center; min-height: 60px; font-size: 20px; color: var(--muted-foreground); border-top: 3px solid transparent; margin-top: -1px; }
+.tab[aria-current="page"] { color: var(--foreground); border-top-color: var(--primary); font-weight: 600; }
+
+/* Split gig footer */
+.ft { display: flex; align-items: stretch; border-top: 1px solid var(--border); background: var(--background); }
+.lap .ft { justify-content: center; }
+.lap .ft .zone { flex: 0 0 18rem; }
+.zone { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 64px; }
+.zone + .mid, .mid + .zone { border-left: 1px solid var(--border); }
+.zone .ic { width: 30px; height: 30px; stroke-width: 2.25; color: var(--primary); }
+.zone.pressed { background: var(--press); }
+.zone.off .ic { color: var(--muted-foreground); opacity: .3; }
+.mid { display: flex; align-items: center; justify-content: center; padding: 0 14px; font-size: 18px; color: var(--muted-foreground); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* Sheets and dialogs */
+.under { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--background); transform: translateY(14px) scale(.93); transform-origin: top center; border-radius: 16px; overflow: hidden; }
+.scrim { position: absolute; inset: 0; background: var(--scrim); }
+.sheet { position: absolute; inset: 44px 0 0; background: var(--background); border-radius: 16px 16px 0 0; box-shadow: var(--shadow); display: flex; flex-direction: column; overflow: hidden; }
+.sheet-head { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; padding: 8px; min-height: 60px; border-bottom: 1px solid var(--border); }
+.sheet-head > :last-child { justify-self: end; }
+.sheet-title { font-family: var(--serif); font-size: 20px; font-weight: 500; }
+.sheet-body { padding: 4px 16px 16px; flex: 1; overflow: hidden; }
+.sheet-desc { font-size: 16px; color: var(--muted-foreground); margin: 10px 0 0; }
+.lap .under { transform: none; border-radius: 0; }
+.lap .sheet { inset: 0 0 0 auto; width: 460px; border-radius: 0; border-left: 1px solid var(--border); }
+.alert { position: absolute; left: 20px; right: 20px; top: 50%; transform: translateY(-50%); background: var(--background); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); padding: 22px 20px 20px; z-index: 3; }
+.lap .alert { left: 50%; right: auto; width: 460px; transform: translate(-50%, -50%); }
+.alert h4 { margin: 0; font-size: 22px; font-weight: 600; }
+.alert p { margin: 8px 0 0; font-size: 18px; color: var(--muted-foreground); }
+.alert ul { margin: 8px 0 0; padding-left: 20px; font-size: 18px; }
+.alert .foot-btns { display: flex; flex-direction: column-reverse; gap: 10px; margin-top: 20px; }
+.lap .alert .foot-btns { flex-direction: row; justify-content: flex-end; }
+
+/* Band picker and settings */
+.hdr.list { grid-template-columns: 1fr auto; }
+.bandbtn { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 10px; border-radius: 8px; font-family: var(--serif) !important; font-size: 20px !important; }
+.bandbtn .ic { color: var(--link); }
+.optrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; padding: 6px 0; font-size: 22px; border-bottom: 1px solid var(--border); }
+.optrow .ic { color: var(--link); width: 24px; height: 24px; }
+.optrow.action { justify-content: flex-start; gap: 12px; color: var(--foreground); }
+.optrow.action .ic { color: var(--muted-foreground); }
+.optlabel { font-size: 16px; color: var(--muted-foreground); margin: 16px 0 0; letter-spacing: .02em; }
+
+/* Sign in */
+.signin { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 0 24px 80px; }
+.signin .ptitle { font-size: 34px; }
+</style>
+
+<div class="page">
+  <h1>Design review</h1>
+  <p class="intro">Every screen in the agreed design, ready for a last look. Use the accent switch to pick the final tone, and check it in both Light and Dark. Song, venue and set names are placeholders.</p>
+  <ul class="agreed">
+    <li>Songs and Gigs tab bar on the two list pages; the Home page goes</li>
+    <li>Edit and Add as an accent word with an icon in the header</li>
+    <li>Edit setlist next to the first set</li>
+    <li>Editing and adding in sheets, with Cancel and Save in the sheet's header</li>
+    <li>Delete in red, confirmed in a dialog</li>
+    <li>shadcn/ui buttons, fields and badges, at GigBuddy sizes</li>
+    <li>Gig footer split in half, inert at either end of the gig</li>
+    <li>On the laptop, sheets become a panel from the right</li>
+    <li>Accent: brass (chosen)</li>
+    <li>Band name on the left of the list headers opens band and settings, including Export</li>
+  </ul>
+
+  <div class="controls">
+    <div class="ctl"><span id="m-label">Mode</span>
+      <div class="seg" role="group" aria-labelledby="m-label">
+        <button type="button" id="m-light" data-m="light" aria-pressed="true">Light (prep)</button>
+        <button type="button" id="m-dark" data-m="dark" aria-pressed="false">Dark (gig)</button>
+      </div>
+    </div>
+    <div class="ctl"><span id="a-label">Accent</span>
+      <div class="seg" role="group" aria-labelledby="a-label">
+        <button type="button" id="a-brass" data-a="brass" aria-pressed="true"><span class="sw" style="background:#b3892f"></span>Brass</button>
+        <button type="button" id="a-oxblood" data-a="oxblood" aria-pressed="false"><span class="sw" style="background:#8c2f39"></span>Oxblood</button>
+        <button type="button" id="a-ink" data-a="ink" aria-pressed="false"><span class="sw" style="background:#2f5a8a"></span>Ink blue</button>
+        <button type="button" id="a-green" data-a="green" aria-pressed="false"><span class="sw" style="background:#2e6a4e"></span>Green</button>
+        <button type="button" id="a-neutral" data-a="neutral" aria-pressed="false"><span class="sw" style="background:#1a1209"></span>Ink-black</button>
+      </div>
+    </div>
+    <nav class="jump" aria-label="Areas">
+      <a href="#band">Band</a><a href="#signin">Sign in</a><a href="#songs">Songs</a><a href="#gigs">Gigs</a><a href="#play">Playing a gig</a><a href="#laptop">Laptop</a>
+    </nav>
+  </div>
+  <p class="accnote" id="accnote" aria-live="polite"></p>
+
+  <div class="mocks" id="mocks" data-m="light" data-a="brass">
+    <section id="band">
+      <h2>Band and settings</h2>
+      <p class="notes">On the two list pages, the band's name replaces the GigBuddy wordmark on the left of the header. Tapping it opens a sheet with the band list and Export, which moves off the foot of the songs page. Song, gig and playing screens have a back link there instead, so you can't switch band mid-gig by accident. Choosing a band switches straight away, with no Save, and Done closes the sheet.</p>
+      <div class="screens" data-set="band"></div>
+    </section>
+    <section id="signin">
+      <h2>Sign in</h2>
+      <p class="notes">Seen rarely, but it's the first screen on a new phone.</p>
+      <div class="screens" data-set="signin"></div>
+    </section>
+    <section id="songs">
+      <h2>Songs</h2>
+      <p class="notes">The library, a song, and adding, editing and deleting. If you try to delete a song that's in a gig's setlist, a dialog lists the gigs instead of offering Delete, as the app does now.</p>
+      <div class="screens" data-set="songs"></div>
+    </section>
+    <section id="gigs">
+      <h2>Gigs</h2>
+      <p class="notes">Gigs, a gig's setlist, and the sheets for adding a gig, editing it and editing its setlist, including the message when a line doesn't match a song in the library.</p>
+      <div class="screens" data-set="gigs"></div>
+    </section>
+    <section id="play">
+      <h2>Playing a gig</h2>
+      <p class="notes">A full screen, with nothing over the chart. Shown in the middle of a set with Next being pressed, at the start and at the end. The "Screen may sleep" line appears only when the phone won't stay awake.</p>
+      <div class="screens" data-set="play"></div>
+    </section>
+    <section id="laptop">
+      <h2>Laptop</h2>
+      <p class="notes">The same app at 1024px wide. Content stays in a 40rem column, sheets slide in from the right, and the footer regions stay a sensible width instead of stretching. These frames scroll sideways on a phone.</p>
+      <div class="screens" data-set="laptop" style="flex-direction:column"></div>
+    </section>
+  </div>
+
+  <p class="foot">The accents all pass WCAG AA as text in both modes. Light mode uses a darker shade of each, and the brass is darker than today's. Oxblood sits close to the Delete red, so if you choose it, the Delete red should move towards orange.</p>
+</div>
+
+<script>
+(function () {
+  var IC = {
+    plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
+    pencil: '<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>',
+    left: '<path d="m15 18-6-6 6-6"/>',
+    right: '<path d="m9 18 6-6-6-6"/>',
+    trash: '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
+    down: '<path d="m6 9 6 6 6-6"/>',
+    check: '<path d="M20 6 9 17l-5-5"/>',
+    download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>'
+  };
+  function ic(n) { return '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">' + IC[n] + '</svg>'; }
+
+  var CHART = 'Intro  | Dm7 | G7 | Cmaj7 | % |\nA      | Dm7 | G7 | Em7 A7 | Dm7 G7 |\n       | Cmaj7 | Fmaj7 | Bm7b5 E7 | Am7 |\nB      | Fmaj7 | E7 | Am7 | D7 |\n       | Dm7 | G7 | Cmaj7 | % |\nSolos on A\nOutro  | Dm7 G7 | Cmaj7 |';
+  var CHART_SHORT = '| Dm7 | G7 | Cmaj7 | % |\n| Dm7 | G7 | Em7 A7 | Dm7 G7 |';
+  var SETLIST = '## Set 1\nSong one\nSong two\nSong three\n## Set 2\nSong four\nSong five';
+  var NAMES = ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
+
+  function fig(inner, caption, wide) {
+    if (wide) return '<figure class="wide"><div class="scroller"><div class="scr lap">' + inner + '</div></div><figcaption style="max-width:none">' + caption + '</figcaption></figure>';
+    return '<figure><div class="scr">' + inner + '</div><figcaption>' + caption + '</figcaption></figure>';
+  }
+  function hdr(left, mid, right) { return '<header class="hdr"><div>' + (left || '') + '</div><div class="hmid">' + (mid || '') + '</div><div>' + (right || '') + '</div></header>'; }
+  function body(inner) { return '<div class="body">' + inner + '</div>'; }
+  function listHdr(right) {
+    return '<header class="hdr list"><div><a href="#" class="btn btn-ghost bandbtn" aria-haspopup="dialog">The Jack Ruby 5' + ic('down') + '</a></div><div>' + right + '</div></header>';
+  }
+  function back(text) { return '<a href="#" class="btn btn-ghost quiet">' + ic('left') + text + '</a>'; }
+  var editBtn = '<a href="#" class="btn btn-ghost accent">' + ic('pencil') + 'Edit</a>';
+  function addBtn(label) { return '<a href="#" class="btn btn-ghost accent">' + ic('plus') + 'Add ' + label + '</a>'; }
+  function row(main, sub) { return '<li><a href="#" class="row"><span>' + main + (sub ? '<small>' + sub + '</small>' : '') + '</span>' + ic('right') + '</a></li>'; }
+  function rows(list) { return '<ul class="rows">' + list.map(function (r) { return row(r[0], r[1]); }).join('') + '</ul>'; }
+  function tabs(active) {
+    return '<nav class="tabs"><a href="#" class="tab"' + (active === 'songs' ? ' aria-current="page"' : '') + '>Songs</a><a href="#" class="tab"' + (active === 'gigs' ? ' aria-current="page"' : '') + '>Gigs</a></nav>';
+  }
+  function footer(i, pressed) {
+    var first = i === 0, last = i === 11;
+    return '<nav class="ft">' +
+      '<a href="#" class="zone' + (first ? ' off' : '') + '" aria-label="Previous song"' + (first ? ' aria-disabled="true"' : '') + '>' + ic('left') + '</a>' +
+      '<span class="mid">' + (i + 1) + ' of 12</span>' +
+      '<a href="#" class="zone' + (last ? ' off' : '') + (pressed ? ' pressed' : '') + '" aria-label="Next song"' + (last ? ' aria-disabled="true"' : '') + '>' + ic('right') + '</a></nav>';
+  }
+  function sheetHead(title, save, saveOff) {
+    return '<div class="sheet-head"><div><a href="#" class="btn btn-ghost">Cancel</a></div><div class="sheet-title">' + title + '</div><div><a href="#" class="btn btn-default' + (saveOff ? ' off' : '') + '">' + save + '</a></div></div>';
+  }
+  function overSheet(base, sheet) { return '<div class="under">' + base + '</div><div class="scrim"></div><div class="sheet">' + sheet + '</div>'; }
+  function alertBox(title, text, yes, extra) {
+    var btns = yes
+      ? '<a href="#" class="btn btn-outline btn-lg">Keep</a><a href="#" class="btn btn-destructive btn-lg">' + yes + '</a>'
+      : '<a href="#" class="btn btn-outline btn-lg">OK</a>';
+    return '<div class="scrim" style="z-index:2"></div><div class="alert" role="alertdialog"><h4>' + title + '</h4><p>' + text + '</p>' + (extra || '') + '<div class="foot-btns">' + btns + '</div></div>';
+  }
+
+  /* Pages */
+  var P = {
+    songs: function () {
+      return listHdr(addBtn('song')) +
+        body('<h3 class="ptitle">Songs</h3>' + rows([['Song one'], ['Song two'], ['Song three'], ['Song four'], ['Song five'], ['Song six']])) + tabs('songs');
+    },
+    song: function () {
+      return hdr(back('Songs'), '', editBtn) + body('<h3 class="ptitle">Song three</h3><p class="sub">Dm · Patch 12</p><div class="chart">' + CHART + '</div>');
+    },
+    gigs: function () {
+      return listHdr(addBtn('gig')) +
+        body('<h3 class="ptitle">Gigs</h3>' +
+          rows([['Venue A', 'Sat 14 November'], ['Venue B', 'Fri 4 December']]) +
+          '<h4 class="group">Past</h4>' + rows([['Venue C', 'Sat 17 October']])) + tabs('gigs');
+    },
+    gig: function () {
+      return hdr(back('Gigs'), '', editBtn) +
+        body('<h3 class="ptitle">Venue A</h3><p class="sub">Sat 14 November</p>' +
+          '<h4 class="group">Set 1<a href="#" class="btn btn-secondary btn-sm">' + ic('pencil') + 'Edit setlist</a></h4>' +
+          rows([['Song one'], ['Song two'], ['Song three']]) + '<h4 class="group">Set 2</h4>' + rows([['Song four'], ['Song five']]));
+    },
+    play: function (i, pressed, sleep) {
+      return hdr(back('Venue A'), '', '') +
+        body((sleep ? '<p class="note" style="margin-top:0">Screen may sleep</p>' : '') +
+          '<h3 class="ptitle">Song ' + NAMES[i] + '</h3><p class="sub">Dm · Patch 12</p><div class="chart">' + CHART + '</div>') + footer(i, pressed);
+    }
+  };
+
+  /* Sheet bodies */
+  function songForm(empty) {
+    var v = function (s, ph) { return empty ? '<span class="ph">' + (ph || '&nbsp;') + '</span>' : s; };
+    return '<div class="sheet-body"><label class="lbl">Title</label><div class="inp' + (empty ? ' focus' : '') + '">' + v('Song three') + '</div>' +
+      '<div class="pair"><div><label class="lbl">Key</label><div class="inp">' + v('Dm') + '</div></div><div><label class="lbl">Patch</label><div class="inp">' + v('12') + '</div></div></div>' +
+      '<label class="lbl">Chord chart</label><div class="inp area" style="min-height:110px">' + (empty ? '' : CHART_SHORT) + '</div>' +
+      (empty ? '' : '<hr class="sep"><a href="#" class="btn btn-destructive-outline">' + ic('trash') + 'Delete song</a>') + '</div>';
+  }
+  function gigForm(empty) {
+    var v = function (s) { return empty ? '<span class="ph">&nbsp;</span>' : s; };
+    return '<div class="sheet-body"><label class="lbl">Venue</label><div class="inp' + (empty ? ' focus' : '') + '">' + v('Venue A') + '</div>' +
+      '<div class="pair"><div><label class="lbl">Date</label><div class="inp">' + v('14/11/2026') + '</div></div><div><label class="lbl">Time</label><div class="inp">' + v('20:00') + '</div></div></div>' +
+      (empty ? '' : '<hr class="sep"><a href="#" class="btn btn-destructive-outline">' + ic('trash') + 'Delete gig</a>') + '</div>';
+  }
+  function setlistForm(error) {
+    var text = error ? SETLIST.replace('Song five', 'Song fiev') : SETLIST;
+    return '<div class="sheet-body"><p class="sheet-desc">Venue A · Sat 14 November</p><label class="lbl">Setlist</label><div class="inp area' + (error ? ' focus' : '') + '" style="min-height:250px">' + text + '</div>' +
+      (error ? '<p class="err">Not in the library: Song fiev</p>' : '<p class="help">One song per line. Start a line with ## to name a section.</p>') + '</div>';
+  }
+
+  function settingsSheet(bands) {
+    var list = bands
+      ? '<p class="optlabel">Band</p>' +
+        '<a href="#" class="optrow" aria-current="true"><span>The Jack Ruby 5</span>' + ic('check') + '</a>' +
+        '<a href="#" class="optrow"><span>Middle Aged Dad Band</span></a>' +
+        '<a href="#" class="optrow"><span>Fram</span></a>'
+      : '<p class="optlabel">Band</p><div class="optrow"><span>The Jack Ruby 5</span>' + ic('check') + '</div>';
+    return '<div class="sheet-head"><div></div><div class="sheet-title">GigBuddy</div><div><a href="#" class="btn btn-ghost accent">Done</a></div></div>' +
+      '<div class="sheet-body">' + list +
+      '<p class="optlabel" style="margin-top:28px">Your data</p>' +
+      '<a href="#" class="optrow action">' + ic('download') + '<span>Export all data</span></a>' +
+      '<p class="help">Downloads every band\'s songs and gigs as one file.</p></div>';
+  }
+
+  var SETS = {
+    band: function () {
+      return fig(P.songs(), 'The band name sits on the left of the header, with a chevron to show it opens something') +
+        fig(overSheet(P.songs(), settingsSheet(false)), 'Today, with one band: the sheet holds Export') +
+        fig(overSheet(P.songs(), settingsSheet(true)), 'Later, with all three bands: tap one to switch');
+    },
+    signin: function () {
+      return fig('<div class="signin"><h3 class="ptitle">GigBuddy</h3><label class="lbl" style="margin-top:28px">Password</label><div class="inp focus">••••••••</div>' +
+        '<div style="margin-top:16px"><a href="#" class="btn btn-default btn-lg btn-block">Sign in</a></div></div>', 'Sign in') +
+        fig('<div class="signin"><h3 class="ptitle">GigBuddy</h3><label class="lbl" style="margin-top:28px">Password</label><div class="inp">••••</div>' +
+        '<div style="margin-top:16px"><a href="#" class="btn btn-default btn-lg btn-block">Sign in</a></div><p class="err" role="alert">Wrong password.</p></div>', 'Sign in, wrong password');
+    },
+    songs: function () {
+      return fig(P.songs(), 'Songs list') +
+        fig(P.song(), 'Song') +
+        fig(overSheet(P.songs(), sheetHead('Add song', 'Add', true) + songForm(true)), 'Add song: Add stays faded until there\'s a title') +
+        fig(overSheet(P.song(), sheetHead('Edit song', 'Save') + songForm(false)), 'Edit song') +
+        fig(overSheet(P.song(), sheetHead('Edit song', 'Save') + songForm(false)) +
+          alertBox('Delete Song three?', "This can't be undone.", 'Yes, delete'), 'Delete song') +
+        fig(overSheet(P.song(), sheetHead('Edit song', 'Save') + songForm(false)) +
+          alertBox('Song three is in a setlist', 'Take it out of these gigs first:', null, '<ul><li>Venue A</li><li>Venue B</li></ul>'), 'Delete song when it\'s in a setlist');
+    },
+    gigs: function () {
+      return fig(P.gigs(), 'Gigs list') +
+        fig(P.gig(), 'Gig') +
+        fig(overSheet(P.gigs(), sheetHead('Add gig', 'Add', true) + gigForm(true)), 'Add gig') +
+        fig(overSheet(P.gig(), sheetHead('Edit gig', 'Save') + gigForm(false)), 'Edit gig') +
+        fig(overSheet(P.gig(), sheetHead('Edit gig', 'Save') + gigForm(false)) +
+          alertBox('Delete the gig at Venue A?', "This can't be undone. The songs stay in your library.", 'Yes, delete'), 'Delete gig') +
+        fig(overSheet(P.gig(), sheetHead('Edit setlist', 'Save') + setlistForm(false)), 'Edit setlist') +
+        fig(overSheet(P.gig(), sheetHead('Edit setlist', 'Save') + setlistForm(true)), 'Edit setlist, a line that isn\'t in the library');
+    },
+    play: function () {
+      return fig(P.play(2, true), 'Middle of a set, Next being pressed') +
+        fig(P.play(0, false), 'First song: Previous is inert') +
+        fig(P.play(11, false), 'Last song: Next is inert') +
+        fig(P.play(6, false, true), 'When the phone can\'t be kept awake');
+    },
+    laptop: function () {
+      return fig(P.songs(), 'Songs list', true) +
+        fig('<div class="under">' + P.song() + '</div><div class="scrim"></div><div class="sheet">' + sheetHead('Edit song', 'Save') + songForm(false) + '</div>', 'Edit song, as a panel from the right', true) +
+        fig(P.play(2, false), 'Playing a gig', true);
+    }
+  };
+
+  document.querySelectorAll('.screens[data-set]').forEach(function (el) { el.innerHTML = SETS[el.getAttribute('data-set')](); });
+  document.querySelectorAll('.mocks a').forEach(function (a) { a.addEventListener('click', function (e) { e.preventDefault(); }); });
+
+  var NOTES = {
+    brass: 'Brass: warm and in keeping with the current look. Light mode uses a deeper brass than today.',
+    oxblood: 'Oxblood: rich, but close to the Delete red. The red would need to shift towards orange.',
+    ink: 'Ink blue: cool and calm, and clearly different from the red. Most like a standard app.',
+    green: 'Green: like a card table\'s baize, and distinct from the red.',
+    neutral: 'Ink-black: shadcn\'s default. The main buttons are plain dark ink, and brass disappears.'
+  };
+  var mocks = document.getElementById('mocks');
+  var accnote = document.getElementById('accnote');
+  function wire(attr, key, after) {
+    var buttons = document.querySelectorAll('.seg button[data-' + attr + ']');
+    function set(v) {
+      mocks.setAttribute('data-' + attr, v);
+      buttons.forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-' + attr) === v)); });
+      if (after) after(v);
+      try { localStorage.setItem(key, v); } catch (e) {}
+    }
+    buttons.forEach(function (b) { b.addEventListener('click', function () { set(b.getAttribute('data-' + attr)); }); });
+    var s = null;
+    try { s = localStorage.getItem(key); } catch (e) {}
+    set(s && document.querySelector('.seg button[data-' + attr + '="' + s + '"]') ? s : mocks.getAttribute('data-' + attr));
+  }
+  wire('m', 'gb-mock-theme');
+  wire('a', 'gb-final-accent', function (v) { accnote.textContent = NOTES[v]; });
+})();
+</script>

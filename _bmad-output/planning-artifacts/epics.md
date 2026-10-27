@@ -2183,6 +2183,26 @@ saves tokens.)
 - Queue: 7.15 wake lock, then per-gig notes purge, then export link, then a wide UI review
   (chord-chart polish folds into that).
 
+**Decisions, 2026-10-27 (UI review, after 7.17):**
+- Reference mock-up: `mockups/ui-review-2026-10-27.html` (open in a browser; brass accent).
+  It shows the look. The acceptance criteria below are the spec; where they differ, they win.
+- Adopt shadcn/ui selectively: only the components a story needs, but all-in on its
+  conventions (role-named colour tokens, `Button` for every button, Lucide icons, `cn`).
+  GigBuddy's sizes and type stay: 44px targets, 18–22px text, Lora page titles.
+- Accent: brass, `#8a6420` in light mode, `#e6b855` in dark.
+- Songs | Gigs tab bar on the two list pages; the Home page goes.
+- Edit and Add are accent words with an icon in the header. Edit setlist sits next to the
+  first set. Delete is red and always confirmed.
+- Editing and adding happen in sheets with Cancel and Save in the sheet's header (a panel
+  from the right on wide windows). No swipe-to-close.
+- Gig footer: two tap regions with chevrons only, split in half; inert at either end.
+- Add and Save stay disabled until the required fields are filled.
+- The band name, on the left of the list headers, opens a settings sheet holding Export
+  (and, later, the band list).
+- Rejected: floating buttons, badges on the gigs list, songs as cards over the gig, autosave.
+- Chord-chart polish is not part of this review; it waits for a later story.
+- Queue: 7.18 → 7.22, one at a time. Switching bands is a later, larger piece of work.
+
 ### Story 7.1: Front-end reset to a responsive landing page
 
 As Sandy, I want GigBuddy to open on one simple page that works on my phone and my laptop,
@@ -2654,3 +2674,151 @@ my songs and gigs whenever I like.
 6. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass. Tests cover: the link and
    its href on a loaded list, and that it shows when the list is empty or errored.
 7. Deployed to gig.cormie.com via the normal pipeline.
+
+### Story 7.18: Adopt shadcn/ui foundations
+
+As Sandy, I want GigBuddy's buttons and fields to share one clear style with a brass accent,
+so that the app looks finished and I can tell at a glance what each control does.
+
+**Acceptance criteria**
+1. `architecture.md` records the adoption of shadcn/ui: components copied into
+   `web/src/components/ui/`, the Radix packages they need, `lucide-react` for icons, and a
+   `cn` helper in `web/src/lib/`. It also records how the generated code's `@/` imports fit
+   the project's import style (alias or rewritten imports; decide in the spec, not ad hoc).
+2. `web/src/styles/tokens.css` uses shadcn's role names for colour, with these values. The
+   old colour token names are removed, so there is one set. Type, spacing and tap tokens stay.
+
+   | Token | Light | Dark |
+   |---|---|---|
+   | `--background` | `#faf9f5` | `#1a1209` |
+   | `--foreground` | `#1a1209` | `#f1e6cf` |
+   | `--muted` | `#f0ebe0` | `#251a0e` |
+   | `--muted-foreground` | `#5a4a35` | `#c9b486` |
+   | `--primary` (brass) | `#8a6420` | `#e6b855` |
+   | `--primary-foreground` | `#faf9f5` | `#1a1209` |
+   | `--border` | `#e2dacb` | `#3a2e1f` |
+   | `--input` | `#8f7f66` | `#7a6a4d` |
+   | `--destructive` | `#a3341f` | `#f08a6e` |
+   | `--destructive-foreground` | `#ffffff` | `#1a1209` |
+   | `--ring` | brass at about 45% opacity | same |
+
+3. Only these components are added: Button, Input, Textarea, Label. Each is sized for
+   GigBuddy: at least 44px high, 18px button text, 22px input text, input borders in
+   `--input` (at least 3:1 against the background).
+4. Every button and button-like link in the routes goes through `Button`:
+   - Edit, Add song, Add gig: ghost, brass text, Lucide pencil or plus icon.
+   - Back links: ghost, muted text, Lucide chevron-left.
+   - Save and Add (in forms): default (brass).
+   - Cancel: ghost.
+   - Delete song, Delete gig: destructive outline. In the confirm step, "Yes, delete" is
+     destructive and "Keep" is outline.
+   - Export all data: link variant, muted.
+   - Previous and Next: outline, for now (7.19 replaces them).
+   List rows stay rows, and gain a muted Lucide chevron-right.
+5. Add and Save on the song and gig forms are disabled until the required fields are
+   filled (song: title; gig: venue and date). This replaces the messages shown on submit
+   ("A song needs a title." and "A gig needs a venue and a date.").
+6. Page titles, layout, routes and navigation are unchanged. No change to `api/`, `shared/`
+   or `infra/`.
+7. `STYLE.md` is rewritten around the new tokens: the colour table, which Button variant does
+   which job, form rules, and Lucide as the only icon set.
+8. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass. Tests cover the
+   disabled-until-valid behaviour on add song and add gig, and that Delete uses the
+   destructive style. Existing tests are updated, not deleted.
+9. Deployed to gig.cormie.com via the normal pipeline.
+
+### Story 7.19: Split gig footer
+
+As Sandy, I want the gig footer to be two big tap regions, so that I can move between songs
+from the keyboard without aiming at small buttons.
+
+**Acceptance criteria**
+1. The gig song page's bottom bar becomes two equal tap regions with "3 of 12" in a narrow
+   middle column that does nothing when tapped. The regions show only a brass Lucide
+   chevron (left and right, about 30px). There is no Previous or Next text. The bar is at
+   least 64px tall, with thin `--border` dividers between the regions.
+2. Each region has an accessible name, "Previous song" or "Next song".
+3. At the first song the left region is inert, and at the last song the right region is
+   inert: a faded chevron, `aria-disabled`, and no action. Neither ever becomes another action.
+4. A pressed region shows a brief brass tint.
+5. On wide windows the regions keep a fixed width (about 18rem each), centred, instead of
+   stretching across the screen.
+6. Everything else in 7.14 is unchanged: positions, history replacement, the missing-song
+   case, and no bar on `/songs/:songId`.
+7. `STYLE.md`'s "Bottom bar" entry is updated. No change to `api/`, `shared/` or `infra/`.
+8. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass. Tests cover the
+   regions' names, the inert ends and stepping in both directions.
+9. Deployed to gig.cormie.com via the normal pipeline.
+
+### Story 7.20: Header and tab bar
+
+As Sandy, I want a consistent header and a Songs | Gigs tab bar, so that I can always see
+where I am and move between the two lists in one tap.
+
+**Acceptance criteria**
+1. `/songs` and `/gigs` show a header with the band name ("The Jack Ruby 5", from
+   `ACTIVE_BAND_NAME`) on the left in Lora, and Add song or Add gig on the right. The band
+   name isn't tappable yet (7.22).
+2. Those two pages show a tab bar fixed to the bottom: Songs | Gigs, at least 60px tall. The
+   current tab has primary text, semibold, with a 3px brass line along its top. Content is
+   padded so nothing hides under the bar. No other page shows the tab bar.
+3. Song, gig, form and gig song pages show a header with the back link on the left and, where
+   it exists today, Edit on the right.
+4. On the gig page, Edit setlist moves next to the first set's heading, as a small secondary
+   button.
+5. The Home page is removed. `/` redirects to one of the lists (Sandy to choose `/songs` or
+   `/gigs` when the spec is written), and so does the catch-all route. The band name and
+   counts from Home don't move elsewhere.
+6. No change to `api/`, `shared/` or `infra/`. `STYLE.md` gains "Header" and "Tab bar" entries.
+7. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass. Tests cover the tab bar
+   on both list pages (and its absence elsewhere), the active tab, the `/` redirect and Edit
+   setlist's new place.
+8. Deployed to gig.cormie.com via the normal pipeline.
+
+### Story 7.21: Edit and add in sheets
+
+As Sandy, I want editing and adding to open over the page I'm on, so that I can see I'm in
+the middle of a task and get straight back to where I was.
+
+**Acceptance criteria**
+1. Adds shadcn/ui Sheet and AlertDialog (with their Radix packages). Nothing else.
+2. Add song, Edit song, Add gig, Edit gig and Edit setlist open as a sheet over the page they
+   were opened from. The sheet's header has Cancel (ghost) on the left, the title in Lora in
+   the middle, and Save or Add (default) on the right.
+3. On narrow windows the sheet comes up from the bottom, leaving the page visible behind it,
+   dimmed. On wide windows it is a panel about 460px wide from the right. The choice is made
+   by window width, never by device.
+4. There is no swipe-to-close. Cancel and Escape close the sheet and discard changes. Focus
+   moves into the sheet when it opens, and returns to the control that opened it when it closes.
+5. The existing edit URLs (`/songs/new`, `/songs/:songId/edit`, `/gigs/new`,
+   `/gigs/:setlistId/edit`, `/gigs/:setlistId/setlist`) keep working: opened directly, they
+   show the sheet over the right page. Browser Back closes the sheet.
+6. Delete song and Delete gig confirm in an AlertDialog with a title, a line of explanation,
+   "Keep" (outline) and "Yes, delete" (destructive). When a song is in a gig's setlist, the
+   dialog lists those gigs and offers only "OK", as the app does now.
+7. No change to `api/`, `shared/` or `infra/`. `STYLE.md` gains "Sheet" and "Confirm dialog" entries.
+8. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass. Tests cover opening and
+   cancelling each sheet, saving from the sheet header, deep links to edit URLs, focus
+   return, and both delete dialogs.
+9. Deployed to gig.cormie.com via the normal pipeline.
+
+### Story 7.22: Settings sheet
+
+As Sandy, I want a settings sheet behind the band name, so that Export has a proper home and
+there's a place for picking a band later.
+
+**Acceptance criteria**
+1. On `/songs` and `/gigs`, the band name in the header becomes a button with a Lucide
+   chevron-down. It opens a sheet (as in 7.21) titled "GigBuddy" with Done on the right.
+2. The sheet has a "Band" section showing the current band with a tick. V1 has one band, so
+   there's nothing to switch to yet.
+3. The sheet has a "Your data" section with "Export all data" (a plain
+   `<a href="/api/v1/export">`, as in 7.17) and a help line: "Downloads every band's songs
+   and gigs as one file."
+4. The Export link is removed from the foot of the songs page.
+5. The sheet can't be reached from song, gig, gig song or form pages.
+6. No change to `api/`, `shared/` or `infra/`. `STYLE.md` notes the settings sheet.
+7. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass. Tests cover opening and
+   closing the sheet from both list pages, the export link's href, and that the songs page no
+   longer has the link.
+8. Deployed to gig.cormie.com via the normal pipeline.
