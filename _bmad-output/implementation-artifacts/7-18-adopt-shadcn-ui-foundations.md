@@ -4,7 +4,7 @@ baseline_commit: 6c73f8e
 
 # Story 7.18: Adopt shadcn/ui foundations
 
-Status: review
+Status: done
 
 <!-- Source: epics.md "Epic 7 / Story 7.18" and the 2026-10-27 UI review decisions under Epic 7.
      Reference look: _bmad-output/planning-artifacts/mockups/ui-review-2026-10-27.html (brass accent).
@@ -458,3 +458,4 @@ Claude Sonnet 5.5 (claude-sonnet-5-5)
 - 2026-10-27: Story created; status → ready-for-dev.
 - 2026-10-27: Implemented shadcn/ui foundations; status → review.
 - 2026-10-27: Code review clean (two minor notes for the live check: back links sit 10px in from the title edge; row titles lack `min-w-0`).
+- 2026-10-27: Committed 9d5c139; CI and deploy run 40544982312 green. Sandy's live check: looks good. Status → done.
