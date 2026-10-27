@@ -4,7 +4,7 @@ baseline_commit: 73a500a
 
 # Story 7.19: Split gig footer
 
-Status: review
+Status: done
 
 <!-- Source: epics.md "Epic 7 / Story 7.19" and the 2026-10-27 UI review decisions under Epic 7.
      Reference look: _bmad-output/planning-artifacts/mockups/ui-review-2026-10-27.html
@@ -243,3 +243,4 @@ Claude Sonnet 5.5
 - 2026-10-27: Implemented; status → review.
 - 2026-10-27: Code review clean; committed d709d29; CI and deploy run 40550103680 green.
 - 2026-10-27: Sandy's live check found two faults. (1) The bar was 44px mid-set and 64px at either end: `cn` kept both Button's `min-h-tap` and the region's `min-h-play-bar`, and 44px won. Fixed by teaching tailwind-merge the custom spacing tokens (`web/src/lib/utils.ts`). (2) On the phone there was an empty strip below the bar. The home-indicator padding moved from the `<nav>` into each column, so the regions and dividers run to the screen edge.
+- 2026-10-27: Fix committed 2c8f323; deploy run 40552806529 green. Sandy's live check: looks great. Status → done.
