@@ -4,7 +4,7 @@ baseline_commit: ec72df9
 
 # Story 7.20: Header and tab bar
 
-Status: review
+Status: done
 
 <!-- Source: epics.md "Epic 7 / Story 7.20" and the 2026-10-27 UI review decisions under Epic 7.
      Reference look: _bmad-output/planning-artifacts/mockups/ui-review-2026-10-27.html
@@ -179,7 +179,7 @@ so that I can always see where I am and move between the two lists in one tap.
   - [x] `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass. If
         `web/scripts/contrast-report.ts` lists text pairs, add foreground on `--muted` (the
         secondary button) and confirm it passes.
-  - [ ] Commit `Implement story 7.20: Header and tab bar`, deploy via the normal pipeline,
+  - [x] Commit `Implement story 7.20: Header and tab bar`, deploy via the normal pipeline,
         then Sandy's quick look on phone and laptop. (After code-review, per the story workflow.)
 
 ### Review Findings
@@ -331,3 +331,4 @@ Claude Sonnet 5.5
 - 2026-10-27: Story created (ready-for-dev).
 - 2026-10-27: Implemented header, tab bar, Home removal, Edit setlist move (review).
 - 2026-10-27: Code review: 4 patches applied (add-form back link steps back, login lands on /songs, gig.tsx comment moved, tab-bar test coverage); 2 deferred.
+- 2026-10-27: Committed b3b6b91; CI and deploy run 40556987464 green. Sandy's live check: all looks good. Status → done.
