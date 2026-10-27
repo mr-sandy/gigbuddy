@@ -211,7 +211,9 @@ describe('SongEdit', () => {
     await user.click(save);
     expect(saveSongMock).toHaveBeenCalledTimes(1);
     finish();
-    expect(await screen.findByText('song page')).toBeInTheDocument();
+    // "song page" is the parent route, always rendered; wait for the sheet itself to go.
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(screen.getByText('song page')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'back' }));
     expect(screen.getByText('list page')).toBeInTheDocument();
   });
