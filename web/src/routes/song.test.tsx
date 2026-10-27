@@ -210,22 +210,37 @@ describe('Song', () => {
 
     it('in the middle shows both links and the position', () => {
       setup('b');
-      expect(screen.getByRole('link', { name: GIG_PLAY.previous })).toHaveAttribute(
+      expect(screen.getByRole('link', { name: GIG_PLAY.previousSong })).toHaveAttribute(
         'href',
         '/gigs/g1/songs/a?at=1',
       );
-      expect(screen.getByRole('link', { name: GIG_PLAY.next })).toHaveAttribute(
+      expect(screen.getByRole('link', { name: GIG_PLAY.nextSong })).toHaveAttribute(
         'href',
         '/gigs/g1/songs/a?at=3',
       );
       expect(screen.getByText('2 of 3')).toBeInTheDocument();
+      expect(screen.queryByText('Previous')).not.toBeInTheDocument();
+      expect(screen.queryByText('Next')).not.toBeInTheDocument();
+    });
+
+    it('steps both ways and ignores the inert end', () => {
+      setup('b', '?at=2');
+      fireEvent.click(screen.getByLabelText(GIG_PLAY.nextSong));
+      expect(screen.getByText('3 of 3')).toBeInTheDocument();
+      fireEvent.click(screen.getByLabelText(GIG_PLAY.previousSong));
+      expect(screen.getByText('2 of 3')).toBeInTheDocument();
+      fireEvent.click(screen.getByLabelText(GIG_PLAY.previousSong));
+      expect(screen.getByText('1 of 3')).toBeInTheDocument();
+      fireEvent.click(screen.getByLabelText(GIG_PLAY.previousSong));
+      expect(screen.getByText('1 of 3')).toBeInTheDocument();
     });
 
     it('at the first song Previous is inert', () => {
       setup('a', '?at=1');
-      expect(screen.queryByRole('link', { name: GIG_PLAY.previous })).not.toBeInTheDocument();
-      expect(screen.getByText(GIG_PLAY.previous)).toHaveAttribute('aria-disabled', 'true');
-      expect(screen.getByRole('link', { name: GIG_PLAY.next })).toHaveAttribute(
+      const prev = screen.getByLabelText(GIG_PLAY.previousSong);
+      expect(prev).toHaveAttribute('aria-disabled', 'true');
+      expect(prev).not.toHaveAttribute('href');
+      expect(screen.getByRole('link', { name: GIG_PLAY.nextSong })).toHaveAttribute(
         'href',
         '/gigs/g1/songs/b?at=2',
       );
@@ -234,9 +249,10 @@ describe('Song', () => {
     it('at the last song Next is inert', () => {
       setup('a', '?at=3');
       expect(screen.getByText('3 of 3')).toBeInTheDocument();
-      expect(screen.queryByRole('link', { name: GIG_PLAY.next })).not.toBeInTheDocument();
-      expect(screen.getByText(GIG_PLAY.next)).toHaveAttribute('aria-disabled', 'true');
-      expect(screen.getByRole('link', { name: GIG_PLAY.previous })).toBeInTheDocument();
+      const next = screen.getByLabelText(GIG_PLAY.nextSong);
+      expect(next).toHaveAttribute('aria-disabled', 'true');
+      expect(next).not.toHaveAttribute('href');
+      expect(screen.getByRole('link', { name: GIG_PLAY.previousSong })).toBeInTheDocument();
     });
 
     it('a repeated song with no at shows its first place', () => {
@@ -254,20 +270,20 @@ describe('Song', () => {
       useSongMock.mockReturnValue({ data: { songId: 'b', title: 'T' } });
       useSongsMock.mockReturnValue({ data: undefined, isPending: true });
       renderGigSong('/gigs/g1/songs/b');
-      expect(screen.queryByText(GIG_PLAY.next)).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(GIG_PLAY.nextSong)).not.toBeInTheDocument();
     });
 
     it('is absent when the song is not in the setlist', () => {
       setup('zzz');
-      expect(screen.queryByText(GIG_PLAY.next)).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(GIG_PLAY.nextSong)).not.toBeInTheDocument();
     });
 
     it('is absent on /songs/:songId', () => {
       useSongMock.mockReturnValue({ data: { songId: 'abc', title: 'T' } });
       useSongsMock.mockReturnValue({ data: undefined, isPending: true });
       renderSong();
-      expect(screen.queryByText(GIG_PLAY.next)).not.toBeInTheDocument();
-      expect(screen.queryByText(GIG_PLAY.previous)).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(GIG_PLAY.nextSong)).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(GIG_PLAY.previousSong)).not.toBeInTheDocument();
     });
   });
 
@@ -339,7 +355,7 @@ describe('Song', () => {
           </Routes>
         </MemoryRouter>,
       );
-      fireEvent.click(screen.getByRole('link', { name: GIG_PLAY.next }));
+      fireEvent.click(screen.getByRole('link', { name: GIG_PLAY.nextSong }));
       expect(screen.getByText('2 of 3')).toBeInTheDocument();
       expect(life).toEqual({ mounts: 1, unmounts: 0 });
       fireEvent.click(screen.getByRole('link', { name: GIG_SETLIST.backToGig }));

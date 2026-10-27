@@ -106,8 +106,8 @@ export const GIG_DELETE = {
 
 /* Story 7.14 — play a gig song by song. */
 export const GIG_PLAY = {
-  previous: 'Previous',
-  next: 'Next',
+  previousSong: 'Previous song',
+  nextSong: 'Next song',
   position: (n: number, total: number) => `${n} of ${total}`,
 } as const;
 

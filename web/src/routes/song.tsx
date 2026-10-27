@@ -1,9 +1,9 @@
 import type { Setlist } from '@gigbuddy/shared';
-import { ChevronLeft, Pencil } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Pencil } from 'lucide-react';
 import { useEffect } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router';
 import { PageTitle } from '../components/page-title.js';
-import { Button, buttonVariants } from '../components/ui/button.js';
+import { Button } from '../components/ui/button.js';
 import { useSetlistOrCached } from '../hooks/use-setlist-or-cached.js';
 import { useSongOrCached } from '../hooks/use-song-or-cached.js';
 import { useWakeLock } from '../hooks/use-wake-lock.js';
@@ -16,34 +16,44 @@ import { cn } from '../lib/utils.js';
  * the chord chart verbatim. Falls back to the list cache so the title shows
  * instantly and works offline. Under /gigs/:setlistId/songs/:songId (Story 7.8)
  * it is the same page with "Back to gig" and no Edit link, plus (Story 7.14)
- * a fixed bottom bar stepping Previous/Next through the gig's setlist.
+ * a fixed bottom bar of two chevron tap regions (Story 7.19) stepping
+ * previous/next through the gig's setlist.
  * Both routes keep the screen awake while open (Story 7.15).
  */
 function GigPlayBar({ setlist, place }: { setlist: Setlist; place: number }) {
   const order = playOrder(setlist);
-  const step = (index: number, label: string) =>
+  const region =
+    'flex min-h-play-bar max-w-[18rem] flex-1 items-center justify-center [-webkit-tap-highlight-color:transparent]';
+  const step = (index: number, label: string, Icon: typeof ChevronLeft) =>
     index >= 0 && index < order.length ? (
-      <Button asChild variant="outline">
-        <Link replace to={gigSongPath(setlist.setlistId, order, index)}>
-          {label}
+      <Button
+        asChild
+        variant="ghost"
+        className={cn(region, 'h-auto rounded-none px-0 active:bg-primary/15')}
+      >
+        <Link replace to={gigSongPath(setlist.setlistId, order, index)} aria-label={label}>
+          <Icon aria-hidden="true" strokeWidth={2.25} className="size-7.5 text-primary" />
         </Link>
       </Button>
     ) : (
-      <span
-        aria-disabled="true"
-        className={cn(buttonVariants({ variant: 'outline' }), 'opacity-50')}
-      >
-        {label}
+      // biome-ignore lint/a11y/useFocusableInteractive: inert end, deliberately not focusable (Story 7.19)
+      // biome-ignore lint/a11y/useSemanticElements: an <a> without href would still be announced as a plain link; aria-disabled marks it unavailable
+      <span role="link" aria-disabled="true" aria-label={label} className={region}>
+        <Icon
+          aria-hidden="true"
+          strokeWidth={2.25}
+          className="size-7.5 text-muted-foreground opacity-30"
+        />
       </span>
     );
   return (
-    <nav className="fixed inset-x-0 bottom-0 border-t border-muted-foreground bg-background pb-[env(safe-area-inset-bottom)]">
-      <div className="mx-auto flex max-w-[40rem] items-center justify-between px-[var(--spacing-gutter)] py-[calc(var(--spacing-unit)*2)]">
-        {step(place - 1, GIG_PLAY.previous)}
-        <span className="text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-muted-foreground">
+    <nav className="fixed inset-x-0 bottom-0 border-t border-border bg-background pb-[env(safe-area-inset-bottom)]">
+      <div className="flex items-stretch justify-center">
+        {step(place - 1, GIG_PLAY.previousSong, ChevronLeft)}
+        <span className="flex items-center whitespace-nowrap border-x border-border px-3.5 text-[length:var(--text-body)] leading-[var(--text-body--line-height)] tabular-nums text-muted-foreground">
           {GIG_PLAY.position(place + 1, order.length)}
         </span>
-        {step(place + 1, GIG_PLAY.next)}
+        {step(place + 1, GIG_PLAY.nextSong, ChevronRight)}
       </div>
     </nav>
   );
@@ -77,7 +87,7 @@ export function Song() {
     <div
       className={
         showBar
-          ? 'pb-[calc(var(--spacing-tap)+var(--spacing-unit)*4+env(safe-area-inset-bottom))]'
+          ? 'pb-[calc(var(--spacing-play-bar)+1px+var(--spacing-unit)*4+env(safe-area-inset-bottom))]'
           : undefined
       }
     >

@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { apiFetch } from './api/client.js';
 import { AppBootstrap } from './app-bootstrap.js';
+import { GIG_PLAY } from './lib/microcopy.js';
 import { router } from './router.js';
 
 const fetchMock = vi.fn();
@@ -215,7 +216,7 @@ describe('AppBootstrap', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Test Venue' })).toBeInTheDocument();
     await userEvent.click(await screen.findByRole('link', { name: 'Test Tune' }));
     expect(await screen.findByRole('heading', { level: 1, name: 'Test Tune' })).toBeInTheDocument();
-    await userEvent.click(await screen.findByRole('link', { name: 'Next' }));
+    await userEvent.click(await screen.findByRole('link', { name: GIG_PLAY.nextSong }));
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Second Test Tune' }),
     ).toBeInTheDocument();

@@ -1,5 +1,5 @@
 # generated: 2026-06-09
-# last_updated: 2026-10-27 (7-18 done)
+# last_updated: 2026-10-27 (7-19 review)
 # last_status_change: 2026-06-19
 # project: gigbuddy
 # project_key: NOKEY
@@ -36,7 +36,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-06-09
-last_updated: 2026-10-27 (7-18 done)
+last_updated: 2026-10-27 (7-19 review)
 project: gigbuddy
 project_key: NOKEY
 tracking_system: file-system
@@ -114,7 +114,7 @@ development_status:
   7-16-purge-per-gig-notes: done
   7-17-export-link-on-the-songs-page: done
   7-18-adopt-shadcn-ui-foundations: done
-  7-19-split-gig-footer: backlog
+  7-19-split-gig-footer: review
   7-20-header-and-tab-bar: backlog
   7-21-edit-and-add-in-sheets: backlog
   7-22-settings-sheet: backlog

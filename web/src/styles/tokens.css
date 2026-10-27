@@ -77,6 +77,8 @@
   /* Declared in the spacing namespace so Tailwind generates min-w-tap, */
   /* min-h-tap, w-tap, h-tap utilities. */
   --spacing-tap: 44px;
+  /* Gig song page bottom bar: two big tap regions (Story 7.19). */
+  --spacing-play-bar: 64px;
 
   /* ---------- Font families ---------- */
   --font-serif-editorial: "Lora", Georgia, serif;

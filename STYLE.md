@@ -53,11 +53,13 @@ Tokens use shadcn's role names and live in `web/src/styles/tokens.css`.
 - Back link at the top of a page, then the page title 4px below it.
 - A group label inside a list (e.g. "Past") is Body, secondary text, with the 32px section
   gap above it.
-- Bottom bar (gig song page): fixed to the bottom, page background, 1px top border in
-  `--muted-foreground`. Previous and Next are outline `Button`s (for now); the position
-  ("3 of 12") at Body size, quiet text. An unavailable end is an inert `aria-disabled` span in
-  the outline style at 50% opacity, never a disabled button or another action. Content is
-  padded so nothing hides under the bar.
+- Bottom bar (gig song page): fixed to the bottom, page background, 1px `--border` top line.
+  Two equal regions at least 64px tall (`--spacing-play-bar`), each capped at 18rem and centred
+  on wide windows; brass 30px Lucide chevrons only, named "Previous song" / "Next song". The
+  position ("3 of 12") sits in a narrow middle column (Body, quiet text, tabular figures) with
+  `--border` dividers either side. A pressed region gets a brief brass tint (`primary` at 15%).
+  An unavailable end is an inert `aria-disabled` span with a faded chevron, never a disabled
+  button or another action. Content is padded so nothing hides under the bar.
 - "Screen may sleep" line on song pages: Body size, secondary text, under the back link; shown
   only when the screen can't be kept awake. No token changes.
 - Export link at the foot of the songs page: a `link` variant `Button` rendered as a plain
@@ -76,7 +78,7 @@ All buttons and button-like links use `Button` (`web/src/components/ui/button.ts
 | Cancel | `ghost` |
 | Delete song, Delete gig | `destructive-outline`; confirm step: "Yes, delete" `destructive`, "Keep" `outline` |
 | Export all data | `link`, quiet text |
-| Previous, Next | `outline` (for now) |
+| Play-bar regions (previous, next song) | `ghost`, full-height, square corners, brass chevron only |
 
 Ghost buttons use 10px side padding so their text lines up near the page gutter; `link` has none.
 
@@ -94,7 +96,7 @@ Ghost buttons use 10px side padding so their text lines up near the page gutter;
 
 ## Icons
 
-- Lucide only, always `aria-hidden`, always beside text (no icon-only controls yet).
+- Lucide only, always `aria-hidden`, always beside text. The one exception is the play-bar regions: icon-only, named by `aria-label`.
 
 ## Focus
 
