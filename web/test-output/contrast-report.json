@@ -1,17 +1,17 @@
 {
   "tokensSource": "web/src/styles/tokens.css",
   "summary": {
-    "total": 8,
-    "passing": 8,
+    "total": 18,
+    "passing": 18,
     "failing": 0,
     "waived": 0
   },
   "pairs": [
     {
-      "pair": "text-primary on bg",
+      "pair": "foreground on background",
       "variant": "light",
-      "fgToken": "text-primary",
-      "bgToken": "bg",
+      "fgToken": "foreground",
+      "bgToken": "background",
       "fg": "#1a1209",
       "bg": "#faf9f5",
       "ratio": 17.57,
@@ -19,10 +19,10 @@
       "pass": true
     },
     {
-      "pair": "text-secondary on bg",
+      "pair": "muted-foreground on background",
       "variant": "light",
-      "fgToken": "text-secondary",
-      "bgToken": "bg",
+      "fgToken": "muted-foreground",
+      "bgToken": "background",
       "fg": "#5a4a35",
       "bg": "#faf9f5",
       "ratio": 8.08,
@@ -30,10 +30,87 @@
       "pass": true
     },
     {
-      "pair": "text-primary on bg",
+      "pair": "foreground on muted",
+      "variant": "light",
+      "fgToken": "foreground",
+      "bgToken": "muted",
+      "fg": "#1a1209",
+      "bg": "#f0ebe0",
+      "ratio": 15.57,
+      "target": "AA",
+      "pass": true
+    },
+    {
+      "pair": "muted-foreground on muted",
+      "variant": "light",
+      "fgToken": "muted-foreground",
+      "bgToken": "muted",
+      "fg": "#5a4a35",
+      "bg": "#f0ebe0",
+      "ratio": 7.16,
+      "target": "AA",
+      "pass": true
+    },
+    {
+      "pair": "primary on background",
+      "variant": "light",
+      "fgToken": "primary",
+      "bgToken": "background",
+      "fg": "#8a6420",
+      "bg": "#faf9f5",
+      "ratio": 5.08,
+      "target": "AA",
+      "pass": true
+    },
+    {
+      "pair": "primary-foreground on primary",
+      "variant": "light",
+      "fgToken": "primary-foreground",
+      "bgToken": "primary",
+      "fg": "#faf9f5",
+      "bg": "#8a6420",
+      "ratio": 5.08,
+      "target": "AA",
+      "pass": true
+    },
+    {
+      "pair": "destructive on background",
+      "variant": "light",
+      "fgToken": "destructive",
+      "bgToken": "background",
+      "fg": "#a3341f",
+      "bg": "#faf9f5",
+      "ratio": 6.5,
+      "target": "AA",
+      "pass": true
+    },
+    {
+      "pair": "destructive-foreground on destructive",
+      "variant": "light",
+      "fgToken": "destructive-foreground",
+      "bgToken": "destructive",
+      "fg": "#ffffff",
+      "bg": "#a3341f",
+      "ratio": 6.84,
+      "target": "AA",
+      "pass": true
+    },
+    {
+      "pair": "input on background",
+      "variant": "light",
+      "fgToken": "input",
+      "bgToken": "background",
+      "fg": "#8f7f66",
+      "bg": "#faf9f5",
+      "ratio": 3.69,
+      "target": "UI",
+      "pass": true
+    },
+    {
+      "pair": "foreground on background",
       "variant": "dark",
-      "fgToken": "text-primary",
-      "bgToken": "bg",
+      "fgToken": "foreground",
+      "bgToken": "background",
       "fg": "#f1e6cf",
       "bg": "#1a1209",
       "ratio": 14.95,
@@ -41,10 +118,10 @@
       "pass": true
     },
     {
-      "pair": "text-secondary on bg",
+      "pair": "muted-foreground on background",
       "variant": "dark",
-      "fgToken": "text-secondary",
-      "bgToken": "bg",
+      "fgToken": "muted-foreground",
+      "bgToken": "background",
       "fg": "#c9b486",
       "bg": "#1a1209",
       "ratio": 9.13,
@@ -52,32 +129,32 @@
       "pass": true
     },
     {
-      "pair": "accent on bg",
-      "variant": "light",
-      "fgToken": "accent",
-      "bgToken": "bg",
-      "fg": "#b3892f",
-      "bg": "#faf9f5",
-      "ratio": 3.05,
-      "target": "AA-large",
-      "pass": true
-    },
-    {
-      "pair": "bg-on-accent (CTA)",
-      "variant": "light",
-      "fgToken": "bg",
-      "bgToken": "accent",
-      "fg": "#faf9f5",
-      "bg": "#b3892f",
-      "ratio": 3.05,
-      "target": "AA-large",
-      "pass": true
-    },
-    {
-      "pair": "accent on bg",
+      "pair": "foreground on muted",
       "variant": "dark",
-      "fgToken": "accent",
-      "bgToken": "bg",
+      "fgToken": "foreground",
+      "bgToken": "muted",
+      "fg": "#f1e6cf",
+      "bg": "#251a0e",
+      "ratio": 13.76,
+      "target": "AA",
+      "pass": true
+    },
+    {
+      "pair": "muted-foreground on muted",
+      "variant": "dark",
+      "fgToken": "muted-foreground",
+      "bgToken": "muted",
+      "fg": "#c9b486",
+      "bg": "#251a0e",
+      "ratio": 8.4,
+      "target": "AA",
+      "pass": true
+    },
+    {
+      "pair": "primary on background",
+      "variant": "dark",
+      "fgToken": "primary",
+      "bgToken": "background",
       "fg": "#e6b855",
       "bg": "#1a1209",
       "ratio": 10.01,
@@ -85,14 +162,47 @@
       "pass": true
     },
     {
-      "pair": "bg-on-accent (CTA)",
+      "pair": "primary-foreground on primary",
       "variant": "dark",
-      "fgToken": "bg",
-      "bgToken": "accent",
+      "fgToken": "primary-foreground",
+      "bgToken": "primary",
       "fg": "#1a1209",
       "bg": "#e6b855",
       "ratio": 10.01,
       "target": "AA",
+      "pass": true
+    },
+    {
+      "pair": "destructive on background",
+      "variant": "dark",
+      "fgToken": "destructive",
+      "bgToken": "background",
+      "fg": "#f08a6e",
+      "bg": "#1a1209",
+      "ratio": 7.55,
+      "target": "AA",
+      "pass": true
+    },
+    {
+      "pair": "destructive-foreground on destructive",
+      "variant": "dark",
+      "fgToken": "destructive-foreground",
+      "bgToken": "destructive",
+      "fg": "#1a1209",
+      "bg": "#f08a6e",
+      "ratio": 7.55,
+      "target": "AA",
+      "pass": true
+    },
+    {
+      "pair": "input on background",
+      "variant": "dark",
+      "fgToken": "input",
+      "bgToken": "background",
+      "fg": "#7a6a4d",
+      "bg": "#1a1209",
+      "ratio": 3.52,
+      "target": "UI",
       "pass": true
     }
   ]

@@ -39,7 +39,6 @@ export const SONG_FORM = {
   chordChart: 'Chord chart',
   save: 'Save',
   cancel: 'Cancel',
-  titleRequired: 'A song needs a title.',
 } as const;
 
 /* Story 7.7 — gig list and gig page copy. */
@@ -71,7 +70,6 @@ export const GIG_FORM = {
   time: 'Time',
   save: 'Save',
   cancel: 'Cancel',
-  required: 'A gig needs a venue and a date.',
 } as const;
 
 /* Story 7.10 — edit the setlist as text. */

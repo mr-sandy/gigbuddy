@@ -96,10 +96,9 @@ describe('Songs (list)', () => {
       isPending: false,
     });
     renderSongs();
-    expect(screen.getByRole('link', { name: EXPORT.link })).toHaveAttribute(
-      'href',
-      '/api/v1/export',
-    );
+    const link = screen.getByRole('link', { name: EXPORT.link });
+    expect(link).toHaveAttribute('href', '/api/v1/export');
+    expect(link).toHaveAttribute('data-variant', 'link');
   });
 
   it('shows the export link when the list is empty or errored', () => {

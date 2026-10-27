@@ -2,6 +2,7 @@ import { type FormEvent, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { fetchMe, login } from '../auth/auth-api.js';
 import { useAuth } from '../auth/auth-context.js';
+import { Button } from '../components/ui/button.js';
 
 export function Login() {
   const [password, setPassword] = useState('');
@@ -52,9 +53,9 @@ export function Login() {
           onChange={(e) => setPassword(e.target.value)}
           disabled={submitting}
         />
-        <button type="submit" disabled={submitting || password.length === 0}>
+        <Button type="submit" disabled={submitting || password.length === 0}>
           {submitting ? 'Signing in…' : 'Sign in'}
-        </button>
+        </Button>
         {error && (
           <p role="alert" aria-live="polite">
             {error}

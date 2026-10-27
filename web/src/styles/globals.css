@@ -5,14 +5,14 @@
 /*
  * Base typography + theme paint.
  *
- * `html` picks up the light palette by default (from tokens.css `@theme`);
+ * `html` picks up the light palette by default (from tokens.css `:root`);
  * the `@media (prefers-color-scheme: dark)` block in tokens.css flips the
  * palette when the OS is in dark mode. No JS theme provider, no attribute.
  */
 html {
   color-scheme: light dark;
-  background-color: var(--color-bg);
-  color: var(--color-text-primary);
+  background-color: var(--background);
+  color: var(--foreground);
   font-family: var(--font-serif-editorial);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

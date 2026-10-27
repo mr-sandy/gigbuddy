@@ -13,7 +13,7 @@ export function PageTitle({
 }) {
   return (
     <h1
-      className={`${afterBackLink ? 'mt-[var(--spacing-unit)] ' : ''}text-[length:var(--text-page-title)] leading-[var(--text-page-title--line-height)] text-[color:var(--color-text-primary)] [font-family:var(--font-serif-editorial)]`}
+      className={`${afterBackLink ? 'mt-[var(--spacing-unit)] ' : ''}text-[length:var(--text-page-title)] leading-[var(--text-page-title--line-height)] text-foreground [font-family:var(--font-serif-editorial)]`}
     >
       {children}
     </h1>

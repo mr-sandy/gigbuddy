@@ -1,5 +1,7 @@
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { Link } from 'react-router';
 import { PageTitle } from '../components/page-title.js';
+import { Button } from '../components/ui/button.js';
 import { useSongs } from '../hooks/use-songs.js';
 import { EXPORT, SONG_FORM, SONGS } from '../lib/microcopy.js';
 
@@ -24,29 +26,33 @@ export function Songs() {
   return (
     <>
       <div className="flex items-center justify-between gap-[calc(var(--spacing-unit)*4)]">
-        <Link
-          to="/"
-          className="inline-flex min-h-tap items-center text-[length:var(--text-row)] leading-[var(--text-row--line-height)] text-[color:var(--color-text-primary)] underline focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]"
-        >
-          {SONGS.backToHome}
-        </Link>
-        <Link
-          to="/songs/new"
-          className="inline-flex min-h-tap items-center text-[length:var(--text-row)] leading-[var(--text-row--line-height)] text-[color:var(--color-text-primary)] underline focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]"
-        >
-          {SONG_FORM.addLink}
-        </Link>
+        <Button asChild variant="ghost" className="text-muted-foreground">
+          <Link to="/">
+            <ChevronLeft aria-hidden="true" />
+            {SONGS.backToHome}
+          </Link>
+        </Button>
+        <Button asChild variant="ghost" className="text-primary">
+          <Link to="/songs/new">
+            <Plus aria-hidden="true" />
+            {SONG_FORM.addLink}
+          </Link>
+        </Button>
       </div>
       <PageTitle afterBackLink>{SONGS.heading}</PageTitle>
       {data !== undefined && data.length > 0 ? (
         <ul className="m-0 mt-[calc(var(--spacing-unit)*2)] list-none p-0">
           {data.map((song) => (
-            <li key={song.songId} className="border-b border-[color:var(--color-border-hairline)]">
+            <li key={song.songId} className="border-b border-border">
               <Link
                 to={`/songs/${song.songId}`}
-                className="block min-h-tap py-[calc(var(--spacing-unit)*3)] text-[length:var(--text-row)] leading-[var(--text-row--line-height)] text-[color:var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]"
+                className="flex min-h-tap items-center justify-between gap-3 py-[calc(var(--spacing-unit)*3)] text-[length:var(--text-row)] leading-[var(--text-row--line-height)] text-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring"
               >
-                {song.title}
+                <span>{song.title}</span>
+                <ChevronRight
+                  aria-hidden="true"
+                  className="size-5 shrink-0 text-muted-foreground"
+                />
               </Link>
             </li>
           ))}
@@ -54,19 +60,16 @@ export function Songs() {
       ) : (
         <p
           aria-live="polite"
-          className="mt-[calc(var(--spacing-unit)*3)] text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-[color:var(--color-text-secondary)]"
+          className="mt-[calc(var(--spacing-unit)*3)] text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-muted-foreground"
         >
           {statusLine}
         </p>
       )}
       <footer className="mt-[var(--spacing-section-gap)]">
         {/* Plain <a>, not Link: the router would swallow the click and the download would never fire. */}
-        <a
-          href="/api/v1/export"
-          className="inline-flex min-h-tap items-center text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-[color:var(--color-text-secondary)] underline focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]"
-        >
-          {EXPORT.link}
-        </a>
+        <Button asChild variant="link">
+          <a href="/api/v1/export">{EXPORT.link}</a>
+        </Button>
       </footer>
     </>
   );

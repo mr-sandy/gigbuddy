@@ -93,24 +93,21 @@ describe('GigEdit', () => {
     expect(await screen.findByText('gig page')).toBeInTheDocument();
   });
 
-  it('refuses a blank venue', async () => {
+  it('keeps Save disabled until venue and date are filled', async () => {
     const user = userEvent.setup();
     renderAt('/gigs/new');
+    const save = screen.getByRole('button', { name: GIG_FORM.save });
+    expect(save).toBeDisabled();
+    await user.type(screen.getByLabelText(GIG_FORM.venue), 'Test Venue');
+    expect(save).toBeDisabled();
+    await user.clear(screen.getByLabelText(GIG_FORM.venue));
     await user.type(screen.getByLabelText(GIG_FORM.venue), '   ');
     await user.type(screen.getByLabelText(GIG_FORM.date), '2026-11-07');
-    await user.click(screen.getByRole('button', { name: GIG_FORM.save }));
-    expect(screen.getByRole('alert')).toHaveTextContent(GIG_FORM.required);
-    expect(saveSetlistMock).not.toHaveBeenCalled();
-  });
-
-  it('refuses a blank date', async () => {
-    const user = userEvent.setup();
-    renderAt('/gigs/new');
+    expect(save).toBeDisabled();
     await user.type(screen.getByLabelText(GIG_FORM.venue), 'Test Venue');
-    await user.click(screen.getByRole('button', { name: GIG_FORM.save }));
-    expect(screen.getByRole('alert')).toHaveTextContent(GIG_FORM.required);
-    expect(screen.getByLabelText(GIG_FORM.date)).toHaveAttribute('aria-invalid', 'true');
-    expect(saveSetlistMock).not.toHaveBeenCalled();
+    expect(save).toBeEnabled();
+    await user.click(save);
+    expect(saveSetlistMock).toHaveBeenCalledTimes(1);
   });
 
   it('cancels an edit back to the gig page without saving', async () => {
@@ -152,9 +149,17 @@ describe('GigEdit delete', () => {
     renderAt('/gigs/g1/edit');
     await user.clear(screen.getByLabelText(GIG_FORM.venue));
     await user.type(screen.getByLabelText(GIG_FORM.venue), 'Unsaved');
-    await user.click(screen.getByRole('button', { name: GIG_DELETE.button }));
+    const del = screen.getByRole('button', { name: GIG_DELETE.button });
+    expect(del).toHaveAttribute('data-variant', 'destructive-outline');
+    await user.click(del);
     expect(screen.getByText(confirmLine)).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: GIG_DELETE.keep }));
+    expect(screen.getByRole('button', { name: GIG_DELETE.yes })).toHaveAttribute(
+      'data-variant',
+      'destructive',
+    );
+    const keep = screen.getByRole('button', { name: GIG_DELETE.keep });
+    expect(keep).toHaveAttribute('data-variant', 'outline');
+    await user.click(keep);
     expect(deleteSetlistMock).not.toHaveBeenCalled();
     expect(screen.getByLabelText(GIG_FORM.venue)).toHaveValue('Unsaved');
     expect(screen.getByRole('button', { name: GIG_DELETE.button })).toBeInTheDocument();

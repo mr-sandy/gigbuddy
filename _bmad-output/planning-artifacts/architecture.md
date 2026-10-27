@@ -114,6 +114,7 @@ PWA (static SPA + small REST API + IaC), TypeScript end-to-end. Two deployables:
 - Vite 6 + React 19 + React Router 7 (library mode)
 - TypeScript strict
 - Tailwind CSS v4 with `@theme` tokens lifted from `DESIGN.md`
+- shadcn/ui components, copied in (not a dependency), with Radix primitives, `class-variance-authority`, `clsx` + `tailwind-merge` (`cn`) and `lucide-react` icons (Story 7.18)
 - TanStack Query v5 for server-state + sync cache
 - IndexedDB-backed outbox for offline writes (protocol in Step 4)
 - vite-plugin-pwa (Workbox) for service worker, manifest, install
@@ -749,6 +750,18 @@ Single source of truth: `performanceActive` boolean in a `PerformanceModeContext
 - Variant chosen by `@media (prefers-color-scheme: dark)` — the device's system setting.
 - No `data-atmosphere`, no device detection, no JS theme provider, no user toggle.
 - Light values may be lifted from the DESIGN.md Practice palette and dark from Club Warm, as raw material — not as a device-bound contract.
+- Colours use shadcn's role names (`--background`, `--foreground`, `--muted`, `--muted-foreground`, `--primary`, `--primary-foreground`, `--border`, `--input`, `--destructive`, `--destructive-foreground`, `--ring`) on `:root`, with a dark override in the media query, exposed to Tailwind through `@theme inline`. `--ring` follows `--primary`. Type, spacing and tap tokens stay in `@theme` (2026-10-27, Story 7.18).
+
+### UI components (shadcn/ui, adopted 2026-10-27)
+
+- Components live in `web/src/components/ui/` and are added one at a time, only when a story needs one.
+- Copied by hand: no shadcn CLI, no `components.json`.
+- The generated `@/` imports are rewritten to relative `.js` imports, and there is no path alias, so the codebase keeps one import style and there is no tsconfig, Vite or Vitest alias to keep in step.
+- `cn` (`clsx` + `tailwind-merge`) lives in `web/src/lib/utils.ts`, shadcn's own file name, so future copies change only the import path. Write custom sizes as `text-[length:var(--text-…)]` so `tailwind-merge` reads them as font sizes, not colours.
+- Radix packages are added individually (`@radix-ui/react-slot`, `@radix-ui/react-label`), not through the `radix-ui` umbrella package.
+- GigBuddy sizes override shadcn's stock sizes: 44px tap targets, 18px button text, 22px field text.
+- Lucide is the only icon set. Icons are `aria-hidden` beside visible text.
+- Every button and button-like link uses `Button` (`asChild` for router `Link`s and plain `<a>`s).
 
 ### Error handling
 
@@ -882,6 +895,7 @@ gigbuddy/
 │   │   │   ├── performance-card.tsx        # Performance card (FR-15–FR-22)
 │   │   │   └── install-prompt.tsx          # iPhone non-installed gate
 │   │   ├── components/                     # reusable components
+│   │   │   ├── ui/                         # shadcn/ui copies: button, input, textarea, label
 │   │   │   ├── gig-card.tsx
 │   │   │   ├── song-row.tsx
 │   │   │   ├── section-heading.tsx
@@ -924,6 +938,7 @@ gigbuddy/
 │   │   │   ├── tokens.css                  # @theme blocks (Practice + Performance)
 │   │   │   └── globals.css
 │   │   └── lib/
+│   │       ├── utils.ts                    # cn() for shadcn/ui
 │   │       ├── nanoid.ts
 │   │       ├── iso-date.ts
 │   │       └── platform.ts                 # isIPhone(), isStandalone()

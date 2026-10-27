@@ -4,7 +4,8 @@
  * appear together in either variant (light / dark), and writes
  * `web/test-output/contrast-report.json`.
  *
- * All text pairs target AA (≥4.5:1) in both variants.
+ * All text pairs target AA (≥4.5:1) in both variants; field borders target
+ * 3:1 (WCAG 1.4.11 non-text contrast).
  *
  * Exits non-zero if any pair fails its target unless that pair is explicitly
  * waived inside this file. CI wires this into `pnpm test` so a token edit
@@ -20,7 +21,7 @@ const TOKENS_PATH = resolve(__dirname, '../src/styles/tokens.css');
 const OUTPUT_PATH = resolve(__dirname, '../test-output/contrast-report.json');
 
 type Variant = 'light' | 'dark';
-type Target = 'AAA' | 'AA' | 'AA-large';
+type Target = 'AAA' | 'AA' | 'AA-large' | 'UI';
 
 interface Pair {
   pair: string;
@@ -37,10 +38,15 @@ interface Pair {
 }
 
 const COLOR_TOKEN_NAMES = [
-  'bg',
-  'text-primary',
-  'text-secondary',
-  'accent',
+  'background',
+  'foreground',
+  'muted',
+  'muted-foreground',
+  'primary',
+  'primary-foreground',
+  'destructive',
+  'destructive-foreground',
+  'input',
 ] as const;
 
 function extractBlock(css: string, selector: string): string {
@@ -69,14 +75,16 @@ function parseTokens(css: string): Record<Variant, Record<string, string>> {
 
   // Strip comments first so prose in the header comment can't match a selector.
   const code = css.replace(/\/\*[\s\S]*?\*\//g, '');
-  const lightBody = extractBlock(code, '@theme');
+  // The light palette is the first `:root` block, which must precede the
+  // dark `@media` block.
+  const lightBody = extractBlock(code, ':root');
   const mediaBody = extractBlock(code, '@media (prefers-color-scheme: dark)');
   const darkBody = extractBlock(mediaBody, ':root');
 
   const bodies: Record<Variant, string> = { light: lightBody, dark: darkBody };
   for (const variant of ['light', 'dark'] as const) {
     for (const token of COLOR_TOKEN_NAMES) {
-      const decl = bodies[variant].match(new RegExp(`--color-${token}:\\s*([^;]+);`));
+      const decl = bodies[variant].match(new RegExp(`(?:^|[\\s;{])--${token}:\\s*([^;]+);`));
       if (decl) {
         result[variant][token] = decl[1].trim();
       }
@@ -119,36 +127,28 @@ interface PairDef {
   reason?: string;
 }
 
-const PAIRS: PairDef[] = [
-  // Text pairs — AA target (≥4.5:1) in both variants.
-  { variant: 'light', fg: 'text-primary', bg: 'bg', target: 'AA' },
-  { variant: 'light', fg: 'text-secondary', bg: 'bg', target: 'AA' },
-  { variant: 'dark', fg: 'text-primary', bg: 'bg', target: 'AA' },
-  { variant: 'dark', fg: 'text-secondary', bg: 'bg', target: 'AA' },
-
-  // Accent pairs — reserved for UI component fills (CTA bg, decorative
-  // strokes), never body text. Light needs the large-text/non-text-UI
-  // waiver below; dark passes AA outright.
-  {
-    variant: 'light',
-    fg: 'accent',
-    bg: 'bg',
-    target: 'AA-large',
-    reason:
-      'accent (#b3892f) is reserved for UI component fills (CTA bg, decorative strokes) — never used as body text on bg. WCAG 2.1 §1.4.11 non-text UI ≥3:1 applies and passes (3.05). Focus outlines are the only current use.',
-  },
-  {
-    variant: 'light',
-    fg: 'bg',
-    bg: 'accent',
-    target: 'AA-large',
-    label: 'bg-on-accent (CTA)',
-    reason:
-      'CTA button — bg (#faf9f5) text on accent (#b3892f). CTA label text is ≥18pt, qualifying for WCAG 2.1 §1.4.3 large-text exception (≥3:1 sufficient; passes at 3.05).',
-  },
-  { variant: 'dark', fg: 'accent', bg: 'bg', target: 'AA' },
-  { variant: 'dark', fg: 'bg', bg: 'accent', target: 'AA', label: 'bg-on-accent (CTA)' },
+const TEXT_PAIRS: [string, string][] = [
+  ['foreground', 'background'],
+  ['muted-foreground', 'background'],
+  ['foreground', 'muted'],
+  ['muted-foreground', 'muted'],
+  ['primary', 'background'],
+  ['primary-foreground', 'primary'],
+  ['destructive', 'background'],
+  ['destructive-foreground', 'destructive'],
 ];
+
+const PAIRS: PairDef[] = (['light', 'dark'] as const).flatMap((variant) => [
+  ...TEXT_PAIRS.map(
+    ([fg, bg]): PairDef => ({ variant, fg, bg, target: 'AA' }),
+  ),
+  // Field borders: non-text UI, WCAG 1.4.11.
+  { variant, fg: 'input', bg: 'background', target: 'UI' },
+]);
+
+function thresholdFor(target: Target): number {
+  return target === 'AAA' ? 7 : target === 'AA' ? 4.5 : 3.0;
+}
 
 function round(n: number): number {
   return Math.round(n * 100) / 100;
@@ -165,7 +165,7 @@ function main(): void {
       throw new Error(`Missing token for pair ${p.label ?? `${p.fg}-on-${p.bg}`} in ${p.variant}`);
     }
     const ratio = contrastRatio(fg, bg);
-    const threshold = p.target === 'AAA' ? 7 : p.target === 'AA' ? 4.5 : 3.0;
+    const threshold = thresholdFor(p.target);
     const pass = ratio >= threshold;
     return {
       pair: p.label ?? `${p.fg} on ${p.bg}`,
@@ -201,7 +201,7 @@ function main(): void {
     console.error('Contrast report: pairs failing their target:');
     for (const f of failing) {
       console.error(
-        `  [${f.variant}] ${f.pair} — ratio ${f.ratio} < ${f.target === 'AAA' ? 7 : f.target === 'AA' ? 4.5 : 3.0} (${f.fg} on ${f.bg})`,
+        `  [${f.variant}] ${f.pair} — ratio ${f.ratio} < ${thresholdFor(f.target)} (${f.fg} on ${f.bg})`,
       );
     }
     process.exit(1);

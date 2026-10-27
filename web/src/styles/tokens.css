@@ -1,20 +1,58 @@
 /*
  * GigBuddy design tokens.
  *
- * One responsive app (Story 7.1 reset): a single light token set defined in
- * `@theme`, with a dark variant applied via `@media (prefers-color-scheme:
- * dark)` — no JS theme provider, no device detection. Type scale and spacing
- * are shared by both variants. Tokens are named by role (see STYLE.md).
+ * One responsive app (Story 7.1 reset): a single light token set on `:root`,
+ * with a dark variant applied via `@media (prefers-color-scheme: dark)` — no
+ * JS theme provider, no device detection. Colours use shadcn's role names
+ * (Story 7.18) and are exposed to Tailwind through `@theme inline`; `--ring`
+ * follows `--primary`. Type scale and spacing live in `@theme` and are shared
+ * by both variants. Tokens are named by role (see STYLE.md).
  */
 
-@theme {
-  /* ---------- Colors — light (default) ---------- */
-  --color-bg: #faf9f5;
-  --color-text-primary: #1a1209;
-  --color-text-secondary: #5a4a35;
-  --color-accent: #b3892f;
-  --color-border-hairline: #e8e2d6;
+:root {
+  --background: #faf9f5;
+  --foreground: #1a1209;
+  --muted: #f0ebe0;
+  --muted-foreground: #5a4a35;
+  --primary: #8a6420;
+  --primary-foreground: #faf9f5;
+  --border: #e2dacb;
+  --input: #8f7f66;
+  --destructive: #a3341f;
+  --destructive-foreground: #ffffff;
+  --ring: color-mix(in srgb, var(--primary) 45%, transparent);
+}
 
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #1a1209;
+    --foreground: #f1e6cf;
+    --muted: #251a0e;
+    --muted-foreground: #c9b486;
+    --primary: #e6b855;
+    --primary-foreground: #1a1209;
+    --border: #3a2e1f;
+    --input: #7a6a4d;
+    --destructive: #f08a6e;
+    --destructive-foreground: #1a1209;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-ring: var(--ring);
+}
+
+@theme {
   /* ---------- Type scale (invariant across variants) ---------- */
   /* 1pt = 1px at default iPhone / MacBook CSS pixel density */
   --text-page-title: 28px;
@@ -42,14 +80,4 @@
 
   /* ---------- Font families ---------- */
   --font-serif-editorial: "Lora", Georgia, serif;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-bg: #1a1209;
-    --color-text-primary: #f1e6cf;
-    --color-text-secondary: #c9b486;
-    --color-accent: #e6b855;
-    --color-border-hairline: transparent;
-  }
 }

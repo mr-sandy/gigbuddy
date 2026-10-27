@@ -1,7 +1,11 @@
 import { ACTIVE_BAND_ID, type Setlist, type SetlistPutInput } from '@gigbuddy/shared';
+import { ChevronLeft } from 'lucide-react';
 import { type FormEvent, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { PageTitle } from '../components/page-title.js';
+import { Button } from '../components/ui/button.js';
+import { Label } from '../components/ui/label.js';
+import { Textarea } from '../components/ui/textarea.js';
 import { useSetlistMutation } from '../hooks/use-setlist-mutation.js';
 import { useSetlistOrCached } from '../hooks/use-setlist-or-cached.js';
 import { useSongs } from '../hooks/use-songs.js';
@@ -18,14 +22,8 @@ import { parseSetlistText, setlistToText } from '../lib/setlist-text.js';
  * is history to step back to, as the gig form does.
  */
 
-const LINK_CLASS =
-  'inline-flex min-h-tap items-center text-[length:var(--text-row)] leading-[var(--text-row--line-height)] text-[color:var(--color-text-primary)] underline focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]';
-const LABEL_CLASS =
-  'block text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-[color:var(--color-text-primary)]';
-const FIELD_CLASS =
-  'mt-[var(--spacing-unit)] box-border w-full rounded-[4px] border border-[color:var(--color-text-secondary)] bg-[color:var(--color-bg)] p-[calc(var(--spacing-unit)*3)] text-[length:var(--text-reading)] leading-[var(--text-reading--line-height)] text-[color:var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]';
 const BODY_SECONDARY =
-  'mt-[var(--spacing-unit)] text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-[color:var(--color-text-secondary)]';
+  'mt-[var(--spacing-unit)] text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-muted-foreground';
 
 export function SetlistEdit() {
   const { setlistId } = useParams();
@@ -33,12 +31,15 @@ export function SetlistEdit() {
   if (!setlist) {
     return (
       <>
-        <Link to="/gigs" className={LINK_CLASS}>
-          {GIGS.backToGigs}
-        </Link>
+        <Button asChild variant="ghost" className="text-muted-foreground">
+          <Link to="/gigs">
+            <ChevronLeft aria-hidden="true" />
+            {GIGS.backToGigs}
+          </Link>
+        </Button>
         <p
           aria-live="polite"
-          className="mt-[calc(var(--spacing-unit)*3)] text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-[color:var(--color-text-secondary)]"
+          className="mt-[calc(var(--spacing-unit)*3)] text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-muted-foreground"
         >
           {statusLine}
         </p>
@@ -94,13 +95,11 @@ function SetlistTextForm({ initial }: { initial: Setlist }) {
       <PageTitle>{venue || formatGigDate(initial.gigMeta.date)}</PageTitle>
 
       <div className="mt-[calc(var(--spacing-unit)*4)]">
-        <label htmlFor="setlist-text" className={LABEL_CLASS}>
-          {SETLIST_TEXT.label}
-        </label>
+        <Label htmlFor="setlist-text">{SETLIST_TEXT.label}</Label>
         <p id="setlist-hint" className={BODY_SECONDARY}>
           {SETLIST_TEXT.hint}
         </p>
-        <textarea
+        <Textarea
           ref={textRef}
           id="setlist-text"
           rows={16}
@@ -110,7 +109,7 @@ function SetlistTextForm({ initial }: { initial: Setlist }) {
           autoCorrect="off"
           autoCapitalize="off"
           aria-describedby="setlist-hint"
-          className={`${FIELD_CLASS} resize-y`}
+          className="mt-[var(--spacing-unit)] resize-y"
         />
         {songs ? null : (
           <p aria-live="polite" className={BODY_SECONDARY}>
@@ -120,7 +119,7 @@ function SetlistTextForm({ initial }: { initial: Setlist }) {
         {problems.length > 0 ? (
           <div
             role="alert"
-            className="mt-[var(--spacing-unit)] text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-[color:var(--color-text-primary)]"
+            className="mt-[var(--spacing-unit)] text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-foreground"
           >
             {problems.map((problem, i) => (
               // biome-ignore lint/suspicious/noArrayIndexKey: static list of messages
@@ -133,25 +132,22 @@ function SetlistTextForm({ initial }: { initial: Setlist }) {
       </div>
 
       <div className="mt-[calc(var(--spacing-unit)*8)] flex items-center gap-[calc(var(--spacing-unit)*6)]">
-        <button
-          type="submit"
-          disabled={!songs}
-          className="min-h-tap rounded-[4px] border-2 border-[color:var(--color-text-primary)] bg-transparent px-[calc(var(--spacing-unit)*6)] text-[length:var(--text-row)] leading-[var(--text-row--line-height)] text-[color:var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)] disabled:opacity-50"
-        >
+        <Button type="submit" disabled={!songs}>
           {SETLIST_TEXT.save}
-        </button>
-        <Link
-          replace
-          to={exitTo}
-          onClick={(e) => {
-            if (!canStepBack) return;
-            e.preventDefault();
-            navigate(-1);
-          }}
-          className={LINK_CLASS}
-        >
-          {SETLIST_TEXT.cancel}
-        </Link>
+        </Button>
+        <Button asChild variant="ghost">
+          <Link
+            replace
+            to={exitTo}
+            onClick={(e) => {
+              if (!canStepBack) return;
+              e.preventDefault();
+              navigate(-1);
+            }}
+          >
+            {SETLIST_TEXT.cancel}
+          </Link>
+        </Button>
       </div>
     </form>
   );

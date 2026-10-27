@@ -25,25 +25,25 @@ export function Home() {
   return (
     <>
       <PageTitle>GigBuddy</PageTitle>
-      <p className="mt-[calc(var(--spacing-unit)*3)] text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-[color:var(--color-text-secondary)]">
+      <p className="mt-[calc(var(--spacing-unit)*3)] text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-muted-foreground">
         {ACTIVE_BAND_NAME}
       </p>
       <p
         aria-live="polite"
-        className="mt-[var(--spacing-unit)] tabular-nums text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-[color:var(--color-text-secondary)]"
+        className="mt-[var(--spacing-unit)] tabular-nums text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-muted-foreground"
       >
         {bodyLine}
       </p>
       <div className="mt-[var(--spacing-section-gap)] flex flex-col">
         <Link
           to="/songs"
-          className="inline-flex min-h-tap items-center text-[length:var(--text-row)] leading-[var(--text-row--line-height)] text-[color:var(--color-text-primary)] underline focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]"
+          className="inline-flex min-h-tap items-center text-[length:var(--text-row)] leading-[var(--text-row--line-height)] text-foreground underline outline-none focus-visible:ring-[3px] focus-visible:ring-ring"
         >
           {SONGS.heading}
         </Link>
         <Link
           to="/gigs"
-          className="inline-flex min-h-tap items-center text-[length:var(--text-row)] leading-[var(--text-row--line-height)] text-[color:var(--color-text-primary)] underline focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]"
+          className="inline-flex min-h-tap items-center text-[length:var(--text-row)] leading-[var(--text-row--line-height)] text-foreground underline outline-none focus-visible:ring-[3px] focus-visible:ring-ring"
         >
           {GIGS.heading}
         </Link>

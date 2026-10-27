@@ -1,6 +1,8 @@
 import type { Setlist } from '@gigbuddy/shared';
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { Link } from 'react-router';
 import { PageTitle } from '../components/page-title.js';
+import { Button } from '../components/ui/button.js';
 import { useSetlists } from '../hooks/use-setlists.js';
 import { formatGigDate, orderGigs, todayLondon } from '../lib/gig-date.js';
 import { GIG_FORM, GIGS } from '../lib/microcopy.js';
@@ -17,12 +19,13 @@ function GigRows({ gigs }: { gigs: Setlist[] }) {
         const venue = s.gigMeta.venue.trim();
         const date = formatGigDate(s.gigMeta.date);
         return (
-          <li key={s.setlistId} className="border-b border-[color:var(--color-border-hairline)]">
+          <li key={s.setlistId} className="border-b border-border">
             <Link
               to={`/gigs/${s.setlistId}`}
-              className="block min-h-tap py-[calc(var(--spacing-unit)*3)] text-[length:var(--text-row)] leading-[var(--text-row--line-height)] text-[color:var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]"
+              className="flex min-h-tap items-center justify-between gap-3 py-[calc(var(--spacing-unit)*3)] text-[length:var(--text-row)] leading-[var(--text-row--line-height)] text-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring"
             >
-              {venue ? `${date} · ${venue}` : date}
+              <span>{venue ? `${date} · ${venue}` : date}</span>
+              <ChevronRight aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
             </Link>
           </li>
         );
@@ -49,18 +52,18 @@ export function Gigs() {
   return (
     <>
       <div className="flex items-center justify-between gap-[calc(var(--spacing-unit)*4)]">
-        <Link
-          to="/"
-          className="inline-flex min-h-tap items-center text-[length:var(--text-row)] leading-[var(--text-row--line-height)] text-[color:var(--color-text-primary)] underline focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]"
-        >
-          {GIGS.backToHome}
-        </Link>
-        <Link
-          to="/gigs/new"
-          className="inline-flex min-h-tap items-center text-[length:var(--text-row)] leading-[var(--text-row--line-height)] text-[color:var(--color-text-primary)] underline focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]"
-        >
-          {GIG_FORM.addLink}
-        </Link>
+        <Button asChild variant="ghost" className="text-muted-foreground">
+          <Link to="/">
+            <ChevronLeft aria-hidden="true" />
+            {GIGS.backToHome}
+          </Link>
+        </Button>
+        <Button asChild variant="ghost" className="text-primary">
+          <Link to="/gigs/new">
+            <Plus aria-hidden="true" />
+            {GIG_FORM.addLink}
+          </Link>
+        </Button>
       </div>
       <PageTitle afterBackLink>{GIGS.heading}</PageTitle>
       {data !== undefined && data.length > 0 ? (
@@ -68,7 +71,7 @@ export function Gigs() {
           {upcoming.length > 0 ? <GigRows gigs={upcoming} /> : null}
           {past.length > 0 ? (
             <>
-              <h2 className="m-0 mt-[var(--spacing-section-gap)] text-[length:var(--text-body)] font-normal leading-[var(--text-body--line-height)] text-[color:var(--color-text-secondary)]">
+              <h2 className="m-0 mt-[var(--spacing-section-gap)] text-[length:var(--text-body)] font-normal leading-[var(--text-body--line-height)] text-muted-foreground">
                 {GIGS.past}
               </h2>
               <GigRows gigs={past} />
@@ -78,7 +81,7 @@ export function Gigs() {
       ) : (
         <p
           aria-live="polite"
-          className="mt-[calc(var(--spacing-unit)*3)] text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-[color:var(--color-text-secondary)]"
+          className="mt-[calc(var(--spacing-unit)*3)] text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-muted-foreground"
         >
           {statusLine}
         </p>

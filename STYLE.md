@@ -1,6 +1,6 @@
 # GigBuddy style guide
 
-The source of truth for how GigBuddy looks. Tokens in `web/src/styles/tokens.css` are named by role (`--text-page-title`, `--text-row`, `--text-reading`, `--text-body`). Page titles are 28px, set by Sandy on 2026-10-19.
+The source of truth for how GigBuddy looks. Tokens in `web/src/styles/tokens.css` are named by role (`--text-page-title`, `--text-row`, `--text-reading`, `--text-body`) and, for colour, by shadcn role (`--background`, `--primary` …). Page titles are 28px, set by Sandy on 2026-10-19.
 
 ## Principles
 
@@ -20,17 +20,30 @@ The source of truth for how GigBuddy looks. Tokens in `web/src/styles/tokens.css
 
 Rules:
 - Exactly one Page title per page, always an `<h1>`, always the same size.
-- Page title colour is primary text; body status lines use secondary text.
-- Links are underlined primary text, not accent colour. The light accent only passes AA for
-  large text.
+- Page title colour is foreground text; body status lines use `--muted-foreground`.
+- Plain text links are underlined foreground text. Header actions and buttons are `Button`s.
 
 ## Colour
 
-- Background `#faf9f5` / dark `#1a1209`.
-- Text primary `#1a1209` / `#f1e6cf`; secondary `#5a4a35` / `#c9b486`.
-- Accent `#b3892f` / `#e6b855`: focus outlines only (for now).
-- Hairline `#e8e2d6`, transparent in dark mode (rows rely on padding there).
-- All text pairs must meet WCAG AA.
+Tokens use shadcn's role names and live in `web/src/styles/tokens.css`.
+
+| Token | Light | Dark | Job |
+|---|---|---|---|
+| `--background` | `#faf9f5` | `#1a1209` | Page background |
+| `--foreground` | `#1a1209` | `#f1e6cf` | Text |
+| `--muted` | `#f0ebe0` | `#251a0e` | Hover fill |
+| `--muted-foreground` | `#5a4a35` | `#c9b486` | Quiet text: status lines, back links, group labels |
+| `--primary` | `#8a6420` | `#e6b855` | Brass accent: default buttons, header actions (Edit, Add) |
+| `--primary-foreground` | `#faf9f5` | `#1a1209` | Text on brass |
+| `--border` | `#e2dacb` | `#3a2e1f` | Hairlines under rows (decorative) |
+| `--input` | `#8f7f66` | `#7a6a4d` | Field and outline-button borders (3:1 or better) |
+| `--destructive` | `#a3341f` | `#f08a6e` | Delete |
+| `--destructive-foreground` | `#ffffff` | `#1a1209` | Text on a destructive fill |
+| `--ring` | brass at about 45% | same | Focus ring (follows `--primary`) |
+
+- Brass text is allowed (5.08:1 on the light background) for header actions.
+- Hairlines show in dark mode too.
+- All text pairs meet WCAG AA; borders of fields meet 3:1. `pnpm test` checks this.
 
 ## Spacing and tap targets
 
@@ -40,27 +53,52 @@ Rules:
 - Back link at the top of a page, then the page title 4px below it.
 - A group label inside a list (e.g. "Past") is Body, secondary text, with the 32px section
   gap above it.
-- Bottom bar (gig song page): fixed to the bottom, page background, 1px top border in secondary
-  text colour. Links at Row size, at least 44px; the position ("3 of 12") at Body size, secondary.
-  An unavailable action shows as secondary text, not a link. Content is padded so nothing hides
-  under the bar.
+- Bottom bar (gig song page): fixed to the bottom, page background, 1px top border in
+  `--muted-foreground`. Previous and Next are outline `Button`s (for now); the position
+  ("3 of 12") at Body size, quiet text. An unavailable end is an inert `aria-disabled` span in
+  the outline style at 50% opacity, never a disabled button or another action. Content is
+  padded so nothing hides under the bar.
 - "Screen may sleep" line on song pages: Body size, secondary text, under the back link; shown
   only when the screen can't be kept awake. No token changes.
-- Export link at the foot of the songs page: Body size, secondary text, underlined, 44px tap
-  height, 32px section gap above. No token changes.
+- Export link at the foot of the songs page: a `link` variant `Button` rendered as a plain
+  `<a>` (the router would swallow the download), 32px section gap above.
+
+## Buttons
+
+All buttons and button-like links use `Button` (`web/src/components/ui/button.tsx`): at least
+44px high, 18px text, 8px radius, 50% opacity when disabled.
+
+| Job | Variant |
+|---|---|
+| Edit, Add song, Add gig | `ghost`, brass text (`text-primary`), Lucide pencil or plus |
+| Back links | `ghost`, quiet text (`text-muted-foreground`), Lucide chevron-left |
+| Save, Add, Sign in | `default` (brass) |
+| Cancel | `ghost` |
+| Delete song, Delete gig | `destructive-outline`; confirm step: "Yes, delete" `destructive`, "Keep" `outline` |
+| Export all data | `link`, quiet text |
+| Previous, Next | `outline` (for now) |
+
+Ghost buttons use 10px side padding so their text lines up near the page gutter; `link` has none.
 
 ## Forms
 
-- Labels are Body (18px), primary text, above their field.
-- Inputs and the chord-chart box use Reading (22px), primary text on the page background, a 1px
-  border in secondary text colour, 4px radius, `--spacing-unit*3` padding, full width. Never use
-  the hairline token for field borders (it is transparent in dark mode).
-- The Save button is a bordered button: 2px primary-text border, primary text, Row size, at
-  least 44px high. Cancel is an ordinary underlined link.
+- `Label` (Body, 18px) above `Input` / `Textarea`, with a 4px gap.
+- Fields use Reading (22px), foreground text on the page background, a 1px `--input` border,
+  8px radius, at least 44px high, full width.
+- Save stays disabled until the required fields are filled (song: title; gig: venue and date).
+  There are no submit-time error messages for required fields.
+
+## Rows
+
+- A muted Lucide chevron-right at the end of each list row. Rows are not buttons.
+
+## Icons
+
+- Lucide only, always `aria-hidden`, always beside text (no icon-only controls yet).
 
 ## Focus
 
-- Visible keyboard focus on every link, input and button: 2px outline in the accent colour.
+- Visible keyboard focus on every link, input and button: a 3px `--ring` around it.
 
 ## Copy
 

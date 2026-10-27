@@ -1,7 +1,11 @@
 import { ACTIVE_BAND_ID, type Setlist, type SetlistPutInput } from '@gigbuddy/shared';
-import { type FormEvent, useRef, useState } from 'react';
+import { ChevronLeft } from 'lucide-react';
+import { type FormEvent, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { PageTitle } from '../components/page-title.js';
+import { Button } from '../components/ui/button.js';
+import { Input } from '../components/ui/input.js';
+import { Label } from '../components/ui/label.js';
 import { useSetlistMutation } from '../hooks/use-setlist-mutation.js';
 import { useSetlistOrCached } from '../hooks/use-setlist-or-cached.js';
 import { formatGigDate } from '../lib/gig-date.js';
@@ -21,18 +25,10 @@ import { GIG_DELETE, GIG_FORM, GIGS } from '../lib/microcopy.js';
  * and its setlist are one record, so both go.
  */
 
-const LINK_CLASS =
-  'inline-flex min-h-tap items-center text-[length:var(--text-row)] leading-[var(--text-row--line-height)] text-[color:var(--color-text-primary)] underline focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]';
-const LABEL_CLASS =
-  'block text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-[color:var(--color-text-primary)]';
-const FIELD_CLASS =
-  'mt-[var(--spacing-unit)] box-border w-full rounded-[4px] border border-[color:var(--color-text-secondary)] bg-[color:var(--color-bg)] p-[calc(var(--spacing-unit)*3)] text-[length:var(--text-reading)] leading-[var(--text-reading--line-height)] text-[color:var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]';
-const TAP_FIELD_CLASS = `${FIELD_CLASS} min-h-tap`;
 const PAIR_GAP = 'mt-[calc(var(--spacing-unit)*4)]';
-const BUTTON_CLASS =
-  'min-h-tap rounded-[4px] border-2 border-[color:var(--color-text-primary)] bg-transparent px-[calc(var(--spacing-unit)*6)] text-[length:var(--text-row)] leading-[var(--text-row--line-height)] text-[color:var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]';
+const FIELD_GAP = 'mt-[var(--spacing-unit)]';
 const BODY_PRIMARY =
-  'text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-[color:var(--color-text-primary)]';
+  'text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-foreground';
 
 export function GigEdit() {
   const { setlistId } = useParams();
@@ -44,12 +40,15 @@ function EditExisting({ setlistId }: { setlistId: string }) {
   if (!setlist) {
     return (
       <>
-        <Link to="/gigs" className={LINK_CLASS}>
-          {GIGS.backToGigs}
-        </Link>
+        <Button asChild variant="ghost" className="text-muted-foreground">
+          <Link to="/gigs">
+            <ChevronLeft aria-hidden="true" />
+            {GIGS.backToGigs}
+          </Link>
+        </Button>
         <p
           aria-live="polite"
-          className="mt-[calc(var(--spacing-unit)*3)] text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-[color:var(--color-text-secondary)]"
+          className="mt-[calc(var(--spacing-unit)*3)] text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-muted-foreground"
         >
           {statusLine}
         </p>
@@ -69,23 +68,16 @@ function GigForm({ initial }: { initial?: Setlist }) {
   const [venue, setVenue] = useState(initial?.gigMeta.venue ?? '');
   const [date, setDate] = useState(initial?.gigMeta.date ?? '');
   const [time, setTime] = useState(initial?.gigMeta.time ?? '');
-  const [showRequired, setShowRequired] = useState(false);
-  const venueRef = useRef<HTMLInputElement>(null);
-  const dateRef = useRef<HTMLInputElement>(null);
   const exitTo = initial ? `/gigs/${setlistId}` : '/gigs';
   // 'default' means this form is the first page in the history stack.
   const canStepBack = initial !== undefined && location.key !== 'default';
   const venueBlank = venue.trim() === '';
   const dateBlank = date === '';
+  const canSave = !venueBlank && !dateBlank;
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
-    if (venueBlank || dateBlank) {
-      setShowRequired(true);
-      (venueBlank ? venueRef : dateRef).current?.focus();
-      return;
-    }
-    setShowRequired(false);
+    if (!canSave) return;
     // Built field by field: the API schema is strict, so no spreading `initial`.
     const record: SetlistPutInput = {
       bandId: ACTIVE_BAND_ID,
@@ -105,72 +97,57 @@ function GigForm({ initial }: { initial?: Setlist }) {
       <PageTitle>{initial ? GIG_FORM.editHeading : GIG_FORM.addHeading}</PageTitle>
 
       <div className={PAIR_GAP}>
-        <label htmlFor="gig-venue" className={LABEL_CLASS}>
-          {GIG_FORM.venue}
-        </label>
-        <input
-          ref={venueRef}
+        <Label htmlFor="gig-venue">{GIG_FORM.venue}</Label>
+        <Input
           id="gig-venue"
           type="text"
+          required
           value={venue}
           onChange={(e) => setVenue(e.target.value)}
-          aria-invalid={(showRequired && venueBlank) || undefined}
-          className={FIELD_CLASS}
+          className={FIELD_GAP}
         />
       </div>
 
       <div className={PAIR_GAP}>
-        <label htmlFor="gig-date" className={LABEL_CLASS}>
-          {GIG_FORM.date}
-        </label>
-        <input
-          ref={dateRef}
+        <Label htmlFor="gig-date">{GIG_FORM.date}</Label>
+        <Input
           id="gig-date"
           type="date"
+          required
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          aria-invalid={(showRequired && dateBlank) || undefined}
-          className={TAP_FIELD_CLASS}
+          className={FIELD_GAP}
         />
-        {showRequired ? (
-          <p
-            role="alert"
-            className="mt-[var(--spacing-unit)] text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-[color:var(--color-text-primary)]"
-          >
-            {GIG_FORM.required}
-          </p>
-        ) : null}
       </div>
 
       <div className={PAIR_GAP}>
-        <label htmlFor="gig-time" className={LABEL_CLASS}>
-          {GIG_FORM.time}
-        </label>
-        <input
+        <Label htmlFor="gig-time">{GIG_FORM.time}</Label>
+        <Input
           id="gig-time"
           type="time"
           value={time}
           onChange={(e) => setTime(e.target.value)}
-          className={TAP_FIELD_CLASS}
+          className={FIELD_GAP}
         />
       </div>
 
       <div className="mt-[calc(var(--spacing-unit)*8)] flex items-center gap-[calc(var(--spacing-unit)*6)]">
-        <button type="submit" className={BUTTON_CLASS}>
+        <Button type="submit" disabled={!canSave}>
           {GIG_FORM.save}
-        </button>
-        <Link
-          replace
-          to={exitTo}
-          onClick={(e) => {
-            if (!canStepBack) return;
-            e.preventDefault();
-            navigate(-1);
-          }}
-          className={LINK_CLASS}
-        >
-          {GIG_FORM.cancel}
-        </Link>
+        </Button>
+        <Button asChild variant="ghost">
+          <Link
+            replace
+            to={exitTo}
+            onClick={(e) => {
+              if (!canStepBack) return;
+              e.preventDefault();
+              navigate(-1);
+            }}
+          >
+            {GIG_FORM.cancel}
+          </Link>
+        </Button>
       </div>
 
       {initial ? <DeleteGig gig={initial} /> : null}
@@ -209,30 +186,30 @@ function DeleteGig({ gig }: { gig: Setlist }) {
             {`${GIG_DELETE.confirm} ${venue ? `${venue}, ${date}` : date}?`}
           </p>
           <div className="mt-[calc(var(--spacing-unit)*4)] flex flex-wrap items-center gap-[calc(var(--spacing-unit)*6)]">
-            <button type="button" onClick={onConfirm} disabled={deleting} className={BUTTON_CLASS}>
+            <Button type="button" variant="destructive" onClick={onConfirm} disabled={deleting}>
               {GIG_DELETE.yes}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="outline"
               onClick={() => setConfirming(false)}
               disabled={deleting}
-              className={BUTTON_CLASS}
             >
               {GIG_DELETE.keep}
-            </button>
+            </Button>
           </div>
         </>
       ) : (
-        <button
+        <Button
           type="button"
+          variant="destructive-outline"
           onClick={() => {
             setFailed(false);
             setConfirming(true);
           }}
-          className={BUTTON_CLASS}
         >
           {GIG_DELETE.button}
-        </button>
+        </Button>
       )}
       {failed ? (
         <p role="alert" className={`mt-[var(--spacing-unit)] ${BODY_PRIMARY}`}>

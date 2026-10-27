@@ -117,13 +117,25 @@ describe('SongEdit', () => {
     expect(await screen.findByText('song page')).toBeInTheDocument();
   });
 
-  it('refuses a blank title', async () => {
+  it('keeps Save disabled until the title has content', async () => {
     const user = userEvent.setup();
     renderAt('/songs/new');
+    const save = screen.getByRole('button', { name: SONG_FORM.save });
+    expect(save).toBeDisabled();
     await user.type(screen.getByLabelText(SONG_FORM.title), '   ');
-    await user.click(screen.getByRole('button', { name: SONG_FORM.save }));
-    expect(screen.getByRole('alert')).toHaveTextContent(SONG_FORM.titleRequired);
-    expect(saveSongMock).not.toHaveBeenCalled();
+    expect(save).toBeDisabled();
+    await user.type(screen.getByLabelText(SONG_FORM.title), 'New Tune');
+    expect(save).toBeEnabled();
+    await user.click(save);
+    expect(saveSongMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('disables Save when an edit clears the title', async () => {
+    const user = userEvent.setup();
+    renderAt('/songs/abc/edit');
+    expect(screen.getByRole('button', { name: SONG_FORM.save })).toBeEnabled();
+    await user.clear(screen.getByLabelText(SONG_FORM.title));
+    expect(screen.getByRole('button', { name: SONG_FORM.save })).toBeDisabled();
   });
 
   it('cancels an edit back to the song page without saving', async () => {
@@ -185,9 +197,17 @@ describe('SongEdit delete', () => {
   it('asks first, and Keep leaves the song alone', async () => {
     const user = userEvent.setup();
     renderAt('/songs/abc/edit');
-    await user.click(screen.getByRole('button', { name: SONG_DELETE.button }));
+    const del = screen.getByRole('button', { name: SONG_DELETE.button });
+    expect(del).toHaveAttribute('data-variant', 'destructive-outline');
+    await user.click(del);
     expect(screen.getByText(`${SONG_DELETE.confirm} Alpha Test Tune?`)).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: SONG_DELETE.keep }));
+    expect(screen.getByRole('button', { name: SONG_DELETE.yes })).toHaveAttribute(
+      'data-variant',
+      'destructive',
+    );
+    const keep = screen.getByRole('button', { name: SONG_DELETE.keep });
+    expect(keep).toHaveAttribute('data-variant', 'outline');
+    await user.click(keep);
     expect(deleteSongMock).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: SONG_DELETE.button })).toBeInTheDocument();
   });

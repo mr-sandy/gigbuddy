@@ -1,12 +1,15 @@
 import type { Setlist } from '@gigbuddy/shared';
+import { ChevronLeft, Pencil } from 'lucide-react';
 import { useEffect } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router';
 import { PageTitle } from '../components/page-title.js';
+import { Button, buttonVariants } from '../components/ui/button.js';
 import { useSetlistOrCached } from '../hooks/use-setlist-or-cached.js';
 import { useSongOrCached } from '../hooks/use-song-or-cached.js';
 import { useWakeLock } from '../hooks/use-wake-lock.js';
 import { gigSongPath, playOrder, resolvePlace } from '../lib/gig-position.js';
 import { GIG_PLAY, GIG_SETLIST, SONG_FORM, SONGS, WAKE_LOCK } from '../lib/microcopy.js';
+import { cn } from '../lib/utils.js';
 
 /*
  * Song page (Story 7.3 shell, Story 7.5 content): title, key/patch line and
@@ -16,36 +19,31 @@ import { GIG_PLAY, GIG_SETLIST, SONG_FORM, SONGS, WAKE_LOCK } from '../lib/micro
  * a fixed bottom bar stepping Previous/Next through the gig's setlist.
  * Both routes keep the screen awake while open (Story 7.15).
  */
-const LINK_CLASS =
-  'inline-flex min-h-tap min-w-[var(--spacing-tap)] items-center text-[length:var(--text-row)] leading-[var(--text-row--line-height)]';
-
 function GigPlayBar({ setlist, place }: { setlist: Setlist; place: number }) {
   const order = playOrder(setlist);
-  const step = (index: number, label: string, align: string) =>
+  const step = (index: number, label: string) =>
     index >= 0 && index < order.length ? (
-      <Link
-        replace
-        to={gigSongPath(setlist.setlistId, order, index)}
-        className={`${LINK_CLASS} ${align} text-[color:var(--color-text-primary)] underline focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]`}
-      >
-        {label}
-      </Link>
+      <Button asChild variant="outline">
+        <Link replace to={gigSongPath(setlist.setlistId, order, index)}>
+          {label}
+        </Link>
+      </Button>
     ) : (
       <span
         aria-disabled="true"
-        className={`${LINK_CLASS} ${align} text-[color:var(--color-text-secondary)]`}
+        className={cn(buttonVariants({ variant: 'outline' }), 'opacity-50')}
       >
         {label}
       </span>
     );
   return (
-    <nav className="fixed inset-x-0 bottom-0 border-t border-[color:var(--color-text-secondary)] bg-[var(--color-bg)] pb-[env(safe-area-inset-bottom)]">
+    <nav className="fixed inset-x-0 bottom-0 border-t border-muted-foreground bg-background pb-[env(safe-area-inset-bottom)]">
       <div className="mx-auto flex max-w-[40rem] items-center justify-between px-[var(--spacing-gutter)] py-[calc(var(--spacing-unit)*2)]">
-        {step(place - 1, GIG_PLAY.previous, 'justify-start')}
-        <span className="text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-[color:var(--color-text-secondary)]">
+        {step(place - 1, GIG_PLAY.previous)}
+        <span className="text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-muted-foreground">
           {GIG_PLAY.position(place + 1, order.length)}
         </span>
-        {step(place + 1, GIG_PLAY.next, 'justify-end')}
+        {step(place + 1, GIG_PLAY.next)}
       </div>
     </nav>
   );
@@ -84,23 +82,23 @@ export function Song() {
       }
     >
       <div className="flex items-center justify-between gap-[calc(var(--spacing-unit)*4)]">
-        <Link
-          to={setlistId ? `/gigs/${setlistId}` : '/songs'}
-          className="inline-flex min-h-tap items-center text-[length:var(--text-row)] leading-[var(--text-row--line-height)] text-[color:var(--color-text-primary)] underline focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]"
-        >
-          {setlistId ? GIG_SETLIST.backToGig : SONGS.backToSongs}
-        </Link>
-        {song && !setlistId ? (
-          <Link
-            to={`/songs/${song.songId}/edit`}
-            className="inline-flex min-h-tap items-center text-[length:var(--text-row)] leading-[var(--text-row--line-height)] text-[color:var(--color-text-primary)] underline focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]"
-          >
-            {SONG_FORM.editLink}
+        <Button asChild variant="ghost" className="text-muted-foreground">
+          <Link to={setlistId ? `/gigs/${setlistId}` : '/songs'}>
+            <ChevronLeft aria-hidden="true" />
+            {setlistId ? GIG_SETLIST.backToGig : SONGS.backToSongs}
           </Link>
+        </Button>
+        {song && !setlistId ? (
+          <Button asChild variant="ghost" className="text-primary">
+            <Link to={`/songs/${song.songId}/edit`}>
+              <Pencil aria-hidden="true" />
+              {SONG_FORM.editLink}
+            </Link>
+          </Button>
         ) : null}
       </div>
       {wakeLock.failed ? (
-        <p className="mt-[calc(var(--spacing-unit)*2)] text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-[color:var(--color-text-secondary)]">
+        <p className="mt-[calc(var(--spacing-unit)*2)] text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-muted-foreground">
           {WAKE_LOCK.maySleep}
         </p>
       ) : null}
@@ -108,14 +106,14 @@ export function Song() {
         <>
           <PageTitle afterBackLink>{song.title}</PageTitle>
           {keyAndPatch ? (
-            <p className="mt-[calc(var(--spacing-unit)*4)] text-[length:var(--text-reading)] leading-[var(--text-reading--line-height)] text-[color:var(--color-text-secondary)]">
+            <p className="mt-[calc(var(--spacing-unit)*4)] text-[length:var(--text-reading)] leading-[var(--text-reading--line-height)] text-muted-foreground">
               {keyAndPatch}
             </p>
           ) : null}
           {hasChart ? (
             <p
               data-testid="chord-chart"
-              className="mt-[calc(var(--spacing-unit)*4)] whitespace-pre-wrap [overflow-wrap:anywhere] text-[length:var(--text-reading)] leading-[var(--text-reading--line-height)] text-[color:var(--color-text-primary)]"
+              className="mt-[calc(var(--spacing-unit)*4)] whitespace-pre-wrap [overflow-wrap:anywhere] text-[length:var(--text-reading)] leading-[var(--text-reading--line-height)] text-foreground"
             >
               {song.chordChart}
             </p>
@@ -124,7 +122,7 @@ export function Song() {
       ) : (
         <p
           aria-live="polite"
-          className="mt-[calc(var(--spacing-unit)*3)] text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-[color:var(--color-text-secondary)]"
+          className="mt-[calc(var(--spacing-unit)*3)] text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-muted-foreground"
         >
           {statusLine}
         </p>

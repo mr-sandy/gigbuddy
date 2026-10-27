@@ -1,7 +1,12 @@
 import { ACTIVE_BAND_ID, type Song, type SongPutInput } from '@gigbuddy/shared';
-import { type FormEvent, useRef, useState } from 'react';
+import { ChevronLeft } from 'lucide-react';
+import { type FormEvent, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { PageTitle } from '../components/page-title.js';
+import { Button } from '../components/ui/button.js';
+import { Input } from '../components/ui/input.js';
+import { Label } from '../components/ui/label.js';
+import { Textarea } from '../components/ui/textarea.js';
 import { useSetlists } from '../hooks/use-setlists.js';
 import { useSongMutation } from '../hooks/use-song-mutation.js';
 import { useSongOrCached } from '../hooks/use-song-or-cached.js';
@@ -23,17 +28,10 @@ import { SONG_DELETE, SONG_FORM, SONGS } from '../lib/microcopy.js';
  * and the API's 409 covers anything the cache missed.
  */
 
-const LINK_CLASS =
-  'inline-flex min-h-tap items-center text-[length:var(--text-row)] leading-[var(--text-row--line-height)] text-[color:var(--color-text-primary)] underline focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]';
-const LABEL_CLASS =
-  'block text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-[color:var(--color-text-primary)]';
-const FIELD_CLASS =
-  'mt-[var(--spacing-unit)] box-border w-full rounded-[4px] border border-[color:var(--color-text-secondary)] bg-[color:var(--color-bg)] p-[calc(var(--spacing-unit)*3)] text-[length:var(--text-reading)] leading-[var(--text-reading--line-height)] text-[color:var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]';
 const PAIR_GAP = 'mt-[calc(var(--spacing-unit)*4)]';
-const BUTTON_CLASS =
-  'min-h-tap rounded-[4px] border-2 border-[color:var(--color-text-primary)] bg-transparent px-[calc(var(--spacing-unit)*6)] text-[length:var(--text-row)] leading-[var(--text-row--line-height)] text-[color:var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]';
+const FIELD_GAP = 'mt-[var(--spacing-unit)]';
 const BODY_PRIMARY =
-  'text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-[color:var(--color-text-primary)]';
+  'text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-foreground';
 
 export function SongEdit() {
   const { songId } = useParams();
@@ -45,12 +43,15 @@ function EditExisting({ songId }: { songId: string }) {
   if (!song) {
     return (
       <>
-        <Link to="/songs" className={LINK_CLASS}>
-          {SONGS.backToSongs}
-        </Link>
+        <Button asChild variant="ghost" className="text-muted-foreground">
+          <Link to="/songs">
+            <ChevronLeft aria-hidden="true" />
+            {SONGS.backToSongs}
+          </Link>
+        </Button>
         <p
           aria-live="polite"
-          className="mt-[calc(var(--spacing-unit)*3)] text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-[color:var(--color-text-secondary)]"
+          className="mt-[calc(var(--spacing-unit)*3)] text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-muted-foreground"
         >
           {statusLine}
         </p>
@@ -71,21 +72,15 @@ function SongForm({ initial }: { initial?: Song }) {
   const [key, setKey] = useState(initial?.key ?? '');
   const [patch, setPatch] = useState(initial?.patch ?? '');
   const [chart, setChart] = useState(initial?.chordChart ?? '');
-  const [titleError, setTitleError] = useState(false);
-  const titleRef = useRef<HTMLInputElement>(null);
+  const canSave = title.trim() !== '';
   const exitTo = initial ? `/songs/${songId}` : '/songs';
   // 'default' means this form is the first page in the history stack.
   const canStepBack = initial !== undefined && location.key !== 'default';
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
+    if (!canSave) return;
     const trimmedTitle = title.trim();
-    if (trimmedTitle === '') {
-      setTitleError(true);
-      titleRef.current?.focus();
-      return;
-    }
-    setTitleError(false);
     const trimmedKey = key.trim();
     const trimmedPatch = patch.trim();
     // Built field by field: the API schema is strict, so no spreading `initial`.
@@ -113,83 +108,67 @@ function SongForm({ initial }: { initial?: Song }) {
       <PageTitle>{initial ? SONG_FORM.editHeading : SONG_FORM.addHeading}</PageTitle>
 
       <div className={PAIR_GAP}>
-        <label htmlFor="song-title" className={LABEL_CLASS}>
-          {SONG_FORM.title}
-        </label>
-        <input
-          ref={titleRef}
+        <Label htmlFor="song-title">{SONG_FORM.title}</Label>
+        <Input
           id="song-title"
           type="text"
+          required
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          aria-invalid={titleError || undefined}
-          className={FIELD_CLASS}
+          className={FIELD_GAP}
         />
-        {titleError ? (
-          <p
-            role="alert"
-            className="mt-[var(--spacing-unit)] text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-[color:var(--color-text-primary)]"
-          >
-            {SONG_FORM.titleRequired}
-          </p>
-        ) : null}
       </div>
 
       <div className={PAIR_GAP}>
-        <label htmlFor="song-key" className={LABEL_CLASS}>
-          {SONG_FORM.key}
-        </label>
-        <input
+        <Label htmlFor="song-key">{SONG_FORM.key}</Label>
+        <Input
           id="song-key"
           type="text"
           value={key}
           onChange={(e) => setKey(e.target.value)}
-          className={FIELD_CLASS}
+          className={FIELD_GAP}
         />
       </div>
 
       <div className={PAIR_GAP}>
-        <label htmlFor="song-patch" className={LABEL_CLASS}>
-          {SONG_FORM.patch}
-        </label>
-        <input
+        <Label htmlFor="song-patch">{SONG_FORM.patch}</Label>
+        <Input
           id="song-patch"
           type="text"
           value={patch}
           onChange={(e) => setPatch(e.target.value)}
-          className={FIELD_CLASS}
+          className={FIELD_GAP}
         />
       </div>
 
       <div className={PAIR_GAP}>
-        <label htmlFor="song-chart" className={LABEL_CLASS}>
-          {SONG_FORM.chordChart}
-        </label>
-        <textarea
+        <Label htmlFor="song-chart">{SONG_FORM.chordChart}</Label>
+        <Textarea
           id="song-chart"
           rows={12}
           value={chart}
           onChange={(e) => setChart(e.target.value)}
-          className={`${FIELD_CLASS} resize-y`}
+          className={`${FIELD_GAP} resize-y`}
         />
       </div>
 
       <div className="mt-[calc(var(--spacing-unit)*8)] flex items-center gap-[calc(var(--spacing-unit)*6)]">
-        <button type="submit" className={BUTTON_CLASS}>
+        <Button type="submit" disabled={!canSave}>
           {SONG_FORM.save}
-        </button>
-        <Link
-          replace
-          to={exitTo}
-          onClick={(e) => {
-            if (!canStepBack) return;
-            e.preventDefault();
-            navigate(-1);
-          }}
-          className={LINK_CLASS}
-        >
-          {SONG_FORM.cancel}
-        </Link>
+        </Button>
+        <Button asChild variant="ghost">
+          <Link
+            replace
+            to={exitTo}
+            onClick={(e) => {
+              if (!canStepBack) return;
+              e.preventDefault();
+              navigate(-1);
+            }}
+          >
+            {SONG_FORM.cancel}
+          </Link>
+        </Button>
       </div>
 
       {initial ? <DeleteSong song={initial} /> : null}
@@ -225,31 +204,31 @@ function DeleteSong({ song }: { song: Song }) {
   }
 
   const keep = (
-    <button
+    <Button
       type="button"
+      variant="outline"
       onClick={() => {
         setStep('idle');
         setMessage(null);
       }}
-      className={BUTTON_CLASS}
     >
       {SONG_DELETE.keep}
-    </button>
+    </Button>
   );
 
   return (
     <div className="mt-[calc(var(--spacing-unit)*12)]">
       {step === 'idle' ? (
-        <button
+        <Button
           type="button"
+          variant="destructive-outline"
           onClick={() => {
             setMessage(null);
             setStep('confirm');
           }}
-          className={BUTTON_CLASS}
         >
           {SONG_DELETE.button}
-        </button>
+        </Button>
       ) : gigs.length > 0 ? (
         <>
           <p className={BODY_PRIMARY}>{SONG_DELETE.inUse}</p>
@@ -266,9 +245,9 @@ function DeleteSong({ song }: { song: Song }) {
         <>
           <p className={BODY_PRIMARY}>{`${SONG_DELETE.confirm} ${song.title}?`}</p>
           <div className="mt-[calc(var(--spacing-unit)*4)] flex flex-wrap items-center gap-[calc(var(--spacing-unit)*6)]">
-            <button type="button" onClick={onConfirm} disabled={deleting} className={BUTTON_CLASS}>
+            <Button type="button" variant="destructive" onClick={onConfirm} disabled={deleting}>
               {SONG_DELETE.yes}
-            </button>
+            </Button>
             {keep}
           </div>
         </>
