@@ -4,7 +4,7 @@ baseline_commit: 28f127b
 
 # Story 7.21: Edit and add in sheets
 
-Status: review
+Status: done
 
 <!-- Source: epics.md "Epic 7 / Story 7.21" and the 2026-10-27 UI review decisions under Epic 7.
      Reference look: _bmad-output/planning-artifacts/mockups/ui-review-2026-10-27.html
@@ -400,3 +400,4 @@ Claude Sonnet 5.5
 - 2026-10-27: Story created (ready-for-dev).
 - 2026-10-27: Implemented; status → review.
 - 2026-10-27: Code review: 5 patches applied (Save can't run twice while saving; delete confirm can't be dismissed mid-delete; one `SheetFrame` kept across loading and form so focus returns to the opener; spacing token instead of `mt-2`; Edit-opener focus, Escape-destination and double-tap tests). 2 deferred to deferred-work.md.
+- 2026-10-27: Committed 49bba2f; CI and deploy run 40564286768 green. Sandy's live check: OK (noted that sheets appear rather than slide; no animation by design). Status → done.
