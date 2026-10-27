@@ -4,7 +4,7 @@ baseline_commit: b86a2b4
 
 # Story 7.24: Sheets slide in
 
-Status: review
+Status: done
 
 <!-- Source: Sandy, 2026-10-27, after 7.23: "add the animations to the sheets loading; less
      concerned about a closing animation if that's going to be too complicated". 7.21 shipped
@@ -89,13 +89,13 @@ so that opening a form feels connected to the page it came from instead of poppi
         in. Closing is instant. Reduce Motion turns the slide off."
   - [x] `_bmad-output/planning-artifacts/architecture.md` ~line 763: after "no animation
         library", add "; slides in on open via CSS keyframes (Story 7.24), no exit animation".
-- [ ] Task 5 (commit, push, deploy and Sandy's look follow code review): Verify and ship (AC: 4, 5, 6)
+- [x] Task 5: Verify and ship (AC: 4, 5, 6)
   - [x] `git diff --stat b86a2b4 -- api shared infra` is empty; no new dependency in any
         `package.json`.
   - [x] `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`. Check the built CSS in
         `web/dist/assets/*.css` contains `@keyframes sheet-up` (Tailwind only emits theme
         animations that are used, and sheet.tsx uses them).
-  - [ ] Commit `Implement story 7.24: Sheets slide in` (after code review), push, deploy, then
+  - [x] Commit `Implement story 7.24: Sheets slide in` (after code review), push, deploy, then
         Sandy's quick look.
 
 ## Dev Notes
@@ -179,3 +179,5 @@ Claude Opus 5.5
 
 - 2026-10-27: Story created (ready-for-dev).
 - 2026-10-27: Implemented; status → review.
+- 2026-10-27: Code review (lightweight): clean.
+- 2026-10-27: Committed a2ca6ec; CI and deploy run 40592519197 green. Sandy's live check (phone and laptop): OK. Status → done.
