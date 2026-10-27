@@ -19,7 +19,7 @@
 ## Deferred from: code review of 1-4-access-gate-single-password-jwt-cookie-ssm (2026-06-11)
 
 - **JWT key has no minimum-length runtime enforcement** (`api/src/auth/jwt.ts`) — a misconfigured SSM value shorter than 32 chars would produce a weak HS256 signature; fix is operational (bootstrap runbook should specify key generation command). Address when documenting key generation in rotation runbooks (Story 5.2).
-- **`daysUntilExpiry === 0` renders "Re-authenticate within 0 days."** (`web/src/components/reauth-banner.tsx:22-23`) — grammar is wrong and misleading at boundary; fix requires singular/plural handling. UX polish, no security impact.
+- ~~**`daysUntilExpiry === 0` renders "Re-authenticate within 0 days."** (`web/src/components/reauth-banner.tsx:22-23`) — grammar is wrong and misleading at boundary; fix requires singular/plural handling. UX polish, no security impact.~~ **No longer applies (checked 2026-10-27)**: `reauth-banner.tsx` was removed.
 - **`handler.test.ts` `getPasswordHashMock` not initialized in `beforeEach`** (`api/src/handler.test.ts`) — future test exercising the login path through the handler will find mock returning `undefined`. Add `getPasswordHashMock.mockResolvedValue(...)` to `beforeEach` in a test cleanup pass.
 - ~~**`app-bootstrap.test.tsx` authenticated-shell assertion is inconclusive** (`web/src/app-bootstrap.test.tsx`) — test cannot distinguish the boot loading shell from the authenticated shell; both render `<h1>GigBuddy</h1>`. Improve once Story 1.5 adds unique authenticated-shell content.~~ **Resolved in Story 1.5 (Task 9)** — assertion now binds to the `Setlists` heading + `EMPTY_STATES.noUpcomingGigs` text from the new Home route.
 - **No redirect from `/login` when already authenticated** (`web/src/router.tsx:15`) — authenticated user navigating to `/login` sees the form silently. Add an `alreadyAuthenticated` guard in a future Story 1.5 router polish pass.
@@ -27,9 +27,9 @@
 
 ## Deferred from: code review of 1-5-navigation-chrome-scaffold (2026-06-12)
 
-- **`fetchMe()` has no `.catch()` — network failure leaves app in permanent loading state** (`web/src/app-bootstrap.tsx:22`) — pre-existing from Story 1.4 baseline; `ready` never flips to `true` on a rejected promise, leaving the user staring at `<h1>GigBuddy</h1>` indefinitely with no error UI or retry path. Add error handling when addressing the app loading/error states.
+- ~~**`fetchMe()` has no `.catch()` — network failure leaves app in permanent loading state** (`web/src/app-bootstrap.tsx:22`) — pre-existing from Story 1.4 baseline; `ready` never flips to `true` on a rejected promise, leaving the user staring at `<h1>GigBuddy</h1>` indefinitely with no error UI or retry path. Add error handling when addressing the app loading/error states.~~ **No longer applies (checked 2026-10-27)**: `fetchMe()` catches its own fetch and parse errors and never rejects (`web/src/auth/auth-api.ts`).
 - **`shouldRedirectOn401` called with hardcoded `wasNetworkSuccess: true` in `RequireAuth`** (`web/src/router.tsx` RequireAuth) — pre-existing from Story 1.4; the `wasNetworkSuccess: false` branch in `shouldRedirectOn401` is dead code in the render path. If a future auth interceptor (e.g., Story 2.4 sync-layer 401 handling) sets `auth.status = 'unauthenticated'` after a cache-hit 401, the offline redirect guard will not engage. Pass `wasNetworkSuccess` dynamically when wiring a real interceptor.
-- **E2E iPhone/BottomTabs path has no coverage** (`e2e/smoke/shell.spec.ts`) — `shell.spec.ts` only verifies the MacBook chrome path; the iPhone BottomTabs branch is entirely untested at the e2e layer. Deferred to Sandy's on-device verification (UA-gated — requires real iPhone Safari or browser device emulation in Playwright config). Add an iPhone viewport project config in a future e2e hardening pass.
+- ~~**E2E iPhone/BottomTabs path has no coverage** (`e2e/smoke/shell.spec.ts`) — `shell.spec.ts` only verifies the MacBook chrome path; the iPhone BottomTabs branch is entirely untested at the e2e layer. Deferred to Sandy's on-device verification (UA-gated — requires real iPhone Safari or browser device emulation in Playwright config). Add an iPhone viewport project config in a future e2e hardening pass.~~ **No longer applies (checked 2026-10-27)**: one responsive app since 7.1; there is no iPhone-only chrome to cover.
 
 ## Deferred from: bootstrap execution (2026-06-15)
 
@@ -80,8 +80,8 @@
 
 ## Deferred from: code review of 2-2-iphone-pwa-install-gate (2026-06-16)
 
-- **`isStandalone()` lacks guard for `window.matchMedia` being absent** (`web/src/lib/platform.ts:29`) — production browsers always have `matchMedia`; `isIPhone()` short-circuit prevents calling `isStandalone()` on non-iPhone paths; jsdom tests always stub matchMedia before calling `isStandalone()` directly. Add `typeof window.matchMedia === 'function'` guard if SSR or a non-standard browser env is ever targeted.
-- **`stubMatchMedia` helper duplicated verbatim in `app-bootstrap.test.tsx` and `platform.test.ts`** — inline stubs are the established pattern in this codebase. Extract to a shared `web/src/test-utils/stubs.ts` in a future test-utilities pass when duplication reaches three or more files.
+- ~~**`isStandalone()` lacks guard for `window.matchMedia` being absent** (`web/src/lib/platform.ts:29`) — production browsers always have `matchMedia`; `isIPhone()` short-circuit prevents calling `isStandalone()` on non-iPhone paths; jsdom tests always stub matchMedia before calling `isStandalone()` directly. Add `typeof window.matchMedia === 'function'` guard if SSR or a non-standard browser env is ever targeted.~~ **No longer applies (checked 2026-10-27)**: `web/src/lib/platform.ts` was removed with the device split.
+- ~~**`stubMatchMedia` helper duplicated verbatim in `app-bootstrap.test.tsx` and `platform.test.ts`** — inline stubs are the established pattern in this codebase. Extract to a shared `web/src/test-utils/stubs.ts` in a future test-utilities pass when duplication reaches three or more files.~~ **No longer applies (checked 2026-10-27)**: `platform.test.ts` was removed with the device split.
 
 
 ## Deferred from: code review of 2-5-library-list-surface (2026-06-18)
@@ -91,8 +91,8 @@
 
 ## Deferred from: code review of 7-1-front-end-reset-to-responsive-landing-page (2026-10-19)
 
-- **Home "Loading…" indefinitely on offline first launch** (`web/src/routes/home.tsx:19`) — with no persisted cache and `navigator.onLine === false`, TanStack v5's default `networkMode: 'online'` pauses both queries with `status: 'pending'`, so the line never reaches the error message. Would need a `fetchStatus === 'paused'` branch. Spec-mandated state order; only bites a device with no cache.
-- **One failed query hides the other's count** (`web/src/routes/home.tsx:16`) — counts render only when both songs and setlists have data; one errored endpoint with no cache replaces the whole line with the error. Spec-mandated; revisit if counts become separate elements.
+- ~~**Home "Loading…" indefinitely on offline first launch** (`web/src/routes/home.tsx:19`) — with no persisted cache and `navigator.onLine === false`, TanStack v5's default `networkMode: 'online'` pauses both queries with `status: 'pending'`, so the line never reaches the error message. Would need a `fetchStatus === 'paused'` branch. Spec-mandated state order; only bites a device with no cache.~~ **No longer applies (checked 2026-10-27)**: `routes/home.tsx` was removed.
+- ~~**One failed query hides the other's count** (`web/src/routes/home.tsx:16`) — counts render only when both songs and setlists have data; one errored endpoint with no cache replaces the whole line with the error. Spec-mandated; revisit if counts become separate elements.~~ **No longer applies (checked 2026-10-27)**: `routes/home.tsx` was removed.
 - **`/login` reachable while signed in; Back returns to it** (post-login `replace` fixed in the 7.20 review, 2026-10-27; the guard is still open) (`web/src/routes/login.tsx:29`, `web/src/router.tsx:19`) — no authenticated → `/` guard on `/login`, and post-login `navigate('/')` lacks `{ replace: true }`. Pre-existing.
 - **Manifest colours still dark** (`web/vite.config.ts:80-81`) — `theme_color`/`background_color` `#1a1209`, so installed-PWA splash/task switcher is dark in light mode. Out of scope for 7.1 (`build-output.test.ts` asserts the values).
 - **Orphaned persisted query keys** (`web/src/sync/query-client.tsx:22`) — keys for removed screens (tonight-gig prefetch, per-song/per-setlist detail) restore with `gcTime: Infinity` under unchanged `buster: 'v1'` and are re-persisted forever. Harmless; clear on next buster bump.
@@ -110,7 +110,7 @@
 ## Deferred from: code review of 7-21-edit-and-add-in-sheets (2026-10-27)
 
 - **After a delete, Back returns to the deleted record** (`web/src/routes/song-edit.tsx:186`, `web/src/routes/gig-edit.tsx:166`): the delete replaces only the edit entry, so history ends up list → record → list. Back then opens the deleted record's not-found page. The old pages did this too.
-- **Edit from a gig's song page swaps the page behind the sheet** (`web/src/routes/song.tsx:107`): the Edit link points to `/songs/:id/edit`, not to a child of `gigs/:setlistId/songs/:songId`. The gig chrome disappears behind the scrim, and after a reload Cancel lands on the plain song page.
+- ~~**Edit from a gig's song page swaps the page behind the sheet** (`web/src/routes/song.tsx:107`): the Edit link points to `/songs/:id/edit`, not to a child of `gigs/:setlistId/songs/:songId`. The gig chrome disappears behind the scrim, and after a reload Cancel lands on the plain song page.~~ **No longer applies (checked 2026-10-27)**: a gig's song page has no Edit link (`web/src/routes/song.tsx`, `song && !setlistId`), so there is nothing to swap.
 
 ## Deferred from: code review of 7-22-settings-sheet (2026-10-27)
 
