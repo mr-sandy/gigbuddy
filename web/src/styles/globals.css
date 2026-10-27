@@ -68,6 +68,18 @@ html:has([data-bottom-bar="play"]) {
   }
 }
 
+/* iOS Safari sizes date and time fields from their contents, ignoring `w-full`, so
+   at reading size they run off a phone-width sheet. Dropping the native styling makes
+   them respect the width; the value is then centred, so align it to the start. */
+input[type="date"],
+input[type="time"] {
+  appearance: none;
+}
+
+input::-webkit-date-and-time-value {
+  text-align: start;
+}
+
 :root[data-theme="light"] {
   color-scheme: light;
 }

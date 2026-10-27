@@ -25,3 +25,12 @@ describe('globals.css sheet animations (Story 7.24)', () => {
     expect(css).toContain(`@keyframes ${name}`);
   });
 });
+
+describe('globals.css date and time fields', () => {
+  // iOS Safari overflows these past the sheet width unless native styling is off.
+  it('drops native styling so the fields respect their width', () => {
+    const rule = css.match(/input\[type="date"\],\s*input\[type="time"\]\s*\{([^}]*)\}/);
+    expect(rule?.[1]).toMatch(/appearance:\s*none/);
+    expect(css).toMatch(/::-webkit-date-and-time-value\s*\{[^}]*text-align:\s*start/);
+  });
+});
