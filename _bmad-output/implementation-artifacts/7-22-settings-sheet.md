@@ -4,7 +4,7 @@ baseline_commit: 6a540d0
 
 # Story 7.22: Settings sheet
 
-Status: review
+Status: done
 
 <!-- Source: epics.md "Epic 7 / Story 7.22" (amended 2026-10-27 to add Appearance) and the
      2026-10-27 UI review decisions under Epic 7. architecture.md "Theme" was amended the same
@@ -427,3 +427,4 @@ Claude Sonnet 5.5
 - 2026-10-27: Story created (ready-for-dev).
 - 2026-10-27: Implemented; status → review.
 - 2026-10-27: Code review (lightweight): clean; 1 deferred to deferred-work.md (stale `SheetContent` opener for controlled sheets).
+- 2026-10-27: Committed 74219bb; CI green; deploy run 40569274087 green on attempt 2 (attempt 1 hit a flaky 7.21 test in song-edit.test.tsx). Sandy's live check: OK. Status → done.
