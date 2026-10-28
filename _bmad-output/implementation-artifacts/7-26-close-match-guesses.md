@@ -4,7 +4,7 @@ baseline_commit: 01a68e8
 
 # Story 7.26: Close-match guesses for setlist lines
 
-Status: review
+Status: done
 
 <!-- Source: Sandy, 2026-10-27, as a follow-on to 7.25. Very close matches (typos, OCR slips) go
      ahead without confirmation; less certain lines get a "Best guess" in the Check songs
@@ -125,7 +125,7 @@ so that typos and OCR mistakes don't need fixing by hand.
   - [x] `git diff --stat 01a68e8 -- api shared infra` is empty; no new dependency in any
         `package.json`.
   - [x] `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`.
-  - [ ] Commit `Implement story 7.26: Close-match guesses for setlist lines` (after code
+  - [x] Commit `Implement story 7.26: Close-match guesses for setlist lines` (after code
         review), push, deploy, then Sandy's quick look.
 
 ## Dev Notes
@@ -219,7 +219,7 @@ Claude Sonnet 5.5
 - `ocrFold` and `editDistance` (exported) live in `setlist-text.ts`; no new package.
 - Check songs: "Best guess" / "Other guesses" optgroups after shared-title candidates; "Matched for you" list at the foot (only when something else needs a decision).
 - Tests: 12 new lib tests, 5 new route tests. lint, typecheck, test, build all pass; api/shared/infra untouched.
-- Commit, push, deploy and Sandy's live check still to do (after code review).
+- Committed `6516de9`, deployed, Sandy's live check done.
 
 ### File List
 
@@ -235,4 +235,6 @@ Claude Sonnet 5.5
 
 - 2026-10-28: Story created (ready-for-dev).
 - 2026-10-28: Implemented; status → review.
-- 2026-10-28: Code review (lightweight, inline): match condition simplified to `matches.length <= 1`; shared-title typos deliberately never auto-match. Committed and pushed to deploy.
+- 2026-10-28: Code review (lightweight, inline): match condition simplified to `matches.length <= 1`; shared-title typos deliberately never auto-match. Committed `6516de9`.
+- 2026-10-28: Deployed via deploy-force (blackout from a "Test" gig on 2026-10-29, Sandy approved); fixed deploy-force's output delimiter on the way (`d13fac4`).
+- 2026-10-28: Sandy's live check with a test setlist: looks good; follow-ups (section-heading choice, dropdown arrow inset) go to 7.27. Status → done.
