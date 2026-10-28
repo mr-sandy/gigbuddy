@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   type Choice,
   defaultChoice,
+  editDistance,
   parseSetlistText,
   resolveDraft,
   type SetlistDraft,
@@ -234,5 +235,108 @@ describe('defaultChoice and resolveDraft', () => {
         songs: [ref('s2', 'Tune B'), ref('n1', 'New One'), ref('d2', 'Tune A')],
       },
     ]);
+  });
+});
+
+describe('close matches (Story 7.26)', () => {
+  const songs = [song('c', 'Cissy Strut'), song('m', 'Into the Mystic'), song('t', 'Tune A')];
+
+  it('auto-matches single-letter typos and OCR slips, listing each line once', () => {
+    const draft = parseSetlistText('Cisy Strut\nCissy Strutt\nC1ssy Strut\nCisy Strut', songs, []);
+    expect(draft.pending).toEqual([]);
+    expect(draft.autoMatched.map((m) => m.line)).toEqual([
+      'Cisy Strut',
+      'Cissy Strutt',
+      'C1ssy Strut',
+    ]);
+    expect(draft.autoMatched[0]?.title).toBe('Cissy Strut');
+    const [section] = resolveDraft(draft, new Map(), new Map());
+    expect(section?.songs.every((s) => s.songId === 'c' && s.titleSnapshot === 'Cissy Strut')).toBe(
+      true,
+    );
+  });
+
+  it('folds rn to m', () => {
+    const lib = [song('s', 'Summer Samba')];
+    expect(parseSetlistText('Sumrner Samba', lib, []).autoMatched).toHaveLength(1);
+  });
+
+  it('does not list exact matches', () => {
+    expect(parseSetlistText('cissy strut', songs, []).autoMatched).toEqual([]);
+  });
+
+  it('leaves a near-tie pending, with both as guesses', () => {
+    const lib = [song('a', 'Tune Alpha'), song('b', 'Tune Alphb')];
+    const draft = parseSetlistText('Tune Alphc', lib, []);
+    expect(draft.autoMatched).toEqual([]);
+    expect(draft.pending[0]?.guesses.map((g) => g.songId)).toEqual(['a', 'b']);
+  });
+
+  it('never auto-matches a short title', () => {
+    const draft = parseSetlistText('Tuna', [song('a', 'Tune')], []);
+    expect(draft.autoMatched).toEqual([]);
+    expect(draft.pending[0]?.guesses.map((g) => g.songId)).toEqual(['a']);
+  });
+
+  it('guesses when two letters off a 6-letter title', () => {
+    const draft = parseSetlistText('Sambaa x', [song('a', 'Sambas')], []);
+    expect(draft.autoMatched).toEqual([]);
+    const two = parseSetlistText('Sampas', [song('a', 'Sambas')], []);
+    expect(two.autoMatched).toHaveLength(1);
+    const far = parseSetlistText('Sumbaz', [song('a', 'Sambas')], []);
+    expect(far.autoMatched).toEqual([]);
+    expect(far.pending[0]?.guesses.map((g) => g.songId)).toEqual(['a']);
+  });
+
+  it('guesses a title contained in the line, first', () => {
+    const draft = parseSetlistText('Cissy Strut (Herbie) live version', songs, []);
+    expect(draft.pending[0]?.guesses[0]?.songId).toBe('c');
+    expect(defaultChoice(draft.pending[0] as never)).toEqual({
+      kind: 'song',
+      songId: 'c',
+      title: 'Cissy Strut',
+    });
+  });
+
+  it('does not guess the other way round', () => {
+    const lib = [song('a', 'Strut Around Town')];
+    expect(parseSetlistText('Strut', lib, []).pending[0]?.guesses).toEqual([]);
+  });
+
+  it('caps guesses at three, best first, and gives none for nonsense', () => {
+    const lib = ['One', 'Two', 'Three', 'Four'].map((n) => song(n, `Blue Moon ${n}`));
+    const draft = parseSetlistText('Blue Moon Fiv', lib, []);
+    expect(draft.pending[0]?.guesses).toHaveLength(3);
+    expect(parseSetlistText('Qqqqqqqq', songs, []).pending[0]?.guesses).toEqual([]);
+  });
+
+  it('gives a shared-title line candidates but no guesses', () => {
+    const dupes = [song('a', 'Tune A', 'C'), song('b', 'Tune A', 'F')];
+    const draft = parseSetlistText('Tune A', dupes, []);
+    expect(draft.pending[0]?.guesses).toEqual([]);
+    expect(draft.autoMatched).toEqual([]);
+  });
+
+  it('defaults to a candidate, then a guess, then a new song', () => {
+    const base = { key: 'k', line: 'k', newTitle: 'k' };
+    const a = song('a', 'A');
+    const b = song('b', 'B');
+    expect(defaultChoice({ ...base, candidates: [a], guesses: [b] })).toMatchObject({
+      songId: 'a',
+    });
+    expect(defaultChoice({ ...base, candidates: [], guesses: [b] })).toMatchObject({ songId: 'b' });
+    expect(defaultChoice({ ...base, candidates: [], guesses: [] })).toEqual({ kind: 'new' });
+  });
+});
+
+describe('editDistance', () => {
+  it.each([
+    ['abc', 'abc', 0],
+    ['abc', 'abd', 1],
+    ['abc', 'abcd', 1],
+    ['', 'abc', 3],
+    ['abc', '', 3],
+  ])('%s / %s = %i', (a, b, d) => {
+    expect(editDistance(a, b)).toBe(d);
   });
 });

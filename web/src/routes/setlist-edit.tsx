@@ -221,6 +221,20 @@ function SetlistTextForm({ initial }: { initial: Setlist }) {
                       {SETLIST_TEXT.songWithKey(candidate.title, candidate.key)}
                     </option>
                   ))}
+                  {p.guesses[0] ? (
+                    <optgroup label={SETLIST_TEXT.bestGuess}>
+                      <option value={`song:${p.guesses[0].songId}`}>{p.guesses[0].title}</option>
+                    </optgroup>
+                  ) : null}
+                  {p.guesses.length > 1 ? (
+                    <optgroup label={SETLIST_TEXT.otherGuesses}>
+                      {p.guesses.slice(1).map((guess) => (
+                        <option key={guess.songId} value={`song:${guess.songId}`}>
+                          {guess.title}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ) : null}
                   <option value="new">{SETLIST_TEXT.addNew(p.newTitle)}</option>
                   <option value="out">{SETLIST_TEXT.leaveOut}</option>
                   <optgroup label={SETLIST_TEXT.wholeLibrary}>
@@ -234,6 +248,16 @@ function SetlistTextForm({ initial }: { initial: Setlist }) {
               </div>
             );
           })}
+          {draft.autoMatched.length > 0 ? (
+            <div className="mt-[calc(var(--spacing-unit)*6)]">
+              <h3 className={CHECK_LABEL}>{SETLIST_TEXT.matchedHeading}</h3>
+              <ul className="m-0 mt-[var(--spacing-unit)] list-none p-0 text-[length:var(--text-body)] leading-[var(--text-body--line-height)] text-muted-foreground">
+                {draft.autoMatched.map((m) => (
+                  <li key={m.line}>{SETLIST_TEXT.matchedItem(m.line, m.title)}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </div>
       </EditSheet>
     );

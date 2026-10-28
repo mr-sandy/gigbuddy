@@ -235,6 +235,55 @@ describe('SetlistEdit', () => {
     ]);
   });
 
+  it('saves in one step when every line is a close match, with the library title', async () => {
+    useSongsMock.mockReturnValue({
+      data: [...songs, { songId: 's5', title: 'Cissy Strut' }],
+      isPending: false,
+    });
+    await typeAndSave('C1ssy Strut');
+    await vi.waitFor(() => expect(saveSetlistMock).toHaveBeenCalledTimes(1));
+    expect(saveSetlistMock.mock.calls[0]?.[0].sections).toEqual([
+      { name: '', songs: [{ songId: 's5', titleSnapshot: 'Cissy Strut' }] },
+    ]);
+  });
+
+  it('lists close matches under "Matched for you" when another line needs a decision', async () => {
+    useSongsMock.mockReturnValue({
+      data: [...songs, { songId: 's5', title: 'Cissy Strut' }],
+      isPending: false,
+    });
+    await typeAndSave('C1ssy Strut\nQqqqqqqq');
+    expect(screen.getByRole('heading', { name: SETLIST_TEXT.matchedHeading })).toBeInTheDocument();
+    expect(
+      screen.getByText(SETLIST_TEXT.matchedItem('C1ssy Strut', 'Cissy Strut')),
+    ).toBeInTheDocument();
+  });
+
+  it('has no "Matched for you" heading when nothing was matched for you', async () => {
+    await typeAndSave('Tune A\nMYSTERY SONG');
+    expect(screen.queryByText(SETLIST_TEXT.matchedHeading)).not.toBeInTheDocument();
+  });
+
+  it('defaults a less certain line to its best guess and saves that song', async () => {
+    const user = await typeAndSave('Tune Cxx');
+    const select = screen.getByRole('combobox', { name: '“Tune Cxx”' });
+    expect(select).toHaveValue('song:s3');
+    expect(screen.getByRole('group', { name: SETLIST_TEXT.bestGuess })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: SETLIST_TEXT.save }));
+    await vi.waitFor(() => expect(saveSetlistMock).toHaveBeenCalledTimes(1));
+    expect(saveSongMock).not.toHaveBeenCalled();
+    expect(saveSetlistMock.mock.calls[0]?.[0].sections[0].songs).toEqual([
+      { songId: 's3', titleSnapshot: 'Tune C' },
+    ]);
+  });
+
+  it('still adds a new song when chosen over the best guess', async () => {
+    const user = await typeAndSave('Tune Cxx');
+    await user.selectOptions(screen.getByRole('combobox'), SETLIST_TEXT.addNew('Tune Cxx'));
+    await user.click(screen.getByRole('button', { name: SETLIST_TEXT.save }));
+    await vi.waitFor(() => expect(saveSongMock).toHaveBeenCalledTimes(1));
+  });
+
   it('closes on Escape from the second step without saving anything', async () => {
     const user = await typeAndSave('Mystery');
     await user.keyboard('{Escape}');

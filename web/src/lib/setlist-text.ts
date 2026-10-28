@@ -19,8 +19,15 @@ export type PendingLine = {
   newTitle: string;
   /** More than one: a shared title. None: nothing matched. */
   candidates: Song[];
+  /** Best first, up to three. Only for a line with no exact match (Story 7.26). */
+  guesses: Song[];
 };
-export type SetlistDraft = { sections: DraftSection[]; pending: PendingLine[] };
+export type SetlistDraft = {
+  sections: DraftSection[];
+  pending: PendingLine[];
+  /** Lines matched to a library song by close spelling, once per distinct line. */
+  autoMatched: { line: string; title: string }[];
+};
 
 export type Choice =
   | { kind: 'song'; songId: string; title: string }
@@ -62,6 +69,78 @@ export function matchKey(s: string): string {
     .replace(/\s+/g, ' ')
     .trim()
     .replace(/^the /, '');
+}
+
+/** Folds look-alike OCR characters together. Only ever used for distance. */
+function ocrFold(key: string): string {
+  return key.replace(/rn/g, 'm').replace(/vv/g, 'w').replace(/[1i|]/g, 'l').replace(/0/g, 'o');
+}
+
+export function editDistance(a: string, b: string): number {
+  let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    const row = [i];
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      row[j] = Math.min((prev[j] ?? 0) + 1, (row[j - 1] ?? 0) + 1, (prev[j - 1] ?? 0) + cost);
+    }
+    prev = row;
+  }
+  return prev[b.length] ?? 0;
+}
+
+type KeyedSong = { song: Song; key: string };
+
+function distances(keys: string[], entry: KeyedSong) {
+  const target = ocrFold(entry.key);
+  let d = Number.POSITIVE_INFINITY;
+  let longest = target.length;
+  for (const key of keys) {
+    const folded = ocrFold(key);
+    const dist = editDistance(folded, target);
+    if (dist < d) {
+      d = dist;
+      longest = Math.max(folded.length, target.length);
+    }
+  }
+  return { d, similarity: longest === 0 ? 0 : 1 - d / longest };
+}
+
+function isVeryClose(d: number, songKeyLength: number): boolean {
+  if (songKeyLength >= 12) return d <= 2;
+  if (songKeyLength >= 5) return d <= 1;
+  return false;
+}
+
+/** The one song a line is very close to, if no other song is nearly as close. */
+function autoMatch(keys: string[], entries: KeyedSong[]): Song | undefined {
+  const scored = entries
+    .map((entry) => ({ entry, d: distances(keys, entry).d }))
+    .sort((a, b) => a.d - b.d);
+  const [best, runnerUp] = scored;
+  if (!best) return undefined;
+  if (!isVeryClose(best.d, ocrFold(best.entry.key).length)) return undefined;
+  if (runnerUp && runnerUp.d < best.d + 2) return undefined;
+  return best.entry.song;
+}
+
+const GUESS_FLOOR = 0.6;
+const CONTAINED_SCORE = 0.9;
+
+function guessSongs(keys: string[], entries: KeyedSong[]): Song[] {
+  const padded = keys.map((key) => ` ${key} `);
+  return entries
+    .map((entry) => {
+      let score = distances(keys, entry).similarity;
+      if (entry.key.length >= 4 && padded.some((k) => k.includes(` ${entry.key} `))) {
+        score = Math.max(score, CONTAINED_SCORE);
+      }
+      return { song: entry.song, score };
+    })
+    .filter((g) => g.score >= GUESS_FLOOR)
+    .sort((a, b) => b.score - a.score || a.song.title.localeCompare(b.song.title, 'en'))
+    .slice(0, 3)
+    .map((g) => g.song);
 }
 
 const SMALL_WORDS = new Set(['a', 'an', 'and', 'as', 'at', 'but', 'by', 'for', 'in', 'nor', 'of']);
@@ -126,6 +205,10 @@ export function parseSetlistText(text: string, songs: Song[], previous: Section[
     }
   }
 
+  const entries: KeyedSong[] = songs
+    .map((song) => ({ song, key: matchKey(song.title) }))
+    .filter((entry) => entry.key !== '');
+
   const find = (key: string): Song[] => {
     const direct = byKey.get(key) ?? [];
     if (direct.length > 0) return direct;
@@ -134,6 +217,7 @@ export function parseSetlistText(text: string, songs: Song[], previous: Section[
 
   const sections: DraftSection[] = [];
   const pending = new Map<string, PendingLine>();
+  const autoMatched = new Map<string, { line: string; title: string }>();
   let current: DraftSection | undefined;
 
   for (const raw of text.split(/\r?\n/)) {
@@ -160,27 +244,43 @@ export function parseSetlistText(text: string, songs: Song[], previous: Section[
       sections.push(current);
     }
     const key = matchKey(line);
+    const bare = matchKey(withoutBrackets(line));
     let matches = find(key);
+    if (matches.length === 0 && bare !== key) matches = find(bare);
+    const fuzzyKeys = bare !== key && bare !== '' ? [key, bare] : [key];
+    let match = matches[0];
+    let guesses: Song[] = [];
     if (matches.length === 0) {
-      const bare = matchKey(withoutBrackets(line));
-      if (bare !== key) matches = find(bare);
+      match = autoMatch(fuzzyKeys, entries);
+      if (match) {
+        if (!autoMatched.has(key)) {
+          autoMatched.set(key, { line: stripLineNoise(line), title: match.title });
+        }
+      } else {
+        guesses = guessSongs(fuzzyKeys, entries);
+      }
     }
-    const [match] = matches;
-    if (matches.length === 1 && match) {
+    if (matches.length <= 1 && match) {
       current.lines.push({ ref: { songId: match.songId, titleSnapshot: match.title } });
     } else {
       if (!pending.has(key)) {
-        pending.set(key, { key, line, newTitle: tidyTitle(line), candidates: matches });
+        pending.set(key, {
+          key,
+          line,
+          newTitle: tidyTitle(line),
+          candidates: matches,
+          guesses,
+        });
       }
       current.lines.push({ pendingKey: key });
     }
   }
 
-  return { sections, pending: [...pending.values()] };
+  return { sections, pending: [...pending.values()], autoMatched: [...autoMatched.values()] };
 }
 
 export function defaultChoice(p: PendingLine): Choice {
-  const [first] = p.candidates;
+  const [first] = p.candidates.length > 0 ? p.candidates : p.guesses;
   return first ? { kind: 'song', songId: first.songId, title: first.title } : { kind: 'new' };
 }
 

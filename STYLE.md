@@ -131,6 +131,10 @@ over the page it was opened from, built from `ui/sheet.tsx` and `EditSheet`.
   panel from the right (`--spacing-sheet`). The choice is made by window width, never by device.
 - It slides in when it opens (up from the bottom, or in from the right on wide windows; 250ms,
   ease-out) while the scrim fades in. Closing is instant. Reduce Motion turns the slide off.
+- Edit setlist's Check songs step: a line with likely matches gets "Best guess" (chosen by
+  default) and "Other guesses" groups in its dropdown, after any shared-title candidates; very
+  close matches are made for you and listed under "Matched for you" at the foot of the step
+  (Row-role heading, Body-size muted list, information only).
 - No swipe-to-close and no tap-outside close. Cancel and Escape close it and discard changes.
   Focus moves in when it opens and returns to the opener when it closes.
 - The body scrolls; the header doesn't. Delete sits at the foot of the body, after a hairline
