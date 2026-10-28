@@ -4,7 +4,7 @@ baseline_commit: 9b362f4e3cd530c279f0ffab93bdfd1fb7e717f1
 
 # Story 7.29: Edit a song from inside a gig
 
-Status: review
+Status: done
 
 <!-- Source: Sandy, 2026-10-28: "I would like to be able to edit songs from within /gigs."
      Consequences discussed and scope approved the same day: Edit link on the gig song page,
@@ -79,9 +79,9 @@ so that I can fix a chart, key or patch without leaving the gig and finding the 
         `titleSnapshot`, the row shows the library title; with no songs list, it shows
         `titleSnapshot`.
   - [x] Existing `/songs` tests stay green unchanged (AC6).
-- [ ] **Task 6: Verify and ship** (AC: 7–9): checks, commit
+- [x] **Task 6: Verify and ship** (AC: 7–9): checks, commit
       `Implement story 7.29: Edit a song from inside a gig`, push, deploy, Sandy's quick look.
-  - Checks done (lint, typecheck, test, build pass). Commit, push and deploy follow code review.
+  - Checks done (lint, typecheck, test, build pass). Committed `74b93d2`, deployed, Sandy checked live.
 
 ## Dev Notes
 
@@ -164,7 +164,7 @@ Claude Sonnet 5.5
 - `song-edit.tsx`: one `useRecordPage` helper gives the exit target (gig song page with `?at=`, or `/songs/:id`); Delete hidden when a `setlistId` is present.
 - `gig.tsx` rows show the live library title via `useSongs()`, falling back to `titleSnapshot`.
 - Tests: replaced the 7.8 "no Edit link" test; added gig-sheet exit tests (history and direct), Delete visibility, and gig row title tests. 454 web tests pass; lint, typecheck and build pass.
-- Not done here: commit, push, deploy and Sandy's live check (follow code review).
+- Committed `74b93d2`, deployed, Sandy's live check done.
 
 ### File List
 
@@ -181,3 +181,5 @@ Claude Sonnet 5.5
 - 2026-10-28: Story created; status → ready-for-dev.
 - 2026-10-28: Implemented; status → review.
 - 2026-10-28: Code review (lightweight, inline): no defects; all ACs met. Optional nit noted (dead `songId === undefined` branch in `useRecordPage`), left as is.
+- 2026-10-28: Committed `74b93d2`; deployed via the normal pipeline.
+- 2026-10-28: Sandy's live check: looks good. Status → done.
