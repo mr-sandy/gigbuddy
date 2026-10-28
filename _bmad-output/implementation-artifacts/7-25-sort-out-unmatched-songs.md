@@ -4,7 +4,7 @@ baseline_commit: 52b4be8
 
 # Story 7.25: Sort out unmatched songs when saving a setlist
 
-Status: review
+Status: done
 
 <!-- Source: Sandy, 2026-10-27. Pasting a setlist (from a text message, or OCR'd from a photo of
      a written note) then renaming lines and adding songs in another tab, pressing Save until the
@@ -193,7 +193,7 @@ so that a pasted setlist can be saved without renaming lines and adding songs in
   - [x] `git diff --stat 52b4be8 -- api shared infra` is empty; no new dependency in any
         `package.json`.
   - [x] `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`.
-  - [ ] Commit `Implement story 7.25: Sort out unmatched songs when saving a setlist` (after
+  - [x] Commit `Implement story 7.25: Sort out unmatched songs when saving a setlist` (after
         code review), push, deploy, then Sandy's quick look.
 
 ## Dev Notes
@@ -305,3 +305,6 @@ Claude Sonnet 5.5
 
 - 2026-10-27: Story created (ready-for-dev).
 - 2026-10-27: Implemented; status → review.
+- 2026-10-27: Code review (inline): colon no longer stripped as numbering (`5:15`). Committed `1675c6d`, deployed.
+- 2026-10-27: Whole-library dropdown group shows plain titles (keys only on shared-title candidates), `2c01a93`, deployed.
+- 2026-10-28: Sandy's live check: looks good. Status → done.
