@@ -3021,3 +3021,19 @@ show them.)
 8. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass.
 9. Deployed to gig.cormie.com via the normal pipeline; the purge runs after Sandy has seen
    the dry run.
+
+### Story 7.32: New app icon
+
+As Sandy, I want an app icon that looks like a keyboard and matches the app's colours, so that
+GigBuddy is easy to spot in a browser tab and on my phone's home screen.
+
+**Acceptance criteria**
+1. `web/public/icon-source.svg` is three piano keys with two black keys, the middle white key
+   gold: background `#1a1209`, keys `#f1e6cf`, accent `#e6b855`. The black keys share the
+   background colour.
+2. The favicon, PWA icons, Apple touch icon and maskable icon are regenerated from it with
+   `pnpm assets:pwa`. The Apple touch and maskable icons are full squares with no transparency;
+   the maskable icon keeps the keys inside Android's safe zone.
+3. No other UI change. No change to `infra/`.
+4. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass.
+5. Deployed to gig.cormie.com via the normal pipeline.
