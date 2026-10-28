@@ -156,6 +156,33 @@ describe('PUT /api/v1/songs/:songId', () => {
     expect(putSongMock).toHaveBeenCalledWith(body.data);
   });
 
+  it('accepts the retired notes from an old build and drops them', async () => {
+    getSongMock.mockResolvedValue(undefined);
+    putSongMock.mockResolvedValue(undefined);
+    const res = await authedRequest(`/api/v1/songs/${SONG_ID_A}`, {
+      method: 'PUT',
+      body: JSON.stringify({ ...putInput(), performanceNotes: 'old', practiceNotes: 'older' }),
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { status: string };
+    expect(body.status).toBe('applied');
+    expect(putSongMock).toHaveBeenCalledTimes(1);
+    const saved = putSongMock.mock.calls[0]?.[0];
+    expect(saved).not.toHaveProperty('performanceNotes');
+    expect(saved).not.toHaveProperty('practiceNotes');
+  });
+
+  it('still returns 400 for any other unknown key', async () => {
+    const res = await authedRequest(`/api/v1/songs/${SONG_ID_A}`, {
+      method: 'PUT',
+      body: JSON.stringify({ ...putInput(), colour: 'red' }),
+    });
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error: { code: string } };
+    expect(body.error.code).toBe('VALIDATION_FAILED');
+    expect(putSongMock).not.toHaveBeenCalled();
+  });
+
   it('returns 200 dropped-as-stale when incoming is strictly older than existing', async () => {
     const existing = makeSong({ clientWrittenAt: '2026-06-16T13:00:00.000Z' });
     getSongMock.mockResolvedValue(existing);

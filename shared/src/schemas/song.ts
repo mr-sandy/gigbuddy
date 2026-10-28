@@ -7,8 +7,6 @@ export const SongSchema = z.object({
   key: z.string().optional(),
   patch: z.string().optional(),
   chordChart: z.string().optional(),
-  performanceNotes: z.string().optional(),
-  practiceNotes: z.string().optional(),
   clientWrittenAt: z.string().datetime(),
   serverReceivedAt: z.string().datetime(),
   version: z.literal(1),

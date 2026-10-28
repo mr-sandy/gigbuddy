@@ -222,8 +222,10 @@ pk = BAND#<bandId>, sk = META
   { name, createdAt, ... }                                                 (band metadata)
 
 pk = BAND#<bandId>, sk = SONG#<songId>
-  { title, key, patch, chordChart, performanceNotes, practiceNotes,
+  { title, key, patch, chordChart,
     clientWrittenAt, serverReceivedAt, version }                            (song record)
+  Performance and practice notes removed in Story 7.31 (2026-10-28). Song PUT still
+  accepts and drops those two keys (old cached builds may send them); any other unknown key is a 400.
 
 pk = BAND#<bandId>, sk = SETLIST#<setlistId>
   { gigMeta: { venue, date, time },
@@ -549,8 +551,6 @@ const SongSchema = z.object({
   key: z.string().optional(),
   patch: z.string().optional(),
   chordChart: z.string().optional(),
-  performanceNotes: z.string().optional(),
-  practiceNotes: z.string().optional(),
   clientWrittenAt: z.string().datetime(),
   serverReceivedAt: z.string().datetime(),
   version: z.literal(1),

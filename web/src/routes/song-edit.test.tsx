@@ -191,8 +191,8 @@ describe('SongEdit', () => {
     expect(record.title).toBe('Renamed Tune');
     expect(record).not.toHaveProperty('patch');
     expect(record).not.toHaveProperty('serverReceivedAt');
-    expect(record.performanceNotes).toBe('perf note text');
-    expect(record.practiceNotes).toBe('practice note text');
+    expect(record).not.toHaveProperty('performanceNotes');
+    expect(record).not.toHaveProperty('practiceNotes');
     expect(record.clientWrittenAt).not.toBe(fullSong.clientWrittenAt);
     expect(await screen.findByText('song page')).toBeInTheDocument();
   });

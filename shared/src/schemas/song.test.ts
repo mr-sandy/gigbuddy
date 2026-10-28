@@ -8,8 +8,6 @@ const validSong = {
   key: 'Eb minor',
   patch: 'Rhodes',
   chordChart: '| Cm7 | F7 | BbM7 |',
-  performanceNotes: 'Slow ballad',
-  practiceNotes: 'Watch the turnaround',
   clientWrittenAt: '2026-06-16T12:00:00.000Z',
   serverReceivedAt: '2026-06-16T12:00:01.000Z',
   version: 1 as const,
@@ -47,7 +45,24 @@ describe('SongSchema', () => {
   });
 });
 
+describe('retired song notes', () => {
+  it('SongSchema.parse drops performanceNotes and practiceNotes from a stored song', () => {
+    const parsed = SongSchema.parse({
+      ...validSong,
+      performanceNotes: 'Slow ballad',
+      practiceNotes: 'Watch the turnaround',
+    });
+    expect(parsed).not.toHaveProperty('performanceNotes');
+    expect(parsed).not.toHaveProperty('practiceNotes');
+  });
+});
+
 describe('SongPutInputSchema', () => {
+  it('still rejects an unknown key', () => {
+    const { serverReceivedAt: _s, ...input } = validSong;
+    expect(SongPutInputSchema.safeParse({ ...input, colour: 'red' }).success).toBe(false);
+  });
+
   it('accepts a body without serverReceivedAt', () => {
     const { serverReceivedAt: _s, ...input } = validSong;
     const result = SongPutInputSchema.safeParse(input);

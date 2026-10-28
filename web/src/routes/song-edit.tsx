@@ -26,9 +26,7 @@ import { SONG_DELETE, SONG_FORM } from '../lib/microcopy.js';
 
 /*
  * Add / edit song sheet (Story 7.6, in a sheet since 7.21). `/songs/new` adds, `/songs/:songId/edit`
- * edits. Save writes through `useSongMutation` as a whole-record PUT, so the
- * stored performance and practice notes (not shown here) are copied from the
- * song being edited or the PUT would delete them. The form mounts only once
+ * edits. Save writes through `useSongMutation` as a whole-record PUT. The form mounts only once
  * the song is available and reads it once, so a background refetch never
  * resets what Sandy is typing. Leaving an edit steps back in history when
  * there is history to step back to, so the song page isn't stacked twice.
@@ -119,10 +117,6 @@ function SongForm({ initial }: { initial?: Song }) {
       ...(trimmedKey !== '' ? { key: trimmedKey } : {}),
       ...(trimmedPatch !== '' ? { patch: trimmedPatch } : {}),
       ...(chart.trim() !== '' ? { chordChart: chart } : {}),
-      ...(initial?.performanceNotes !== undefined
-        ? { performanceNotes: initial.performanceNotes }
-        : {}),
-      ...(initial?.practiceNotes !== undefined ? { practiceNotes: initial.practiceNotes } : {}),
       clientWrittenAt: new Date().toISOString(),
       version: 1,
     };

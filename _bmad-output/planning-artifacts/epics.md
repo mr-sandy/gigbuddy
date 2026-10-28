@@ -2997,3 +2997,27 @@ so that a test gig or a weekend evening never blocks a deploy. (Epic 7 retro dec
    blackout in force. `/api/v1/upcoming-gigs` and the service worker behave as before.
 4. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass.
 5. Deployed to gig.cormie.com via the normal pipeline; the run is green.
+
+### Story 7.31: Remove song notes
+
+As Sandy, I want performance notes and practice notes gone from songs, so that a song is just
+its title, key, patch and chart. (Epic 7 retro decision, 2026-10-28: remove them rather than
+show them.)
+
+**Acceptance criteria**
+1. `performanceNotes` and `practiceNotes` are removed from `SongSchema` in `shared/`.
+2. Reads never return them: a stored song that still has notes comes back from the API, the
+   song pages and `GET /api/v1/export` without them.
+3. A song PUT that still carries either field (an old cached build, or a save queued before
+   the deploy) is accepted and the notes are dropped, not stored. No 400. Any other unknown
+   key still gets a 400.
+4. The add/edit song sheet no longer copies notes into the saved record.
+5. A one-off script, `api/scripts/purge-song-notes.ts`, removes both fields from the stored
+   song items. Dry run by default: it lists each song and each note it would remove.
+   `--apply` rewrites only the songs that have notes, changing nothing else, then re-reads
+   and confirms none are left. Re-running is harmless.
+6. `architecture.md` no longer lists the two fields as part of the song record.
+7. No visible UI change. No change to `infra/`.
+8. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass.
+9. Deployed to gig.cormie.com via the normal pipeline; the purge runs after Sandy has seen
+   the dry run.

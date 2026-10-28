@@ -120,3 +120,18 @@ describe('listSongsByBand', () => {
     expect(result).toEqual([]);
   });
 });
+
+describe('retired song notes', () => {
+  it('drops retired notes from a stored item', async () => {
+    const song = makeSong();
+    const stored = { performanceNotes: 'old', practiceNotes: 'older' };
+    ddbMock.on(GetCommand).resolves({
+      Item: { pk: `BAND#${BAND_ID}`, sk: `SONG#${SONG_ID}`, ...song, ...stored },
+    });
+    ddbMock.on(QueryCommand).resolves({
+      Items: [{ pk: `BAND#${BAND_ID}`, sk: `SONG#${SONG_ID}`, ...song, ...stored }],
+    });
+    expect(await getSong(BAND_ID, SONG_ID)).toEqual(song);
+    expect(await listSongsByBand(BAND_ID)).toEqual([song]);
+  });
+});

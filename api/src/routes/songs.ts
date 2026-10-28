@@ -14,6 +14,14 @@ function summarizeZodIssues(error: {
   return error.errors.map((e) => `${e.path.join('.')}: ${e.message}`).join('; ');
 }
 
+// Retired in Story 7.31. An old cached build may still send them; dropping
+// beats a 400 that the outbox would discard along with the rest of the edit.
+function dropRetiredKeys(body: unknown): unknown {
+  if (typeof body !== 'object' || body === null || Array.isArray(body)) return body;
+  const { performanceNotes: _p, practiceNotes: _n, ...rest } = body as Record<string, unknown>;
+  return rest;
+}
+
 export const songsRoute = new Hono()
   .get('/', async (c) => {
     const songs = await listSongsByBand(ACTIVE_BAND_ID);
@@ -47,7 +55,7 @@ export const songsRoute = new Hono()
         400,
       );
     }
-    const parsed = SongPutInputSchema.safeParse(body);
+    const parsed = SongPutInputSchema.safeParse(dropRetiredKeys(body));
     if (!parsed.success) {
       return c.json(
         {
