@@ -4,7 +4,7 @@ baseline_commit: b78741170687c6824562a277aad8dffb14bde388
 
 # Story 7.30: Remove the deploy blackout
 
-Status: review
+Status: done
 
 <!-- Source: Epic 7 retro, Sandy's answers 2026-10-28 (epics.md "Decisions, 2026-10-28"):
      "The gig-day deploy blackout is redundant: Sandy is the only developer and user and won't
@@ -90,7 +90,7 @@ so that a test gig or a weekend evening never blocks a deploy or needs the force
   - [x] `infra/runbooks/restore-pitr.md` §3: the deploy role no longer has any DynamoDB
         actions; reword the parenthesis to say so ("…`infra/lib/stacks/ci-stack.ts`, which
         grants no DynamoDB actions").
-- [ ] **Task 6: Verify and ship** (AC: 6–8): `pnpm lint`, `pnpm typecheck`, `pnpm test`,
+- [x] **Task 6: Verify and ship** (AC: 6–8): `pnpm lint`, `pnpm typecheck`, `pnpm test`,
       `pnpm build`; commit `Implement story 7.30: Remove the deploy blackout`; push; watch the
       deploy run (`gh run watch`, using `GH_TOKEN=$(gh auth token --user mr-sandy)` if the
       work account gets 403) and confirm it's green, including the `GigbuddyCi` update.
@@ -190,3 +190,4 @@ Claude Sonnet 5.5
 
 - 2026-10-28: Removed the deploy blackout (workflow step, deploy-force workflow, script, IAM grants, docs).
 - 2026-10-28: Code review (lightweight, inline): no blockers; confirmed the table-ARN export stays (GigbuddyApi imports it), so dropping `tableArn` from CiStack is safe. Dropped the dead `scripts/**/*` include from infra/tsconfig.json; added epics.md to the File List.
+- 2026-10-28: Deployed ed9e22c; Actions run 40688166288 green, GigbuddyCi UPDATE_COMPLETE (narrowed deploy role applied). Status → done.
