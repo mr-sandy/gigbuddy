@@ -299,9 +299,29 @@ describe('close matches (Story 7.26)', () => {
     });
   });
 
-  it('does not guess the other way round', () => {
-    const lib = [song('a', 'Strut Around Town')];
-    expect(parseSetlistText('Strut', lib, []).pending[0]?.guesses).toEqual([]);
+  it('guesses a title that contains the line, as a shortened title (Story 7.28)', () => {
+    const lib = [song('a', 'Chitlins con Carne'), song('b', 'Strut Around Town')];
+    const draft = parseSetlistText('Chitlins', lib, []);
+    expect(draft.autoMatched).toEqual([]);
+    expect(defaultChoice(draft.pending[0] as never)).toEqual({
+      kind: 'song',
+      songId: 'a',
+      title: 'Chitlins con Carne',
+    });
+    expect(parseSetlistText('Strut', lib, []).pending[0]?.guesses[0]?.songId).toBe('b');
+  });
+
+  it('needs whole words and four letters for a shortened title', () => {
+    const lib = [song('a', 'Chitlins con Carne'), song('b', 'Up on the Roof')];
+    expect(parseSetlistText('Chit', lib, []).pending[0]?.guesses).toEqual([]);
+    expect(parseSetlistText('Up', lib, []).pending[0]?.guesses).toEqual([]);
+  });
+
+  it('gives a short line that fits several titles up to three guesses', () => {
+    const lib = ['Moon River', 'Blue Moon', 'Moon Dance', 'Fly Me to the Moon'].map((t) =>
+      song(t, t),
+    );
+    expect(parseSetlistText('Moon', lib, []).pending[0]?.guesses).toHaveLength(3);
   });
 
   it('caps guesses at three, best first, and gives none for nonsense', () => {

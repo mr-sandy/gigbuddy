@@ -2942,3 +2942,16 @@ List" become sections without retyping, and the dropdowns look finished on the l
 3. No change to `api/`, `shared/` or `infra/`; no new package.
 4. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass.
 5. Deployed to gig.cormie.com via the normal pipeline.
+
+### Story 7.28: Guess the full title for a shortened setlist line
+
+As Sandy, I want a shortened line such as "Chitlins" to guess the full title ("Chitlins con
+Carne"), so that setlists written in shorthand don't default to adding duplicate songs.
+(Sandy, 2026-10-28, at the 7.27 live check; reverses 7.26's "Strut" rule by Sandy's choice.)
+
+**Acceptance criteria**
+1. A line found as whole words (4+ characters) inside a song title gets that song as a guess,
+   pre-picked when it ranks first; never an auto-match. At most three guesses.
+2. No change to `api/`, `shared/` or `infra/`; no new package.
+3. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass.
+4. Deployed to gig.cormie.com via the normal pipeline.

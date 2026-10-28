@@ -133,9 +133,13 @@ function guessSongs(keys: string[], entries: KeyedSong[]): Song[] {
   return entries
     .map((entry) => {
       let score = distances(keys, entry).similarity;
-      if (entry.key.length >= 4 && padded.some((k) => k.includes(` ${entry.key} `))) {
-        score = Math.max(score, CONTAINED_SCORE);
-      }
+      // Either way round: the title inside the line ("Cissy Strut (Herbie)"), or
+      // the line inside the title, as setlists shorten them ("Chitlins").
+      const paddedTitle = ` ${entry.key} `;
+      const contained =
+        (entry.key.length >= 4 && padded.some((k) => k.includes(paddedTitle))) ||
+        keys.some((k) => k.length >= 4 && paddedTitle.includes(` ${k} `));
+      if (contained) score = Math.max(score, CONTAINED_SCORE);
       return { song: entry.song, score };
     })
     .filter((g) => g.score >= GUESS_FLOOR)
