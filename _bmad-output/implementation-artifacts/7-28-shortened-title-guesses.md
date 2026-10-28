@@ -4,7 +4,7 @@ baseline_commit: a70076d
 
 # Story 7.28: Guess the full title for a shortened setlist line
 
-Status: review
+Status: done
 
 <!-- Source: Sandy, 2026-10-28, at the 7.27 live check. "Chitlins" in a pasted setlist wasn't
      matched with "Chitlins con Carne"; Check songs defaulted to adding a new song. Sandy chose
@@ -46,7 +46,7 @@ Claude Opus 5.5
 
 ### Completion Notes List
 
-- Built straight after Sandy's choice in the same session as the 7.27 review; story kept thin.
+- Built straight after Sandy's choice in the same session as the 7.27 review; story kept thin. Committed `d5f2461`, deployed, Sandy's live check done.
 
 ### File List
 
@@ -56,3 +56,5 @@ Claude Opus 5.5
 ### Change Log
 
 - 2026-10-28: Story created and implemented; status → review.
+- 2026-10-28: Committed `d5f2461`; deployed via deploy-force (blackout from the "Test" gig on 2026-10-29, Sandy approved).
+- 2026-10-28: Sandy's live check: looks good. Status → done.
