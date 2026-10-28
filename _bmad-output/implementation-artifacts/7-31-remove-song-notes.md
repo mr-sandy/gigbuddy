@@ -4,7 +4,7 @@ baseline_commit: 3f5612e
 
 # Story 7.31: Remove song notes
 
-Status: review
+Status: done
 
 <!-- Source: epics.md "Epic 7 / Story 7.31" and "Decisions, 2026-10-28" under Epic 7. -->
 
@@ -109,19 +109,19 @@ so that a song is just its title, key, patch and chart.
     `SongSchema` snippet (~552–553). Add a one-line note by the song record:
     "Performance and practice notes removed in Story 7.31 (2026-10-28)." Don't rewrite
     anything else.
-- [ ] **Task 7: Verify, commit, deploy, purge** (AC 8, 9)
+- [x] **Task 7: Verify, commit, deploy, purge** (AC 8, 9)
   - [x] `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` all green.
   - [x] `git grep -nE 'performanceNotes|practiceNotes' -- shared api/src web e2e` returns only
     the route shim and the deliberate "old client sends it" / "stored item has it" fixtures.
   - [x] Full three-layer code review (this story touches data: retro decision P1).
-  - [ ] Commit `Implement story 7.31: Remove song notes`, push, let the pipeline deploy.
-  - [ ] Deploy before the purge: the old API would happily store notes again from an old
+  - [x] Commit `Implement story 7.31: Remove song notes`, push, let the pipeline deploy.
+  - [x] Deploy before the purge: the old API would happily store notes again from an old
     build; the new one can't.
-  - [ ] Dry run against prod as a **separate step** after the deploy (retro P2): show Sandy
+  - [x] Dry run against prod as a **separate step** after the deploy (retro P2): show Sandy
     the output and **wait for a go-ahead** before `--apply`. If the permission check blocks
     `--apply`, ask Sandy to run
     `! pnpm --filter api exec tsx scripts/purge-song-notes.ts --apply` (as in 7.13 and 7.16).
-  - [ ] Note the apply time in the Change Log: it is the PITR restore point if a note is ever
+  - [x] Note the apply time in the Change Log: it is the PITR restore point if a note is ever
     wanted back. The dry-run output itself is also a record of what was removed.
 
 ### Review Findings
@@ -239,3 +239,4 @@ Claude Sonnet 5.5
 - 2026-10-28: Story created; status → ready-for-dev.
 - 2026-10-28: Implemented Tasks 1–6; verification green; status → review.
 - 2026-10-28: Code review (three layers): 6 patches applied (purge now a conditional UpdateCommand REMOVE with consistent reads; test and doc fixes), 9 dismissed. Remaining: commit, deploy, dry run, apply.
+- 2026-10-28: Committed c27d06a; deploy run 40694216561 and CI green. Prod dry run: 66 songs, 0 with notes, 0 notes in total — nothing to apply, so no PITR restore point needed. Sandy checked the live app: looks fine; status → done.
