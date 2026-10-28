@@ -21,4 +21,17 @@ describe('NativeSelect', () => {
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(select).toHaveValue('b');
   });
+
+  it('draws its own hidden chevron and hides the native arrow', () => {
+    render(
+      <NativeSelect aria-label="Pick" defaultValue="a">
+        <option value="a">A</option>
+      </NativeSelect>,
+    );
+    const select = screen.getByRole('combobox', { name: 'Pick' });
+    expect(select).toHaveClass('appearance-none');
+    const chevron = select.parentElement?.querySelector('svg');
+    expect(chevron).toHaveAttribute('aria-hidden', 'true');
+    expect(chevron).toHaveClass('pointer-events-none', 'right-3');
+  });
 });

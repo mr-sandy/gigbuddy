@@ -207,6 +207,7 @@ function SetlistTextForm({ initial }: { initial: Setlist }) {
                     const value = e.target.value;
                     let choice: Choice = { kind: 'new' };
                     if (value === 'out') choice = { kind: 'out' };
+                    else if (value === 'heading') choice = { kind: 'heading' };
                     else if (value.startsWith('song:')) {
                       const songId = value.slice(5);
                       const found = songs?.find((song) => song.songId === songId);
@@ -236,6 +237,7 @@ function SetlistTextForm({ initial }: { initial: Setlist }) {
                     </optgroup>
                   ) : null}
                   <option value="new">{SETLIST_TEXT.addNew(p.newTitle)}</option>
+                  <option value="heading">{SETLIST_TEXT.asHeading}</option>
                   <option value="out">{SETLIST_TEXT.leaveOut}</option>
                   <optgroup label={SETLIST_TEXT.wholeLibrary}>
                     {library.map((song) => (

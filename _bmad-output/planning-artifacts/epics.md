@@ -2925,3 +2925,20 @@ wanted.)
 5. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass, with tests covering the
    auto-match threshold, near-ties staying unmatched, and the guess order.
 6. Deployed to gig.cormie.com via the normal pipeline.
+
+### Story 7.27: Section headings from Check songs, and the dropdown arrow
+
+As Sandy, I want to turn an unrecognised line into a section heading from the Check songs
+step, and see the dropdown arrow sitting inside its box, so that lists like "Emergency Reserve
+List" become sections without retyping, and the dropdowns look finished on the laptop. (Sandy,
+2026-10-28, after the 7.26 live check.)
+
+**Acceptance criteria**
+1. Every Check songs dropdown has "Use as a section heading" directly after "Add as a new
+   song: …". Choosing it makes that line start a new section, named after the tidied line;
+   the songs after it go into that section.
+2. The dropdown arrow is inset from the right edge like the text on the left, and long option
+   text doesn't run under it. Still a native dropdown (iPhone picker wheel).
+3. No change to `api/`, `shared/` or `infra/`; no new package.
+4. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass.
+5. Deployed to gig.cormie.com via the normal pipeline.

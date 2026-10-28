@@ -84,6 +84,7 @@ export const SETLIST_TEXT = {
       : `${need} The other ${matched} songs are matched.`;
   },
   addNew: (title: string) => `Add as a new song: ${title}`,
+  asHeading: 'Use as a section heading',
   leaveOut: 'Leave it out',
   wholeLibrary: 'Whole library',
   bestGuess: 'Best guess',

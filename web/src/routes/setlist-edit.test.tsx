@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Outlet, Route, Routes, useNavigate } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -159,6 +159,35 @@ describe('SetlistEdit', () => {
     await user.click(screen.getByRole('button', { name: SETLIST_TEXT.back }));
     expect(screen.getByLabelText(SETLIST_TEXT.label)).toHaveValue('Tune A\nMystery');
     expect(saveSetlistMock).not.toHaveBeenCalled();
+  });
+
+  it('offers a section heading after "Add as a new song" and saves it as a section', async () => {
+    const user = await typeAndSave('Tune A\nEmergency Reserve List\nTune B');
+    const select = screen.getByRole('combobox', { name: '“Emergency Reserve List”' });
+    const labels = within(select)
+      .getAllByRole('option')
+      .map((o) => o.textContent);
+    const add = labels.indexOf(SETLIST_TEXT.addNew('Emergency Reserve List'));
+    expect(labels.slice(add, add + 3)).toEqual([
+      SETLIST_TEXT.addNew('Emergency Reserve List'),
+      SETLIST_TEXT.asHeading,
+      SETLIST_TEXT.leaveOut,
+    ]);
+    expect(select).toHaveValue('new');
+    await user.selectOptions(select, SETLIST_TEXT.asHeading);
+    await user.click(screen.getByRole('button', { name: SETLIST_TEXT.back }));
+    await user.click(screen.getByRole('button', { name: SETLIST_TEXT.save }));
+    expect(screen.getByRole('combobox')).toHaveValue('heading');
+    await user.click(screen.getByRole('button', { name: SETLIST_TEXT.save }));
+    await vi.waitFor(() => expect(saveSetlistMock).toHaveBeenCalledTimes(1));
+    expect(saveSongMock).not.toHaveBeenCalled();
+    expect(saveSetlistMock.mock.calls[0]?.[0].sections).toEqual([
+      {
+        name: '',
+        songs: [{ songId: 's1', titleSnapshot: 'Tune A' }],
+      },
+      { name: 'Emergency Reserve List', songs: [{ songId: 's2', titleSnapshot: 'Tune B' }] },
+    ]);
   });
 
   it('saves a new song before the setlist and uses its id', async () => {

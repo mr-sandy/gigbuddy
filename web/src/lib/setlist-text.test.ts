@@ -4,6 +4,7 @@ import {
   type Choice,
   defaultChoice,
   editDistance,
+  headingFromLine,
   parseSetlistText,
   resolveDraft,
   type SetlistDraft,
@@ -338,5 +339,46 @@ describe('editDistance', () => {
     ['abc', '', 3],
   ])('%s / %s = %i', (a, b, d) => {
     expect(editDistance(a, b)).toBe(d);
+  });
+});
+
+describe('heading choice (Story 7.27)', () => {
+  const heading = new Map<string, Choice>([['emergency reserve list', { kind: 'heading' }]]);
+
+  it('splits a section at the line, naming the new one after it', () => {
+    const draft = parseSetlistText(
+      '## Set 1\nTune A\nEmergency Reserve List\nTune B\nTune C',
+      library,
+      [],
+    );
+    expect(resolveDraft(draft, heading, new Map())).toEqual([
+      { name: 'Set 1', songs: [ref('s1', 'Tune A')] },
+      { name: 'Emergency Reserve List', songs: [ref('s2', 'Tune B'), ref('s3', 'Tune C')] },
+    ]);
+  });
+
+  it('splits at each occurrence of a repeated line', () => {
+    const draft = parseSetlistText(
+      'Emergency Reserve List\nTune A\n------\nEmergency Reserve List\nTune B',
+      library,
+      [],
+    );
+    expect(resolveDraft(draft, heading, new Map())).toEqual([
+      { name: 'Emergency Reserve List', songs: [ref('s1', 'Tune A')] },
+      { name: 'Emergency Reserve List', songs: [ref('s2', 'Tune B')] },
+    ]);
+  });
+
+  it('gives an empty named section when the line is last', () => {
+    const draft = parseSetlistText('## Set 1\nTune A\nEmergency Reserve List', library, []);
+    expect(resolveDraft(draft, heading, new Map())).toEqual([
+      { name: 'Set 1', songs: [ref('s1', 'Tune A')] },
+      { name: 'Emergency Reserve List', songs: [] },
+    ]);
+  });
+
+  it('tidies the name: numbering and duration dropped, ALL CAPS title-cased', () => {
+    expect(headingFromLine('3. EMERGENCY RESERVE LIST')).toBe('Emergency Reserve List');
+    expect(headingFromLine('Extras 4:30')).toBe('Extras');
   });
 });

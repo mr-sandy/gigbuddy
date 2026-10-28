@@ -1,5 +1,5 @@
 # generated: 2026-06-09
-# last_updated: 2026-10-28 (7-26 done)
+# last_updated: 2026-10-28 (7-27 review)
 # last_status_change: 2026-06-19
 # project: gigbuddy
 # project_key: NOKEY
@@ -36,7 +36,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-06-09
-last_updated: 2026-10-28 (7-26 done)
+last_updated: 2026-10-28 (7-27 review)
 project: gigbuddy
 project_key: NOKEY
 tracking_system: file-system
@@ -122,4 +122,5 @@ development_status:
   7-24-sheets-slide-in: done
   7-25-sort-out-unmatched-songs: done
   7-26-close-match-guesses: done
+  7-27-section-headings-and-dropdown-arrow: review
   epic-7-retrospective: optional

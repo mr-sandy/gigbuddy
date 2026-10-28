@@ -32,6 +32,7 @@ export type SetlistDraft = {
 export type Choice =
   | { kind: 'song'; songId: string; title: string }
   | { kind: 'new' }
+  | { kind: 'heading' }
   | { kind: 'out' };
 
 export function setlistToText(sections: Section[]): string {
@@ -186,6 +187,12 @@ function headingName(line: string): string | undefined {
   return isAllCaps(line) ? titleCase(line) : line;
 }
 
+/** The section name for a line chosen as a heading: tidied like a parsed heading. */
+export function headingFromLine(line: string): string {
+  const tidy = stripLineNoise(line);
+  return isAllCaps(tidy) ? titleCase(tidy) : tidy;
+}
+
 export function parseSetlistText(text: string, songs: Song[], previous: Section[]): SetlistDraft {
   const byKey = new Map<string, Song[]>();
   for (const song of songs) {
@@ -295,8 +302,13 @@ export function resolveDraft(
   newRefs: Map<string, SongRef>,
 ): Section[] {
   const sections: Section[] = [];
+  const lineByKey = new Map(draft.pending.map((p) => [p.key, p.line]));
   for (const section of draft.sections) {
-    const songs: SongRef[] = [];
+    let name = section.name;
+    let songs: SongRef[] = [];
+    const flush = () => {
+      if (name !== '' || songs.length > 0) sections.push({ name, songs });
+    };
     for (const line of section.lines) {
       if ('ref' in line) {
         songs.push(line.ref);
@@ -308,10 +320,13 @@ export function resolveDraft(
       } else if (choice?.kind === 'new') {
         const ref = newRefs.get(line.pendingKey);
         if (ref) songs.push(ref);
+      } else if (choice?.kind === 'heading') {
+        flush();
+        name = headingFromLine(lineByKey.get(line.pendingKey) ?? '');
+        songs = [];
       }
     }
-    if (section.name === '' && songs.length === 0) continue;
-    sections.push({ name: section.name, songs });
+    flush();
   }
   return sections;
 }

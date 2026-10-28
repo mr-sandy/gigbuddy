@@ -143,7 +143,7 @@ over the page it was opened from, built from `ui/sheet.tsx` and `EditSheet`.
   browser Back closes it.
 - Edit setlist has a second step, Check songs, shown only when lines don't match: the same
   sheet, header ‹ Back · Check songs · Save, one native dropdown per line (`NativeSelect`, Body
-  size). Cancel is on the first step only.
+  size; each also offers "Use as a section heading"). Cancel is on the first step only.
 
 ## Settings sheet
 
