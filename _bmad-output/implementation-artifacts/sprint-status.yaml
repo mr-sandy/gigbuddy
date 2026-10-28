@@ -1,5 +1,5 @@
 # generated: 2026-06-09
-# last_updated: 2026-10-28 (5-1 done)
+# last_updated: 2026-10-28 (epic 5 + 7 retros done)
 # last_status_change: 2026-06-19
 # project: gigbuddy
 # project_key: NOKEY
@@ -36,7 +36,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-06-09
-last_updated: 2026-10-28 (5-1 done)
+last_updated: 2026-10-28 (epic 5 + 7 retros done)
 project: gigbuddy
 project_key: NOKEY
 tracking_system: file-system
@@ -88,7 +88,7 @@ development_status:
   epic-5: in-progress
   5-1-json-export-endpoint-library-footer-affordance: done
   5-2-verified-restore-drill-runbook-v1-ship-gate: review
-  epic-5-retrospective: optional
+  epic-5-retrospective: done
 
   # Epic 6 (P1 Performance-Mode Enhancements) — superseded 2026-10-19 before acceptance
   #   (stories 6.1–6.6 were at `review`). Code at tag pre-reset.
@@ -125,4 +125,4 @@ development_status:
   7-27-section-headings-and-dropdown-arrow: done
   7-28-shortened-title-guesses: done
   7-29-edit-a-song-inside-a-gig: done
-  epic-7-retrospective: optional
+  epic-7-retrospective: done
