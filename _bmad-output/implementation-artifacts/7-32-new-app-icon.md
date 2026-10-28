@@ -35,7 +35,7 @@ so that GigBuddy is easy to spot in a browser tab and on my phone's home screen.
   padding 0; Apple padding 0 on a `#1a1209` background (iOS shows transparency as black);
   maskable padding 0.2 on `#1a1209` (keys' furthest corner sits at ~36% radius, inside 40%).
   Regenerate.
-- [ ] **Task 3: Verify, commit, deploy** (AC 4, 5)
+- [x] **Task 3: Verify, commit, deploy** (AC 4, 5)
 
 ## Dev Agent Record
 
@@ -65,3 +65,4 @@ Claude Opus 5.5
 ### Change Log
 
 - 2026-10-28: Story created and implemented; verification green; status → review.
+- 2026-10-28: Committed 2854e8e; deploy run 40701353545 and CI green; new icons live. Awaiting Sandy's look.
