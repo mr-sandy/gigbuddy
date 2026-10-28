@@ -78,5 +78,4 @@ new ObservabilityStack(app, 'GigbuddyObservability', {
 new CiStack(app, 'GigbuddyCi', {
   env,
   githubOwner: githubOwner as string,
-  tableArn: data.table.tableArn,
 });

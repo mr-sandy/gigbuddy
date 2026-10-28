@@ -12,8 +12,7 @@ export default defineConfig({
       registerType: 'prompt',
       injectRegister: 'auto',
       // architecture.md line 690 + AR-27: SW installs but waits for clean
-      // cold-start to activate. No mid-gig activation possible. Belt-and-
-      // braces with the §A.2 deploy blackout (Story 1.6).
+      // cold-start to activate. No mid-gig activation possible.
       workbox: {
         skipWaiting: false,
         clientsClaim: false,

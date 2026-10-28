@@ -49,9 +49,6 @@ jobs:
 
       - run: pnpm test
 
-      - name: blackout check
-        run: pnpm -F infra exec tsx scripts/blackout-check.ts
-
       - name: cdk diff
         run: >-
           pnpm -F infra exec cdk diff

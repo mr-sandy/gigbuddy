@@ -25,7 +25,7 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 
 ## Course correction (2026-10-19)
 
-See `sprint-change-proposal-2026-10-19.md`. The back-end, data, sync, auth, infrastructure, deploy, blackout and backup decisions in this document are **unchanged and in force**.
+See `sprint-change-proposal-2026-10-19.md`. The back-end, data, sync, auth, infrastructure, deploy and backup decisions in this document are **unchanged and in force**. Deploy blackout removed 2026-10-28 (Story 7.30): Sandy won't push while playing; any future automation runs in the early hours.
 
 Front-end decisions **superseded** (one responsive app, no device split):
 
@@ -405,6 +405,8 @@ pk = BAND#<bandId>, sk = SETLIST#<setlistId>
 ---
 
 ### 6. Deploy Automation + Gig-Window Blackout (§A.2)
+
+**Superseded 2026-10-28 (Story 7.30):** no blackout check and no `deploy-force.yml`; the pipeline below runs without step 3.
 
 **Decision:** GitHub Actions pipeline with two-stage blackout check (fail-closed on infra errors); static Fri–Sun 18:00–24:00 Europe/London fallback only when DDB returns zero records cleanly.
 

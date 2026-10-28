@@ -1,6 +1,6 @@
 import { App } from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions';
-import { describe, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { CiStack } from './ci-stack.js';
 
 describe('CiStack', () => {
@@ -9,7 +9,6 @@ describe('CiStack', () => {
     const stack = new CiStack(app, 'TestCi', {
       env: { account: '111111111111', region: 'eu-west-2' },
       githubOwner: 'sandycormie',
-      tableArn: 'arn:aws:dynamodb:eu-west-2:111111111111:table/gigbuddy-data',
     });
     return Template.fromStack(stack);
   };
@@ -65,41 +64,15 @@ describe('CiStack', () => {
     });
   });
 
-  it('grants dynamodb:Query+Scan+DescribeTable on the table + GSI', () => {
+  it('grants no dynamodb:* or logs:* actions', () => {
     const template = synth();
-    template.hasResourceProperties('AWS::IAM::Policy', {
-      PolicyDocument: Match.objectLike({
-        Statement: Match.arrayWith([
-          Match.objectLike({
-            Action: Match.arrayWith(['dynamodb:Query', 'dynamodb:Scan', 'dynamodb:DescribeTable']),
-            Resource: Match.arrayWith([
-              'arn:aws:dynamodb:eu-west-2:111111111111:table/gigbuddy-data',
-              'arn:aws:dynamodb:eu-west-2:111111111111:table/gigbuddy-data/index/*',
-            ]),
-          }),
-        ]),
-      }),
-    });
-  });
-
-  it('grants logs:CreateLogGroup+CreateLogStream+PutLogEvents on /gigbuddy/deploy-force only', () => {
-    const template = synth();
-    template.hasResourceProperties('AWS::IAM::Policy', {
-      PolicyDocument: Match.objectLike({
-        Statement: Match.arrayWith([
-          Match.objectLike({
-            Action: Match.arrayWith([
-              'logs:CreateLogGroup',
-              'logs:CreateLogStream',
-              'logs:PutLogEvents',
-            ]),
-            Resource: Match.arrayWith([
-              'arn:aws:logs:eu-west-2:111111111111:log-group:/gigbuddy/deploy-force',
-              'arn:aws:logs:eu-west-2:111111111111:log-group:/gigbuddy/deploy-force:*',
-            ]),
-          }),
-        ]),
-      }),
-    });
+    const actions: string[] = [];
+    for (const policy of Object.values(template.findResources('AWS::IAM::Policy'))) {
+      for (const statement of policy.Properties.PolicyDocument.Statement) {
+        actions.push(...[statement.Action].flat());
+      }
+    }
+    expect(actions.length).toBeGreaterThan(0);
+    expect(actions.filter((a) => /^(dynamodb|logs):/.test(a))).toEqual([]);
   });
 });

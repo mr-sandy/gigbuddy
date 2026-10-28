@@ -50,8 +50,7 @@ Execute this runbook when one of the following applies:
   bootstrap profile from `bootstrap.md` § 0a. **Do not** attempt to run this
   with the CI OIDC `gigbuddy-deploy-role` — it deliberately lacks the required
   DynamoDB restore/delete and Lambda-config actions (see `infra/lib/stacks/ci-stack.ts`,
-  which grants only `dynamodb:Query`/`Scan`/`DescribeTable` on the table for the
-  deploy-time blackout check). Widening the deploy role is **not** the fix; the
+  which grants no DynamoDB actions). Widening the deploy role is **not** the fix; the
   drill is admin-only by design.
 - **IAM actions required** (all on eu-west-2 resources):
   - `dynamodb:RestoreTableToPointInTime`, `dynamodb:DescribeTable`,

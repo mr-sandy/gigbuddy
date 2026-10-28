@@ -48,7 +48,6 @@ describe('CDK App composition', () => {
     new CiStack(app, 'GigbuddyCi', {
       env,
       githubOwner: 'test-owner',
-      tableArn: data.table.tableArn,
     });
 
     expect(() => app.synth()).not.toThrow();

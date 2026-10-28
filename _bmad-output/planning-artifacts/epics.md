@@ -2981,3 +2981,19 @@ inside a gig".)
 4. No change to `api/`, `shared/` or `infra/`; no new package.
 5. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass.
 6. Deployed to gig.cormie.com via the normal pipeline.
+
+### Story 7.30: Remove the deploy blackout
+
+As Sandy, I want a push to `main` to deploy whatever the date and whatever gigs are coming up,
+so that a test gig or a weekend evening never blocks a deploy. (Epic 7 retro decision,
+2026-10-28: Sandy won't push while playing; any future automation runs in the early hours.)
+
+**Acceptance criteria**
+1. `deploy.yml` has no blackout step; `deploy-force.yml` and `infra/scripts/blackout-check.ts`
+   (and its test) are deleted, with `@aws-sdk/client-dynamodb` removed from `infra`.
+2. The CI deploy role loses its blackout-only grants (DynamoDB read on the table, CloudWatch
+   Logs on `/gigbuddy/deploy-force`); every other grant is unchanged.
+3. Comments and docs (architecture.md, bootstrap and restore runbooks) no longer describe a
+   blackout in force. `/api/v1/upcoming-gigs` and the service worker behave as before.
+4. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass.
+5. Deployed to gig.cormie.com via the normal pipeline; the run is green.

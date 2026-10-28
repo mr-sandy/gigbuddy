@@ -237,8 +237,8 @@ bootstrap is now only for:
    "Checks" tab shows `lint + typecheck + test` as required, and the merge
    button is disabled until it passes.
 
-The deploy and deploy-force workflows reference `vars.AWS_DEPLOY_ROLE_ARN`.
-If the variable name does not match exactly, both workflows fail at the
+The deploy workflow references `vars.AWS_DEPLOY_ROLE_ARN`.
+If the variable name does not match exactly, it fails at the
 credential-configuration step.
 
 ## 8. Verify the access gate (after Story 1.4 ships)
@@ -283,42 +283,3 @@ for a stack trace, and verify both SSM parameters exist with
 > rotation is needed. Until then, manual rotation is: write a new SSM
 > SecureString value, redeploy `GigbuddyApi`, log back in. All prior
 > sessions invalidate.
-
-## 9. Emergency: deploy-force.yml
-
-`.github/workflows/deploy-force.yml` bypasses the deploy-time blackout check.
-Use it only when a gig is less than 24h away and a deploy MUST proceed
-(security hotfix, customer-blocking outage). The default answer is "wait until
-after the gig" — this workflow exists for the cases where waiting is not an
-option.
-
-Trigger via `Actions → deploy-force → Run workflow` with two inputs:
-
-- `reason` — free text, required. One sentence on why the override is needed.
-- `venueConfirmation` — must match the venue name of the nearest blocking Gig
-  exactly (case-sensitive). Leave blank if no Gig blocks (the static
-  weekend-evening fallback fired but no real Gig is scheduled).
-
-To find the venue name: open the workflow run. The first job (`enumerate`)
-logs each blocking Gig as one JSON object per line (`{"venue": "...",
-"date": "...", "time": "..."}`). Copy the `venue` field of the **first** entry
-verbatim into the `venueConfirmation` input on a re-run.
-
-Audit trail:
-
-- Run history: `Actions → Workflows → deploy-force`. Every triggered run
-  appears here; the `reason` and `venueConfirmation` inputs are shown in the
-  run's "Inputs" panel.
-- `$GITHUB_STEP_SUMMARY` is captured per run (visible in the GitHub Actions UI
-  for 90 days by default). Includes the `reason`, `venueConfirmation`, and the
-  full list of blocking Gigs at deploy time — including runs where venue
-  confirmation failed.
-- CloudWatch Logs group `/gigbuddy/deploy-force` (eu-west-2) retains one JSON
-  event per force-deploy run (including failed confirmation attempts),
-  indefinitely. No retention policy is configured in V1 — accept the volume
-  risk; a future story can wire a 365-day retention if needed.
-
-Do NOT bypass the workflow by running `pnpm -F infra exec cdk deploy` locally
-with the bootstrap-user credentials. The OIDC role is the only legitimate CI
-deploy path post-bootstrap. The bootstrap-user is for `cdk bootstrap` and
-emergency break-glass only.

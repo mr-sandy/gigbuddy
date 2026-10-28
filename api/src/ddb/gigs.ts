@@ -8,12 +8,6 @@ import { getDocClient, getTableName } from './client.js';
  * queries the GSI1 setlist-by-date index for Setlists whose `gigMeta.date`
  * falls inside a [todayIso, tomorrowIso] Europe/London window.
  *
- * `infra/scripts/blackout-check.ts` carries the same 24h Europe/London
- * semantics for the deploy guard (Story 1.6). We do NOT import the helper
- * across that boundary — `infra/` is CDK/deploy tooling, not a consumable
- * library — so the London-calendar window helper is replicated inline
- * here (and asserted to match by a co-located self-test, AC-9).
- *
  * Key shape (matches the GSI1 write in `ddb/setlists.ts`):
  *   gsi1pk = BAND#<bandId>#SETLIST_BY_DATE
  *   gsi1sk = <isoDate>#<setlistId>
@@ -22,8 +16,7 @@ import { getDocClient, getTableName } from './client.js';
  *   :from = "<todayIso>#"        (inclusive lower bound)
  *   :to   = "<tomorrowIso>#zzzz" (inclusive upper bound — the `zzzz`
  *                                 suffix ensures every setlistId value
- *                                 for that date is included; matches the
- *                                 `blackout-check.ts` scan pattern).
+ *                                 for that date is included).
  */
 
 const GSI1_INDEX_NAME = 'GSI1';
@@ -31,10 +24,8 @@ const GSI1_INDEX_NAME = 'GSI1';
 /**
  * Returns the calendar date in `Europe/London` as `YYYY-MM-DD`.
  *
- * Replicated from `infra/scripts/blackout-check.ts:londonIsoDate`. The
- * co-located self-test (`gigs.test.ts`) asserts the two helpers produce
- * the same output for representative inputs spanning BST/GMT and UTC
- * midnight rollover (AC-9, Story 1.6 self-test requirement).
+ * The co-located test (`gigs.test.ts`) covers BST/GMT and UTC midnight
+ * rollover.
  */
 export function londonIsoDate(at: Date): string {
   return new Intl.DateTimeFormat('en-CA', {

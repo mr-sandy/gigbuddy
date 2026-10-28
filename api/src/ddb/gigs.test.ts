@@ -118,18 +118,8 @@ describe('listUpcomingGigs', () => {
   });
 });
 
-/*
- * AC-9 self-test: the inline `londonIsoDate` helper in `gigs.ts` MUST
- * produce the same value as the same-named helper in
- * `infra/scripts/blackout-check.ts`. The two are intentionally duplicated
- * (the `infra/` package is CDK/deploy tooling and not a consumable library
- * for the api package — cross-package import would violate the
- * architecture boundary table), so a self-test guards against semantic
- * drift. The expected values below are the verbatim outputs of the
- * blackout-check helper at the corresponding UTC instants (see
- * `infra/scripts/blackout-check.test.ts` for the matching test cases).
- */
-describe('AC-9 — londonIsoDate matches blackout-check.ts semantics', () => {
+// Guards the Europe/London calendar date across GMT/BST and UTC midnight rollover.
+describe('londonIsoDate — Europe/London calendar date', () => {
   const cases: { label: string; at: Date; expected: string }[] = [
     {
       label: 'BST evening near midnight London (UTC 22:30 → 23:30 BST same day)',
