@@ -4,7 +4,7 @@ baseline_commit: e9b1637
 
 # Story 7.27: Section headings from Check songs, and the dropdown arrow
 
-Status: review
+Status: done
 
 <!-- Source: Sandy, 2026-10-28, after the 7.26 live check with a test setlist. "Emergency
      Reserve List" isn't a recognised heading, so it came up as an unknown song. On the Mac the
@@ -79,7 +79,7 @@ look finished on the laptop.
         Save keeps it. Wait for the dialog to go before querying behind it.
   - [x] `native-select.test.tsx`: the select still has the combobox role and value; a hidden
         chevron `svg` is rendered.
-- [ ] Task 6: Verify and ship (AC: 7, 8, 9)
+- [x] Task 6: Verify and ship (AC: 7, 8, 9)
   - [x] `git diff --stat e9b1637 -- api shared infra` empty; no new dependency.
   - [x] `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`.
   - [x] Commit `Implement story 7.27: Section headings from Check songs, and the dropdown
@@ -140,7 +140,7 @@ Claude Sonnet 5.5
 - `Choice` gains `heading`; `headingFromLine` tidies the name; `resolveDraft` flushes the section at a heading line and starts a new one (same empty-unnamed skip rule).
 - Check songs dropdown has "Use as a section heading" between "Add as a new song" and "Leave it out"; never the default.
 - `NativeSelect` now draws a `ChevronDown` inset `right-3`, `appearance-none`, `pr-10`.
-- Lint, typecheck, test (446) and build pass; `api/`, `shared/`, `infra/` untouched. Commit/deploy pending code review.
+- Lint, typecheck, test (446) and build pass; `api/`, `shared/`, `infra/` untouched. Committed `61e8659`, deployed, Sandy's live check done.
 
 ### File List
 
@@ -157,4 +157,6 @@ Claude Sonnet 5.5
 
 - 2026-10-28: Story created (ready-for-dev).
 - 2026-10-28: Implemented heading choice and inset chevron; status → review.
-- 2026-10-28: Code review (lightweight, single pass): clean; two negligible nits left as is (chevron doesn't dim on a disabled select, which is never used; a number-only line tidies to an unnamed section). Committed and pushed for deploy.
+- 2026-10-28: Code review (lightweight, single pass): clean; two negligible nits left as is (chevron doesn't dim on a disabled select, which is never used; a number-only line tidies to an unnamed section). Committed `61e8659`.
+- 2026-10-28: Deployed via deploy-force (blackout from the "Test" gig on 2026-10-29, Sandy approved).
+- 2026-10-28: Sandy's live check: looks good; follow-up (a shortened line such as "Chitlins" not guessing "Chitlins con Carne") goes to 7.28. Status → done.
