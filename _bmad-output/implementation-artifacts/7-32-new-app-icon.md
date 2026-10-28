@@ -4,7 +4,7 @@ baseline_commit: ea17777
 
 # Story 7.32: New app icon
 
-Status: review
+Status: done
 
 <!-- Source: epics.md "Epic 7 / Story 7.32". Design from a Claude desktop draft (indigo/amber piano keys), recoloured to the app palette. -->
 
@@ -66,3 +66,4 @@ Claude Opus 5.5
 
 - 2026-10-28: Story created and implemented; verification green; status → review.
 - 2026-10-28: Committed 2854e8e; deploy run 40701353545 and CI green; new icons live. Awaiting Sandy's look.
+- 2026-10-28: Sandy checked the new icon on laptop (Chrome) and iPhone: looks fine; status → done.
