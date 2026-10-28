@@ -5,7 +5,7 @@ builds_on: 4-5-backgrounding-survives-tonight-gig-pre-fetch-upcoming-gigs
 
 # Story 5.1: JSON export endpoint + Library footer affordance (FR-33, AR-38)
 
-Status: review
+Status: done
 
 ## Story
 
@@ -264,3 +264,4 @@ claude-opus-4-7 via bmad-dev-story workflow
 | Date       | Change                                                        | Author           |
 | ---------- | ------------------------------------------------------------- | ---------------- |
 | 2026-07-19 | Story 5.1 implemented: export endpoint + Library footer link. | Amelia (dev-agent) |
+| 2026-10-28 | Status → done at Sandy's request (export live and in use).      | Sandy            |
