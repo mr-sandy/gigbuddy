@@ -2203,6 +2203,17 @@ saves tokens.)
 - Chord-chart polish is not part of this review; it waits for a later story.
 - Queue: 7.18 → 7.22, one at a time. Switching bands is a later, larger piece of work.
 
+**Decisions, 2026-10-28 (Epic 7 retro, after 7.29):**
+- Epic 7 stays open as the home for small iterative stories.
+- The gig-day deploy blackout is redundant: Sandy is the only developer and user and won't push
+  while playing. Any future automation (e.g. dependency updates) would be scheduled for the
+  early hours. Remove the blackout rules.
+- Song performance notes and practice notes are to be removed, not shown (a later story;
+  production data purged with the usual dry run and Sandy's go-ahead).
+- Code review: full three-layer review for stories touching state, navigation history, sync or
+  data; lightweight for small presentational stories.
+- Queue: 7.30 remove the deploy blackout, then remove song notes.
+
 ### Story 7.1: Front-end reset to a responsive landing page
 
 As Sandy, I want GigBuddy to open on one simple page that works on my phone and my laptop,

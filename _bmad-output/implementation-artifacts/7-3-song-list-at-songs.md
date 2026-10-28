@@ -4,7 +4,7 @@ baseline_commit: 56ca4d40fed735036d66a9d07a660a3fb9de5d02
 
 # Story 7.3: Song list at /songs
 
-Status: review
+Status: done
 
 <!-- Source: epics.md "Epic 7 / Story 7.3"; agreed with Sandy 2026-10-19 -->
 

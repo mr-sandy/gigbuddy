@@ -649,7 +649,7 @@ function onForeground() {
   const tonightGig = getTonightGig()
   if (tonightGig && hoursUntil(tonightGig.date, tonightGig.time) <= 24) {
     queryClient.prefetchQuery(['setlist', tonightGig.setlistId])
-    tonightGig.songRefs.forEach(ref =>
+    tonightGig.sections.flatMap(s => s.songs).forEach(ref =>
       queryClient.prefetchQuery(['song', ref.songId])
     )
   }
@@ -660,7 +660,7 @@ async function onStartPerformance(setlistId: string) {
   await queryClient.prefetchQuery(['setlist', setlistId])
   const setlist = queryClient.getQueryData(['setlist', setlistId])
   await Promise.all(
-    setlist.songRefs.map(ref => queryClient.prefetchQuery(['song', ref.songId]))
+    setlist.sections.flatMap(s => s.songs).map(ref => queryClient.prefetchQuery(['song', ref.songId]))
   )
 }
 ```
@@ -1117,7 +1117,7 @@ React component
 User taps "Start performance ›"
   └─→ onStartPerformance(setlistId)
         ├─→ await queryClient.prefetchQuery(['setlist', setlistId])
-        ├─→ await Promise.all(setlist.songRefs.map(r => prefetch(['song', r.songId])))
+        ├─→ await Promise.all(setlist.sections.flatMap(s => s.songs).map(r => prefetch(['song', r.songId])))
         ├─→ wakeLock.acquire()
         ├─→ performanceContext.setActive(true)
         └─→ navigate to /performance/:setlistId/0
