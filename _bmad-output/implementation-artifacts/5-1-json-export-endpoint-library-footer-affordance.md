@@ -264,4 +264,4 @@ claude-opus-4-7 via bmad-dev-story workflow
 | Date       | Change                                                        | Author           |
 | ---------- | ------------------------------------------------------------- | ---------------- |
 | 2026-07-19 | Story 5.1 implemented: export endpoint + Library footer link. | Amelia (dev-agent) |
-| 2026-10-28 | Status → done at Sandy's request (export live and in use).      | Sandy            |
+| 2026-10-28 | Status → done at Sandy's request.                              | Sandy            |
