@@ -49,11 +49,12 @@ jobs:
         run: |
           OUTPUT=$(pnpm -F infra --silent exec tsx scripts/blackout-check.ts --report-only)
           printf '%s\n' "$OUTPUT"
-          # Multi-line output handling per GitHub docs; printf avoids the
-          # trailing newline that echo adds when OUTPUT is empty
+          # Multi-line output handling per GitHub docs. The delimiter must start
+          # its own line, so a non-empty OUTPUT needs a trailing newline; an
+          # empty one writes nothing, leaving the output empty
           {
             echo 'blocking_gigs<<EOF'
-            printf '%s' "$OUTPUT"
+            if [ -n "$OUTPUT" ]; then printf '%s\n' "$OUTPUT"; fi
             echo EOF
           } >> "$GITHUB_OUTPUT"
       - name: validate venue confirmation if blocking gigs exist
