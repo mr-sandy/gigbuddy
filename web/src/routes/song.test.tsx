@@ -173,10 +173,10 @@ describe('Song', () => {
   });
 
   describe('inside a gig', () => {
-    it('shows the title, links Back to gig and has no Edit link', () => {
+    it('shows the title, links Back to gig and links Edit with ?at= kept', () => {
       useSongMock.mockReturnValue({ data: { songId: 'abc', title: 'Alpha Test Tune' } });
       useSongsMock.mockReturnValue({ data: undefined, isPending: true });
-      renderGigSong();
+      renderGigSong('/gigs/g1/songs/abc?at=2');
       expect(
         screen.getByRole('heading', { level: 1, name: 'Alpha Test Tune' }),
       ).toBeInTheDocument();
@@ -185,7 +185,10 @@ describe('Song', () => {
         '/gigs/g1',
       );
       expect(screen.queryByRole('link', { name: SONGS.backToSongs })).not.toBeInTheDocument();
-      expect(screen.queryByRole('link', { name: SONG_FORM.editLink })).not.toBeInTheDocument();
+      expect(screen.getByRole('link', { name: SONG_FORM.editLink })).toHaveAttribute(
+        'href',
+        '/gigs/g1/songs/abc/edit?at=2',
+      );
     });
 
     it('shows not found with Back to gig', () => {

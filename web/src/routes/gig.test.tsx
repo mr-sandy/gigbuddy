@@ -1,13 +1,15 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { GIG_FORM, GIG_SETLIST, GIGS, SETLIST_TEXT } from '../lib/microcopy.js';
 import { Gig } from './gig.js';
 
-const { useSetlistMock, useSetlistsMock } = vi.hoisted(() => ({
+const { useSetlistMock, useSetlistsMock, useSongsMock } = vi.hoisted(() => ({
   useSetlistMock: vi.fn(),
   useSetlistsMock: vi.fn(),
+  useSongsMock: vi.fn(),
 }));
+vi.mock('../hooks/use-songs.js', () => ({ useSongs: useSongsMock }));
 vi.mock('../hooks/use-setlist.js', () => ({ useSetlist: useSetlistMock }));
 vi.mock('../hooks/use-setlists.js', () => ({ useSetlists: useSetlistsMock }));
 
@@ -29,6 +31,26 @@ function renderGig() {
 }
 
 describe('Gig', () => {
+  beforeEach(() => {
+    useSongsMock.mockReturnValue({ data: undefined, isPending: true });
+  });
+
+  it('shows the current library title in a row, or the stored snapshot without one', () => {
+    useSetlistMock.mockReturnValue({
+      data: gig('Venue A', [{ name: '', songs: [song('s1', 'Old Name'), song('s2', 'Other')] }]),
+    });
+    useSetlistsMock.mockReturnValue({ data: undefined, isPending: true });
+    useSongsMock.mockReturnValue({ data: [{ songId: 's1', title: 'New Name' }] });
+    const { unmount } = renderGig();
+    expect(screen.getByText('New Name')).toBeInTheDocument();
+    expect(screen.queryByText('Old Name')).not.toBeInTheDocument();
+    expect(screen.getByText('Other')).toBeInTheDocument();
+    unmount();
+    useSongsMock.mockReturnValue({ data: undefined, isPending: true });
+    renderGig();
+    expect(screen.getByText('Old Name')).toBeInTheDocument();
+  });
+
   it('shows the venue as h1 and the date beneath', () => {
     useSetlistMock.mockReturnValue({ data: gig('Venue A') });
     useSetlistsMock.mockReturnValue({ data: undefined, isPending: true });

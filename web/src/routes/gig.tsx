@@ -5,6 +5,7 @@ import { PageHeader } from '../components/page-header.js';
 import { PageTitle } from '../components/page-title.js';
 import { Button } from '../components/ui/button.js';
 import { useSetlistOrCached } from '../hooks/use-setlist-or-cached.js';
+import { useSongs } from '../hooks/use-songs.js';
 import { formatGigDate } from '../lib/gig-date.js';
 import { gigSongPath, playOrder } from '../lib/gig-position.js';
 import { GIG_FORM, GIG_SETLIST, GIGS, SETLIST_TEXT } from '../lib/microcopy.js';
@@ -26,9 +27,12 @@ const HEADING_ROW =
 /*
  * Gig page (Story 7.7 shell, Story 7.8 setlist): venue as the title, date
  * beneath, then the setlist's songs by section, each opening the song page
- * inside the gig. Falls back to the list cache.
+ * inside the gig. Falls back to the list cache. Rows show each song's current
+ * library title (Story 7.29), or the stored snapshot until the songs list has it.
  */
 function SetlistSections({ setlist }: { setlist: Setlist }) {
+  const { data: songs } = useSongs();
+  const titles = new Map((songs ?? []).map((s) => [s.songId, s.title]));
   const firstWithSongs = setlist.sections.findIndex((s) => s.songs.length > 0);
   if (firstWithSongs === -1) {
     return (
@@ -81,7 +85,7 @@ function SetlistSections({ setlist }: { setlist: Setlist }) {
                     to={gigSongPath(setlist.setlistId, order, start + songIndex)}
                     className="flex min-h-tap items-center justify-between gap-3 py-[calc(var(--spacing-unit)*3)] text-[length:var(--text-row)] leading-[var(--text-row--line-height)] text-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring"
                   >
-                    <span>{song.titleSnapshot}</span>
+                    <span>{titles.get(song.songId) ?? song.titleSnapshot}</span>
                     <ChevronRight
                       aria-hidden="true"
                       className="size-5 shrink-0 text-muted-foreground"

@@ -2955,3 +2955,18 @@ Carne"), so that setlists written in shorthand don't default to adding duplicate
 2. No change to `api/`, `shared/` or `infra/`; no new package.
 3. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass.
 4. Deployed to gig.cormie.com via the normal pipeline.
+
+### Story 7.29: Edit a song from inside a gig
+
+As Sandy, I want an Edit link on a song's page while I'm inside a gig, so that I can fix a
+chart, key or patch without leaving the gig. (Sandy, 2026-10-28; reverses 7.8's "no Edit link
+inside a gig".)
+
+**Acceptance criteria**
+1. The gig song page has the same Edit link as the Songs song page. It opens the edit sheet over
+   the gig song page; Cancel and Save return to the same place in the setlist (`?at=` kept).
+2. No "Delete song" in the sheet when opened from a gig.
+3. The gig page's setlist shows each song's current title, falling back to the stored title.
+4. No change to `api/`, `shared/` or `infra/`; no new package.
+5. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass.
+6. Deployed to gig.cormie.com via the normal pipeline.

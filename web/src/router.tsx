@@ -61,7 +61,11 @@ export const router = createBrowserRouter([
           { path: 'setlist', element: <SetlistEdit /> },
         ],
       },
-      { path: 'gigs/:setlistId/songs/:songId', element: <Song /> },
+      {
+        path: 'gigs/:setlistId/songs/:songId',
+        element: <Song />,
+        children: [{ path: 'edit', element: <SongEdit /> }],
+      },
     ],
   },
   { path: '*', element: <Navigate to="/songs" replace /> },

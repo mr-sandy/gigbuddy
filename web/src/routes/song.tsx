@@ -1,7 +1,7 @@
 import type { Setlist } from '@gigbuddy/shared';
 import { ChevronLeft, ChevronRight, Pencil } from 'lucide-react';
 import { useEffect } from 'react';
-import { Link, Outlet, useParams, useSearchParams } from 'react-router';
+import { Link, Outlet, useLocation, useParams, useSearchParams } from 'react-router';
 import { PageHeader } from '../components/page-header.js';
 import { PageTitle } from '../components/page-title.js';
 import { Button } from '../components/ui/button.js';
@@ -16,9 +16,11 @@ import { cn } from '../lib/utils.js';
  * Song page (Story 7.3 shell, Story 7.5 content): title, key/patch line and
  * the chord chart verbatim. Falls back to the list cache so the title shows
  * instantly and works offline. Under /gigs/:setlistId/songs/:songId (Story 7.8)
- * it is the same page with "Back to gig" and no Edit link, plus (Story 7.14)
+ * it is the same page with "Back to gig", plus (Story 7.14)
  * a fixed bottom bar of two chevron tap regions (Story 7.19) stepping
- * previous/next through the gig's setlist.
+ * previous/next through the gig's setlist. The Edit link shows in both (Story 7.29);
+ * inside a gig it opens the sheet over this page, carrying `?at=` so the play bar
+ * keeps its place.
  * Both routes keep the screen awake while open (Story 7.15).
  */
 function GigPlayBar({ setlist, place }: { setlist: Setlist; place: number }) {
@@ -67,6 +69,7 @@ export function Song() {
   const { songId, setlistId } = useParams();
   const [searchParams] = useSearchParams();
   const at = searchParams.get('at');
+  const { search } = useLocation();
   const { song, statusLine } = useSongOrCached(songId);
   const { setlist } = useSetlistOrCached(setlistId);
   const place =
@@ -105,9 +108,15 @@ export function Song() {
           </Button>
         }
         right={
-          song && !setlistId ? (
+          song ? (
             <Button asChild variant="ghost" className="text-primary">
-              <Link to={`/songs/${song.songId}/edit`}>
+              <Link
+                to={
+                  setlistId
+                    ? `/gigs/${setlistId}/songs/${song.songId}/edit${search}`
+                    : `/songs/${song.songId}/edit`
+                }
+              >
                 <Pencil aria-hidden="true" />
                 {SONG_FORM.editLink}
               </Link>

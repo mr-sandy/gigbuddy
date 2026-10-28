@@ -26,6 +26,11 @@ function Pathname() {
   return <output data-testid="pathname">{useLocation().pathname}</output>;
 }
 
+function PathAndSearch() {
+  const { pathname, search } = useLocation();
+  return <output data-testid="pathname">{pathname + search}</output>;
+}
+
 function BackButton() {
   const navigate = useNavigate();
   return (
@@ -74,6 +79,19 @@ function tree(history: string[]) {
         >
           <Route path="edit" element={<SongEdit />} />
         </Route>
+        <Route
+          path="/gigs/:setlistId/songs/:songId"
+          element={
+            <>
+              <p>gig song page</p>
+              <PathAndSearch />
+              <BackButton />
+              <Outlet />
+            </>
+          }
+        >
+          <Route path="edit" element={<SongEdit />} />
+        </Route>
       </Routes>
     </MemoryRouter>
   );
@@ -99,6 +117,41 @@ beforeEach(() => {
   useSongsMock.mockReturnValue({ data: undefined, isPending: true });
   useSetlistsMock.mockReturnValue({ data: [] });
   deleteSongMock.mockReset().mockResolvedValue('deleted');
+});
+
+describe('SongEdit inside a gig', () => {
+  const GIG_SONG = '/gigs/g1/songs/abc?at=2';
+  const GIG_EDIT = '/gigs/g1/songs/abc/edit?at=2';
+
+  it.each([
+    ['Cancel', SONG_FORM.cancel],
+    ['Save', SONG_FORM.save],
+  ])('%s steps back to the gig song page when there is history', async (_n, label) => {
+    const user = userEvent.setup();
+    renderAt(GIG_SONG, GIG_EDIT);
+    await user.click(screen.getByRole('button', { name: label }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByTestId('pathname')).toHaveTextContent(GIG_SONG);
+  });
+
+  it.each([
+    ['Cancel', SONG_FORM.cancel],
+    ['Save', SONG_FORM.save],
+  ])('%s replaces to the gig song page when opened directly', async (_n, label) => {
+    const user = userEvent.setup();
+    renderAt(GIG_EDIT);
+    await user.click(screen.getByRole('button', { name: label }));
+    expect(await screen.findByText('gig song page')).toBeInTheDocument();
+    expect(screen.getByTestId('pathname')).toHaveTextContent(GIG_SONG);
+  });
+
+  it('offers no Delete song in the gig, but still does on /songs', () => {
+    const { unmount } = renderAt(GIG_EDIT);
+    expect(screen.queryByRole('button', { name: SONG_DELETE.button })).not.toBeInTheDocument();
+    unmount();
+    renderAt('/songs/abc/edit');
+    expect(screen.getByRole('button', { name: SONG_DELETE.button })).toBeInTheDocument();
+  });
 });
 
 describe('SongEdit', () => {

@@ -1,7 +1,7 @@
 import { ACTIVE_BAND_ID, type Song, type SongPutInput } from '@gigbuddy/shared';
 import { Trash2 } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useLocation, useNavigate, useParams } from 'react-router';
 import { EditSheet, SheetFrame, useSheetExit } from '../components/edit-sheet.js';
 import {
   AlertDialog,
@@ -38,10 +38,20 @@ import { SONG_DELETE, SONG_FORM } from '../lib/microcopy.js';
  * (Story 7.11) in a confirm dialog. A song in any setlist can't be deleted: the
  * cached setlists name the gigs up front, and the API's 409 covers anything the
  * cache missed.
+ *
+ * Under /gigs/:setlistId/songs/:songId/edit (Story 7.29) it is the same sheet over the
+ * gig song page: exits return there with `?at=` kept, and Delete is not offered.
  */
 
 const PAIR_GAP = 'mt-[calc(var(--spacing-unit)*4)]';
 const FIELD_GAP = 'mt-[var(--spacing-unit)]';
+
+function useRecordPage(songId: string | undefined) {
+  const { setlistId } = useParams();
+  const { search } = useLocation();
+  if (songId === undefined) return '/songs';
+  return setlistId ? `/gigs/${setlistId}/songs/${songId}${search}` : `/songs/${songId}`;
+}
 
 export function SongEdit() {
   const { songId } = useParams();
@@ -50,7 +60,7 @@ export function SongEdit() {
 
 function EditExisting({ songId }: { songId: string }) {
   const { song, statusLine } = useSongOrCached(songId);
-  const { leave } = useSheetExit(`/songs/${songId}`);
+  const { leave } = useSheetExit(useRecordPage(songId));
   return (
     <SheetFrame onCancel={leave} described={false}>
       {song ? (
@@ -77,9 +87,11 @@ function EditExisting({ songId }: { songId: string }) {
 
 function SongForm({ initial }: { initial?: Song }) {
   const navigate = useNavigate();
+  const { setlistId } = useParams();
   const { saveSong } = useSongMutation();
   const [newId] = useState(() => generateId());
   const songId = initial?.songId ?? newId;
+  const recordPage = useRecordPage(songId);
 
   const [title, setTitle] = useState(initial?.title ?? '');
   const [key, setKey] = useState(initial?.key ?? '');
@@ -87,8 +99,7 @@ function SongForm({ initial }: { initial?: Song }) {
   const [chart, setChart] = useState(initial?.chordChart ?? '');
   const [saving, setSaving] = useState(false);
   const canSave = title.trim() !== '';
-  const exitTo = initial ? `/songs/${songId}` : '/songs';
-  const { leave, hasHistory } = useSheetExit(exitTo);
+  const { leave, hasHistory } = useSheetExit(initial ? recordPage : '/songs');
   // After saving a new record, land on its page rather than stepping back.
   const canStepBack = initial !== undefined && hasHistory;
 
@@ -117,7 +128,7 @@ function SongForm({ initial }: { initial?: Song }) {
     };
     await saveSong(record);
     if (canStepBack) navigate(-1);
-    else navigate(`/songs/${songId}`, { replace: true });
+    else navigate(recordPage, { replace: true });
   }
 
   return (
@@ -174,7 +185,7 @@ function SongForm({ initial }: { initial?: Song }) {
         />
       </div>
 
-      {initial ? <DeleteSong song={initial} canStepBack={canStepBack} /> : null}
+      {initial && !setlistId ? <DeleteSong song={initial} canStepBack={canStepBack} /> : null}
     </EditSheet>
   );
 }
