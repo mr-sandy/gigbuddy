@@ -31,7 +31,7 @@ so that a page being too short to scroll doesn't nudge everything sideways.
   width, still measured as non-zero with a stable gutter. Override with
   `html body[data-scroll-locked] { margin-right: 0 !important; }` (higher specificity).
 - [x] **Task 3: Test** — `globals.test.ts` guards both rules (jsdom has no scrollbars).
-- [ ] **Task 4: Verify, commit, deploy** (AC 4, 5)
+- [x] **Task 4: Verify, commit, deploy** (AC 4, 5)
 
 ## Dev Agent Record
 
@@ -55,3 +55,4 @@ Claude Opus 5.5
 ### Change Log
 
 - 2026-10-29: Story created and implemented; verification green; status → review.
+- 2026-10-29: Committed 58047f4; deploy run 40838635301 and CI green; rules live. Awaiting Sandy's look.
