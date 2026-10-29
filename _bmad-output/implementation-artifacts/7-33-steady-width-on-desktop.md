@@ -4,7 +4,7 @@ baseline_commit: 854b29c
 
 # Story 7.33: Steady width on desktop
 
-Status: review
+Status: done
 
 <!-- Source: epics.md "Epic 7 / Story 7.33". Sandy noticed a sideways shift switching Songs ↔ Gigs on the laptop. -->
 
@@ -56,3 +56,4 @@ Claude Opus 5.5
 
 - 2026-10-29: Story created and implemented; verification green; status → review.
 - 2026-10-29: Committed 58047f4; deploy run 40838635301 and CI green; rules live. Awaiting Sandy's look.
+- 2026-10-29: Sandy checked the live app: looks good; status → done.
