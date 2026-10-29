@@ -87,10 +87,10 @@ function mockSignedInWithData() {
 }
 
 describe('AppBootstrap', () => {
-  it('renders the GigBuddy shell heading while the /me probe is in-flight', () => {
+  it('renders the GigBuddy splash icon while the /me probe is in-flight', () => {
     fetchMock.mockReturnValueOnce(new Promise(() => undefined)); // never resolves
     renderBootstrap();
-    expect(screen.getByRole('heading', { name: 'GigBuddy' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'GigBuddy' })).toBeInTheDocument();
   });
 
   it('mounts the authenticated shell with the landing page after a 200 /me response', async () => {
@@ -101,8 +101,7 @@ describe('AppBootstrap', () => {
       // Fresh Response per call — useSongs and useSetlists each read the body.
       .mockImplementation(() => Promise.resolve(jsonResponse(200, { status: 'ok', data: [] })));
     renderBootstrap();
-    // Both the pre-ready boot shell and the authenticated landing page (the
-    // Songs list) render an `<h1>` — the band name only appears once signed in.
+    // The band name only appears once signed in.
     await waitFor(() => {
       expect(screen.getByText('The Jack Ruby 5')).toBeInTheDocument();
     });
@@ -121,7 +120,7 @@ describe('AppBootstrap', () => {
     fetchMock.mockRejectedValueOnce(new Error('network down'));
     renderBootstrap();
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'GigBuddy' })).toBeInTheDocument();
+      expect(screen.getByRole('img', { name: 'GigBuddy' })).toBeInTheDocument();
     });
     // No login input should appear — AR-16 says we stay on the cached shell.
     expect(screen.queryByLabelText(/password/i)).toBeNull();
@@ -147,7 +146,7 @@ describe('AppBootstrap', () => {
       .mockImplementation(() => Promise.resolve(jsonResponse(200, { status: 'ok', data: [] })));
     renderBootstrap();
     // Wait for the authenticated landing page (the band name in the Songs
-    // header, not just the ambiguous "GigBuddy" boot-shell heading) so SyncWiring has definitely mounted.
+    // header, not just the boot-shell splash icon) so SyncWiring has definitely mounted.
     await waitFor(() => {
       expect(screen.getByText('The Jack Ruby 5')).toBeInTheDocument();
     });
