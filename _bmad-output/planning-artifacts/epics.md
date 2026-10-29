@@ -3037,3 +3037,16 @@ GigBuddy is easy to spot in a browser tab and on my phone's home screen.
 3. No other UI change. No change to `infra/`.
 4. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass.
 5. Deployed to gig.cormie.com via the normal pipeline.
+
+### Story 7.33: Steady width on desktop
+
+As Sandy, I want the app to stay put when I switch between Songs and Gigs on the laptop, so
+that a page being too short to scroll doesn't nudge everything sideways.
+
+**Acceptance criteria**
+1. The page always reserves the scrollbar's space (`scrollbar-gutter: stable` on `html`).
+2. Opening a sheet or alert dialog doesn't shift the page: the Radix scroll-lock body margin is
+   cancelled.
+3. No change on overlay-scrollbar devices (iPhone). No change to `infra/`.
+4. `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass.
+5. Deployed to gig.cormie.com via the normal pipeline.

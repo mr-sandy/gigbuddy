@@ -34,3 +34,15 @@ describe('globals.css date and time fields', () => {
     expect(css).toMatch(/::-webkit-date-and-time-value\s*\{[^}]*text-align:\s*start/);
   });
 });
+
+describe('globals.css scrollbar gutter (Story 7.33)', () => {
+  // jsdom has no scrollbars; this guards against either rule being dropped.
+  it('always reserves the scrollbar space', () => {
+    expect(css).toMatch(/html\s*\{[^}]*scrollbar-gutter:\s*stable/);
+  });
+
+  it('cancels the scroll-lock margin so opening a sheet does not shift the page', () => {
+    const rule = css.match(/html body\[data-scroll-locked\]\s*\{([^}]*)\}/);
+    expect(rule?.[1]).toMatch(/margin-right:\s*0\s*!important/);
+  });
+});

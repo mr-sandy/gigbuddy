@@ -92,6 +92,21 @@ body {
   margin: 0;
 }
 
+/* Story 7.33: always reserve the scrollbar's space, so a short page (Gigs) is the same
+   width as a long one (Songs) and switching tabs doesn't shift the app sideways.
+   Overlay scrollbars (iPhone, macOS "when scrolling") take no space, so no effect there. */
+html {
+  scrollbar-gutter: stable;
+}
+
+/* Radix's scroll lock (sheets, alert dialogs) adds a body margin the width of the
+   scrollbar to make up for hiding it. The gutter above already keeps that space, so the
+   margin would shift the page left when a sheet opens. `html body` outranks its
+   `body[data-scroll-locked]` rule; both are !important. */
+html body[data-scroll-locked] {
+  margin-right: 0 !important;
+}
+
 /*
  * Reduced-motion: zero all transitions and animations.
  * The !important markers are required to override per-component declarations
